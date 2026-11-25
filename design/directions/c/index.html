@@ -129,7 +129,6 @@ p { margin: 0; }
 
 .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 
-/* board header */
 .board-head {
   max-width: var(--page-max);
   margin: 0 auto;
@@ -166,7 +165,6 @@ p { margin: 0; }
 
 main { max-width: var(--page-max); margin: 0 auto; padding: 0 var(--sp-4); }
 
-/* items */
 .item { padding-top: var(--sp-16); }
 .item-head { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-4); }
 .num {
@@ -214,7 +212,6 @@ main { max-width: var(--page-max); margin: 0 auto; padding: 0 var(--sp-4); }
 .stage:fullscreen .frame { width: min(100vw, calc(100vh * 64 / 27)); }
 .stage:fullscreen .frame-text { background: var(--bg); }
 
-/* svg type */
 .ff-d { font-family: var(--font-display); font-weight: 400; }
 .ff-dl { font-family: var(--font-display); font-weight: 300; }
 .ff-u { font-family: var(--font-ui); }
@@ -223,7 +220,6 @@ main { max-width: var(--page-max); margin: 0 auto; padding: 0 var(--sp-4); }
 .tr-wide { letter-spacing: var(--track-wide); }
 .c-fg-2 { color: var(--fg-2); }
 
-/* motion */
 .rank { opacity: 1; }
 .rank.r4 { opacity: 0; }
 @keyframes caret { 50% { opacity: 0; } }
@@ -239,7 +235,6 @@ main { max-width: var(--page-max); margin: 0 auto; padding: 0 var(--sp-4); }
   .rank.r4 { animation-name: rk4; }
 }
 
-/* I mood */
 .mood { position: relative; min-height: 100%; display: flex; align-items: center; }
 .mood-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; opacity: 0.55; }
 .mood::before {
@@ -263,7 +258,6 @@ main { max-width: var(--page-max); margin: 0 auto; padding: 0 var(--sp-4); }
 .gloss { font-family: var(--font-display); color: var(--gold); font-size: var(--step-1); margin-top: var(--sp-2); }
 .mood-text { color: var(--fg); font-size: var(--step-1); line-height: 1.5; margin-top: var(--sp-6); max-width: 58ch; }
 
-/* II palette */
 .pal { padding: var(--sp-6); display: grid; gap: var(--sp-8) var(--sp-8); grid-template-columns: 1fr; }
 .pal-h { font-family: var(--font-mono); font-size: var(--step--1); color: var(--fg-3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: var(--sp-3); }
 .k { display: block; color: var(--fg); font-size: var(--step--1); overflow-wrap: anywhere; }
@@ -297,7 +291,6 @@ main { max-width: var(--page-max); margin: 0 auto; padding: 0 var(--sp-4); }
   .wedges { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: var(--sp-4); }
 }
 
-/* VIII fonts */
 .fonts { padding: var(--sp-6); display: grid; gap: var(--sp-8); grid-template-columns: 1fr; height: 100%; }
 .spec { display: flex; flex-direction: column; gap: var(--sp-2); border-top: var(--rule) solid var(--gold-lo); padding-top: var(--sp-4); }
 .spec-role { font-family: var(--font-mono); font-size: var(--step--1); color: var(--fg-3); letter-spacing: 0.08em; text-transform: uppercase; }
@@ -316,7 +309,6 @@ main { max-width: var(--page-max); margin: 0 auto; padding: 0 var(--sp-4); }
 .spec:nth-child(3) .spec-name { font-family: var(--font-mono); }
 @container (min-width: 760px) { .fonts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
-/* IX notes */
 .notes { padding: var(--sp-6); display: grid; gap: var(--sp-8); grid-template-columns: 1fr; }
 .note-h { font-family: var(--font-display); font-size: var(--step-2); color: var(--marble); letter-spacing: var(--track-display); text-transform: uppercase; padding-bottom: var(--sp-2); border-bottom: 2px solid var(--accent); margin-bottom: var(--sp-3); }
 .note ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-3); }
