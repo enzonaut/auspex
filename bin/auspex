@@ -12,7 +12,7 @@ fi
 
 max=0
 for word in "$@"; do
-    [[ "$word" =~ ^[a-z0-9]+$ ]] || break
+    [[ "$word" =~ ^[a-z0-9][a-z0-9-]*$ ]] || break
     max=$((max + 1))
 done
 

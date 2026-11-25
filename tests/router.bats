@@ -53,6 +53,27 @@ teardown() {
     [ "$status" -eq 2 ]
 }
 
+@test "a command word with a hyphen routes: auspex check system-steps" {
+    add_command auspex-check-system-steps
+    run auspex check system-steps --static
+    [ "$status" -eq 0 ]
+    [ "$output" = "auspex-check-system-steps --static" ]
+}
+
+@test "words with '.', '/' or a leading '-' are not command words" {
+    add_command auspex-zz
+    add_command auspex-zz-yy
+    for word in yy.x yy/x -yy ../yy; do
+        run auspex zz "$word"
+        [ "$status" -eq 0 ]
+        [ "$output" = "auspex-zz $word" ]
+    done
+    run auspex -zz
+    [ "$status" -eq 2 ]
+    run auspex .zz
+    [ "$status" -eq 2 ]
+}
+
 @test "AUSPEX defaults to the repo of the router, through a symlink" {
     add_command auspex-zz '1' 'echo "$AUSPEX"'
     mkdir -p "$HOME/.local/bin"
