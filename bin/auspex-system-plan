@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# auspex:summary=List pending system steps with their scripts and file diffs
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+# shellcheck source-path=SCRIPTDIR source=../lib/system-steps.sh
+source "$AUSPEX/lib/system-steps.sh"
+
+[[ $# -eq 0 ]] || auspex_die "usage: auspex system plan" 2
+
+n_pending=0
+while IFS= read -r step; do
+    [[ -n "$step" ]] || continue
+    system_step_installs "$step" >/dev/null
+    if system_step_check "$step"; then
+        printf 'applied %s\n' "$step"
+        continue
+    fi
+    n_pending=$((n_pending + 1))
+    system_step_show "$step"
+done < <(system_step_list)
+printf '%d pending system steps\n' "$n_pending"

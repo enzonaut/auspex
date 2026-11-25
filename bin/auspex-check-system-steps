@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# auspex:summary=Check each system step (functions, headers, syntax, KDE deny list) and run the runner tests
+# auspex:args=[--static]
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+# shellcheck source-path=SCRIPTDIR source=../lib/system-steps.sh
+source "$AUSPEX/lib/system-steps.sh"
+
+static_only=0
+case "${1:-}" in
+    --static) static_only=1 ;;
+    '') ;;
+    *) auspex_die "usage: auspex check system-steps [--static]" 2 ;;
+esac
+
+# Paths that no step may name (spec section 10).
+deny_re='(\.config/plasma|\.config/k|~/\.config/k|/etc/sddm\.conf\.d|/usr/share/sddm|/usr/share/plasma)'
+
+fail=0
+n=0
+while IFS= read -r step; do
+    [[ -n "$step" ]] || continue
+    n=$((n + 1))
+    file="$(system_step_file "$step")"
+    errs=()
+    for fn in check apply undo; do
+        grep -Eq "^${fn}\(\) *\{" "$file" || errs+=("no $fn function")
+    done
+    [[ "$(auspex_header "$file" level || true)" == 3 ]] || errs+=("header level is not 3")
+    [[ "$(auspex_header "$file" requires-sudo || true)" == true ]] || errs+=("header requires-sudo is not true")
+    [[ -n "$(auspex_header "$file" summary || true)" ]] || errs+=("no summary header")
+    bash -n "$file" 2>/dev/null || errs+=("bash -n fails")
+    if hits="$(grep -nE "$deny_re" "$file")"; then
+        errs+=("names a KDE deny-list path: ${hits//$'\n'/; }")
+    fi
+    if [[ ${#errs[@]} -eq 0 ]]; then
+        printf 'ok %s\n' "$step"
+    else
+        fail=1
+        for e in "${errs[@]}"; do
+            printf 'FAIL %s: %s\n' "$step" "$e"
+        done
+    fi
+done < <(system_step_list)
+
+[[ $n -gt 0 ]] || { printf 'no system steps found\n'; exit 77; }
+[[ $fail -eq 0 ]] || exit 1
+((static_only)) && exit 0
+
+if ! command -v bats >/dev/null 2>&1; then
+    printf 'bats is missing; run step 030-auspex-tools\n'
+    exit 77
+fi
+exec bats "$AUSPEX/tests/system-steps.bats"

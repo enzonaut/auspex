@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# auspex:summary=Open a pane to the right that runs auspex system apply for the operator
+# auspex:args=<step>
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+# shellcheck source-path=SCRIPTDIR source=../lib/system-steps.sh
+source "$AUSPEX/lib/system-steps.sh"
+
+[[ $# -eq 1 ]] || auspex_die "usage: auspex system prepare <step>" 2
+step="$(system_step_resolve "$1")"
+printf -v cmd '%q system apply %q' "$AUSPEX/bin/auspex" "$step"
+
+pane=""
+if [[ -n "${HC_TERMINAL_ID:-}" ]] && command -v herdr-app >/dev/null 2>&1; then
+    pane="$(herdr-app ls 2>/dev/null | jq -r --arg t "$HC_TERMINAL_ID" \
+        '.spaces[].tabs[].terminals[] | select(.terminal==$t) | .pane' 2>/dev/null | head -n 1)" || pane=""
+fi
+if [[ -z "$pane" || "$pane" == null ]]; then
+    printf 'Not in herdr. The operator runs this command in a terminal:\n%s\n' "$cmd"
+    exit 0
+fi
+
+argv="$(jq -cn --arg a "$AUSPEX/bin/auspex" --arg s "$step" '["bash", "-c", "\"$1\" system apply \"$2\"; echo; read -rp \"Press Enter to close. \" _", "auspex", $a, $s]')"
+out="$(herdr-app "do" pane.split --direction right --pane "$pane" --argv "$argv")" ||
+    auspex_die "herdr-app pane.split failed. The operator runs this command in a terminal: $cmd"
+term="$(jq -r '.terminal // empty' <<<"$out" 2>/dev/null || true)"
+printf 'Opened pane %s to the right. It runs:\n%s\n' "${term:-?}" "$cmd"
+printf 'The operator reads the plan there, answers y or N, and types the sudo password.\n'
