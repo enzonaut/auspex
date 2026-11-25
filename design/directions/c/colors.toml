@@ -1,0 +1,48 @@
+# auspex theme: AVGVR (direction c, Roman empire x Zeon)
+# Omarchy colors.toml model: semantic keys, background ramp, foreground ramp, named colors.
+# Assumption: the foreground ramp key names mirror the background ramp key names.
+# Contrast ratios are WCAG 2 ratios against background (#1A2016) unless noted.
+
+# Semantic
+accent = "#FF4D7E"      # the sensor eye; focus, active workspace, "needs you" (5.2:1)
+selection = "#3B4832"   # selected text ground; foreground on it is 6.7:1
+muted = "#7C7D66"       # rules, inactive borders, input edges; non-text only (3.9:1)
+cursor = "#FF4D7E"
+
+# Background ramp: olive hull, darkest to lightest
+darker_background = "#0E110C"   # login, lock and boot ground
+dark_background = "#141911"     # top bar plate, terminal ground
+background = "#1A2016"          # window ground
+lighter_background = "#262E21"  # raised armor plate, inactive tabs
+
+# Foreground ramp: khaki to marble
+foreground = "#DDD7BE"          # body text (11.5:1)
+dark_foreground = "#ADA88E"     # secondary text (6.9:1)
+darker_foreground = "#8C8A72"   # captions and comments (4.7:1)
+lighter_foreground = "#F2EDDA"  # display numerals, clock (14.2:1)
+
+# Named colors (terminal 16)
+black = "#141911"
+red = "#E8614F"         # commander red, lifted for text (5.0:1)
+green = "#8FA65A"       # field green (6.2:1)
+yellow = "#C9A04E"      # bronze (6.8:1)
+blue = "#7E9BB0"        # steel blue (5.7:1)
+magenta = "#D46A8C"     # eye, dimmed
+cyan = "#5FA391"        # verdigris patina (5.7:1)
+white = "#C9C3AC"
+
+bright_black = "#5E6853"
+bright_red = "#F2705E"
+bright_green = "#AFC56F"
+bright_yellow = "#E3BE6B"
+bright_blue = "#9DB8CB"
+bright_magenta = "#FF4D7E"
+bright_cyan = "#7FC4B0"
+bright_white = "#F2EDDA"
+
+# Extra roles for this direction (templates may ignore them)
+command_red = "#B8332A" # fills only: legion standard, critical badge; lighter_foreground on it is 5.0:1
+plate = "#323C2B"       # armor plate face
+steel = "#8E958F"       # dark steel grey for icons (5.4:1)
+bronze = "#C9A04E"
+khaki = "#ADA88E"
