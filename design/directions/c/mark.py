@@ -1,14 +1,13 @@
 import math, sys
 
 BG = "#1D1915"
-LB = "#C9A05A"   # laurel bronze
+LAUREL = "#C9A05A"
 LD = "#8C6A30"
-CR = "#D23A2C"   # crest red
-GD = "#D9A93E"   # helmet gold
-GDD = "#A87A22"
+CREST = "#D23A2C"
+GOLD = "#D9A93E"
 
 
-def leaf(x, y, ang, L, W, fill=LB):
+def leaf(x, y, ang, L, W, fill=LAUREL):
     a = math.radians(ang)
     dx, dy = math.cos(a), math.sin(a)
     px, py = -dy, dx
@@ -38,38 +37,6 @@ def branch(side):
     x, y, t = pts[-1]
     out.append(leaf(x, y, t + (90 if side < 0 else -90), 24, 7.5))
     return "\n".join(out)
-
-
-def strand(cx, cy, ang, r0, L, W, bend):
-    """A flame-like strand: base on a circle of radius r0, pointed tip bent sideways."""
-    a = math.radians(ang)
-    dx, dy = math.cos(a), math.sin(a)
-    px, py = -dy, dx
-    bx, by = cx + dx * r0, cy + dy * r0
-    tx, ty = bx + dx * L + px * bend, by + dy * L + py * bend
-    c1 = (bx + dx * L * 0.55 + px * (W + bend * 0.3), by + dy * L * 0.55 + py * (W + bend * 0.3))
-    c2 = (bx + dx * L * 0.55 - px * (W - bend * 0.5), by + dy * L * 0.55 - py * (W - bend * 0.5))
-    b1 = (bx + px * W * 0.6, by + py * W * 0.6)
-    b2 = (bx - px * W * 0.6, by - py * W * 0.6)
-    return (f'<path d="M{b1[0]:.1f},{b1[1]:.1f} Q{c1[0]:.1f},{c1[1]:.1f} {tx:.1f},{ty:.1f} '
-            f'Q{c2[0]:.1f},{c2[1]:.1f} {b2[0]:.1f},{b2[1]:.1f} Z"/>')
-
-
-def crest():
-    cx, cy = 200, 226
-    out = []
-    # back row then front row, so strands overlap like feathers
-    for row, (r0, L, W, step, off) in enumerate([(92, 104, 23, 14, 0), (92, 90, 20, 14, 7)]):
-        a = 178 + off
-        k = 0
-        while a <= 362:
-            side = (a - 270) / 92          # -1 at left, +1 at right
-            bend = 44 * side * abs(side) ** 0.5 + (7 if k % 2 else -7)
-            LL = L * (1 - 0.18 * abs(side)) + (14 if k % 3 == 0 else 0)
-            out.append(strand(cx, cy, a, r0, LL, W, bend))
-            a += step
-            k += 1
-    return f'<g fill="{CR}" stroke="{BG}" stroke-width="3" stroke-linejoin="round">' + "".join(out) + "</g>"
 
 
 def ell(cx, cy, rx, ry, deg):
@@ -112,7 +79,7 @@ def crest_brush():
         x1, y1 = cx + 106 * math.cos(t), cy + 120 * math.sin(t)
         x2, y2 = cx + 158 * math.cos(t), cy + 164 * math.sin(t)
         lines.append(f"M{x1:.1f},{y1:.1f} L{x2:.1f},{y2:.1f}")
-    return (f'<path d="{p}" fill="{CR}" stroke="{BG}" stroke-width="4" stroke-linejoin="round"/>'
+    return (f'<path d="{p}" fill="{CREST}" stroke="{BG}" stroke-width="4" stroke-linejoin="round"/>'
             f'<path d="{" ".join(lines)}" stroke="{CRD}" stroke-width="4" fill="none"/>')
 
 
@@ -126,7 +93,7 @@ def rivets(pts, r=3.2):
 helmet = f'''
 <g transform="translate(200,214) scale(0.7) translate(-200,-230)">
  {crest_brush()}
- <g stroke="{BG}" stroke-width="4" stroke-linejoin="round" fill="{GD}">
+ <g stroke="{BG}" stroke-width="4" stroke-linejoin="round" fill="{GOLD}">
   <path d="{hp}"/>
   <path d="M193,122 L207,122 L207,170 L193,170 Z"/>
   <path d="M104,262 L118,252 L120,290 L106,282 Z"/>
