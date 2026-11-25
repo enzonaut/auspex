@@ -6,7 +6,6 @@ setup() {
     auspex_test_setup
     make_repo_copy
     unset DISPLAY WAYLAND_DISPLAY
-    # Remove the repo checks so each test controls the full set.
     rm -f "$AUSPEX"/bin/auspex-check-*
 }
 

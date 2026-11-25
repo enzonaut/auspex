@@ -7,20 +7,16 @@ if [[ -n "${AUSPEX_COMMON_LOADED:-}" ]]; then
 fi
 AUSPEX_COMMON_LOADED=1
 
-# Paths. AUSPEX is the repo. It defaults to 1 level above this lib/ folder,
-# resolved through symlinks. AUSPEX_STATE overrides ~/.local/state/auspex.
 if [[ -z "${AUSPEX:-}" ]]; then
     AUSPEX="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd -P)"
 fi
 export AUSPEX
 export AUSPEX_STATE="${AUSPEX_STATE:-$HOME/.local/state/auspex}"
-# The commands that source this file use these 2 paths.
 # shellcheck disable=SC2034
 AUSPEX_BIN="$AUSPEX/bin"
 # shellcheck disable=SC2034
 AUSPEX_MANIFEST="$AUSPEX/manifest/user.tsv"
 
-# Logging. All log output goes to stderr, so stdout stays for data.
 auspex_log() {
     printf 'auspex: %s\n' "$*" >&2
 }
@@ -45,7 +41,6 @@ auspex_lock() {
     fi
 }
 
-# Hashes. sha256 hex digest only.
 auspex_hash_file() {
     local out
     out="$(sha256sum -- "$1")" || return 1

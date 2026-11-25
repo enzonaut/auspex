@@ -61,7 +61,6 @@ undo() {
     rm -f "$STEP_RECORD"
 }
 
-# Run directly: bash 030-auspex-tools.sh <check|apply|undo>
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     case "${1:-}" in
         check | apply | undo) "$1" ;;

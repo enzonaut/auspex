@@ -8,7 +8,6 @@ set -euo pipefail
 source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
 
 HEADERS=(summary args level requires-sudo)
-# Words that the router handles itself, so no command can use them.
 RESERVED=(help)
 
 usage() {
@@ -83,7 +82,6 @@ check_commands() {
             printf '%s: the router cannot reach this name; use only a-z, 0-9 and -\n' "$name"
             errors=$((errors + 1))
         fi
-        # Normalize the way a person types it, to find 2 names for 1 command.
         words="$(auspex_command_words "${name,,}")"
         words="${words//_/ }"
         for reserved in "${RESERVED[@]}"; do

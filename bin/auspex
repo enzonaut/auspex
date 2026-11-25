@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Router: auspex <words...> runs the longest existing bin/auspex-<w1>-<w2>-...
-# and passes the rest of the words as arguments.
 set -euo pipefail
 
 if [[ -z "${AUSPEX:-}" ]]; then
@@ -12,8 +10,6 @@ if [[ $# -eq 0 || "$1" == help || "$1" == --help || "$1" == -h ]]; then
     exec "$AUSPEX/bin/auspex-commands"
 fi
 
-# Only words of [a-z0-9] can form a command name. This keeps "../" and
-# other path parts out of the lookup.
 max=0
 for word in "$@"; do
     [[ "$word" =~ ^[a-z0-9]+$ ]] || break

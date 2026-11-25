@@ -9,7 +9,6 @@ setup() {
     export AUSPEX_SYSTEM_STATE="$TEST_TMP/system-state"
     export INSTALLED="$TEST_TMP/installed"
     printf '%s\n' jq >"$INSTALLED"
-    # A fake pacman that keeps the installed set in $INSTALLED.
     make_fake pacman '
 case "$1" in
   -Qq) shift; rc=0; for p in "$@"; do grep -qx "$p" "$INSTALLED" || rc=1; done; exit $rc ;;
