@@ -1,38 +1,31 @@
-# auspex theme: Classis Aquilae (Empire Legion, direction B)
-# Omarchy colors.toml keys. One palette feeds every template.
 mode = "dark"
 
-# Semantic
-accent = "#c8202f"                # Blood red. Active border, active workspace, focus ring, caret.
-selection = "#3a1016"             # Dark red. Selected text, selected session, highlighted row.
-muted = "#5d646c"                 # Gunmetal. Comments, dividers, inactive border, idle ticks.
+accent = "#c8202f"
+selection = "#3a1016"
+muted = "#5d646c"
 
-# Background ramp
-background = "#0b0c0e"            # Hull black. Terminal, bar, panels.
-dark_background = "#070809"       # Input wells, password field.
-darker_background = "#030304"     # Boot splash, deep space.
-lighter_background = "#16181c"    # Raised console, popups, status line.
+background = "#0b0c0e"
+dark_background = "#070809"
+darker_background = "#030304"
+lighter_background = "#16181c"
 
-# Foreground ramp
-foreground = "#c5cbd2"            # Steel light. Body text.
-dark_foreground = "#80878f"       # Secondary labels, placeholders.
-light_foreground = "#dde2e7"      # Headings, user name, clock.
-bright_foreground = "#f3f5f7"     # Text on red, max emphasis.
+foreground = "#c5cbd2"
+dark_foreground = "#80878f"
+light_foreground = "#dde2e7"
+bright_foreground = "#f3f5f7"
 
-# Named
-red = "#c8202f"                   # Errors, urgent, deletions. Same as accent.
-yellow = "#c9a23a"                # Aquila gold. Insignia, rank, agents working.
-orange = "#c56a2c"                # Bronze. Warnings.
-green = "#7f9a5e"                 # Olive. Success, additions.
-cyan = "#6a9fa8"                  # Sensor teal. Links, info.
-blue = "#6584a3"                  # Steel blue. Paths, keywords.
-magenta = "#a2557a"               # Wine. Constants, special.
-brown = "#7a5530"                 # Leather. Rare accents.
+red = "#c8202f"
+yellow = "#c9a23a"
+orange = "#c56a2c"
+green = "#7f9a5e"
+cyan = "#6a9fa8"
+blue = "#6584a3"
+magenta = "#a2557a"
+brown = "#7a5530"
 
-# Named bright
-bright_red = "#ff4655"            # Alarm red. Red text on dark, 'waiting' count.
-bright_yellow = "#e9c46a"         # Polished gold. Highlights.
-bright_green = "#9fbd7c"          # Bright olive.
-bright_cyan = "#8dc0c8"           # Bright teal.
-bright_blue = "#8ba7c4"           # Bright steel blue.
-bright_magenta = "#c77a9d"        # Bright wine.
+bright_red = "#ff4655"
+bright_yellow = "#e9c46a"
+bright_green = "#9fbd7c"
+bright_cyan = "#8dc0c8"
+bright_blue = "#8ba7c4"
+bright_magenta = "#c77a9d"
