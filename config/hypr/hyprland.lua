@@ -1,0 +1,93 @@
+-- auspex Hyprland config (spec 9.4, 9.5). Hyprland 0.57 Lua format.
+-- No theme: default colors, fonts and gaps. No uwsm.
+
+-- NVIDIA (spec 9.2). Only this session sees them.
+hl.env("LIBVA_DRIVER_NAME", "nvidia")
+hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
+hl.env("NVD_BACKEND", "direct")
+hl.env("GSK_RENDERER", "ngl")
+
+-- Matches the KDE setup. VRR and tearing stay off.
+hl.monitor({ output = "DP-2", mode = "5120x2160@165", position = "0x0", scale = 1 })
+
+hl.config({
+  general = { allow_tearing = false },
+  -- Layout from KDE: ~/.config/kxkbrc does not exist, so KDE uses the
+  -- system layout (localectl: us, pc105+inet, terminate:ctrl_alt_bksp).
+  input = {
+    kb_layout = "us",
+    kb_model = "pc105+inet",
+    kb_options = "terminate:ctrl_alt_bksp",
+  },
+  misc = {
+    vrr = 0,
+    key_press_enables_dpms = true,
+    mouse_move_enables_dpms = true,
+  },
+})
+
+hl.on("hyprland.start", function()
+  hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+  hl.exec_cmd("/usr/lib/pam_kwallet_init")
+  hl.exec_cmd("waybar")
+  hl.exec_cmd("mako")
+  hl.exec_cmd("hypridle")
+  hl.exec_cmd("systemctl --user start hyprpolkitagent")
+  hl.exec_cmd("nm-applet --indicator")
+  hl.exec_cmd("blueman-applet")
+end)
+
+-- Binds (spec 9.4).
+hl.bind("SUPER + Return", hl.dsp.exec_cmd("ghostty"))
+hl.bind("SUPER + D", hl.dsp.exec_cmd("fuzzel"))
+hl.bind("SUPER + Q", hl.dsp.window.close())
+hl.bind("SUPER + F", hl.dsp.window.fullscreen({ mode = "fullscreen" }))
+hl.bind("SUPER + V", hl.dsp.window.float({ action = "toggle" }))
+for i = 1, 9 do
+  hl.bind("SUPER + " .. i, hl.dsp.focus({ workspace = tostring(i) }))
+  hl.bind("SUPER + SHIFT + " .. i, hl.dsp.window.move({ workspace = tostring(i), follow = false }))
+end
+hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp)" - | satty -f -'))
+hl.bind("SHIFT + Print", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))
+hl.bind("SUPER + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))
+hl.bind("SUPER + SHIFT + E", hl.dsp.exit())
+
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true })
+hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
+hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl set 5%+"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl set 5%-"), { locked = true, repeating = true })
+
+-- The 2 agent keys live in agent-binds.lua, made by `auspex keys render`
+-- from config/agent-keys.conf. Load it from the folder of this file, so
+-- that `Hyprland --verify-config -c <repo config>` reads the repo copy.
+local here = (debug.getinfo(1, "S").source:match("^@(.*/)"))
+  or ((os.getenv("HOME") or "") .. "/.config/hypr/")
+dofile(here .. "agent-binds.lua")
+
+-- Window rules (spec 9.5). The last matching rule wins, so each program
+-- first floats all its windows, then tiles its main window.
+hl.window_rule({ match = { class = "^steam$" }, float = true, center = true })
+hl.window_rule({ match = { class = "^steam$", title = "^Steam$" }, tile = true })
+hl.window_rule({ match = { class = "^steam_app_.*" }, idle_inhibit = "fullscreen" })
+hl.window_rule({ match = { class = "^battle\\.net\\.exe$" }, float = true, center = true, size = { 1400, 900 } })
+hl.window_rule({ match = { title = "^(Battle\\.net Login|Blizzard Battle\\.net)$" }, float = true, center = true })
+hl.window_rule({ match = { class = "^net\\.lutris\\.Lutris$" }, float = true })
+hl.window_rule({ match = { class = "^net\\.lutris\\.Lutris$", title = "^Lutris$" }, tile = true })
+hl.window_rule({ match = { class = "^heroic$" }, float = true })
+hl.window_rule({ match = { class = "^heroic$", title = "^Heroic Games Launcher$" }, tile = true })
+hl.window_rule({ match = { class = "^net\\.davidotek\\.pupgui2$" }, float = true })
+hl.window_rule({ match = { class = "^gamescope$" }, fullscreen = true, idle_inhibit = "always" })
+hl.window_rule({ match = { fullscreen = true }, idle_inhibit = "fullscreen" })
+hl.window_rule({ match = { title = "^(Open File|Save File).*" }, float = true, center = true, size = { "monitor_w * 0.5", "monitor_h * 0.5" } })
+hl.window_rule({ match = { class = "^xdg-desktop-portal-.*" }, float = true, center = true, size = { "monitor_w * 0.5", "monitor_h * 0.5" } })
+hl.window_rule({ match = { class = "^(org\\.pulseaudio\\.pavucontrol|pavucontrol|blueman-manager|\\.blueman-manager-wrapped|nm-connection-editor)$" }, float = true })
+
+-- Agent dropdown (spec 7.3): `auspex agent dropdown` starts this window
+-- and toggles special:agent.
+hl.window_rule({ match = { class = "^auspex\\.dropdown$" }, float = true, size = { "monitor_w", "monitor_h * 0.5" }, move = { 0, 0 }, workspace = "special:agent silent" })

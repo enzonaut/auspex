@@ -1,0 +1,20 @@
+# Hyprland session packages (spec 9.3). All are in extra.
+hyprland
+fuzzel
+waybar
+mako
+hyprlock
+hypridle
+grim
+slurp
+satty
+wl-clipboard
+pavucontrol
+wireplumber
+network-manager-applet
+blueman
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
+hyprpolkitagent
+playerctl
+brightnessctl

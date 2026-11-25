@@ -7,7 +7,7 @@ set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=../lib/common.sh
 source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
 
-MADE=(config/kde/agent-shortcuts.ini)
+MADE=(config/kde/agent-shortcuts.ini config/hypr/agent-binds.lua)
 KEYS_FILE="config/agent-keys.conf"
 declare -A KEY=()
 
@@ -70,9 +70,20 @@ print_kde() {
     printf '\n[services][auspex-agent-dropdown.desktop]\n_launch=%s\n' "$(kde_key "${KEY[AGENT_DROPDOWN]}")"
 }
 
+hypr_key() {
+    printf '%s\n' "${1//+/ + }"
+}
+
+print_hypr() {
+    printf -- '-- Made by auspex keys render from %s. Do not edit.\n' "$KEYS_FILE"
+    printf 'hl.bind("%s", hl.dsp.exec_cmd("auspex agent --window"))\n' "$(hypr_key "${KEY[AGENT_WINDOW]}")"
+    printf 'hl.bind("%s", hl.dsp.exec_cmd("auspex agent dropdown"))\n' "$(hypr_key "${KEY[AGENT_DROPDOWN]}")"
+}
+
 made() {
     case "$1" in
         config/kde/agent-shortcuts.ini) print_kde ;;
+        config/hypr/agent-binds.lua) print_hypr ;;
     esac
 }
 

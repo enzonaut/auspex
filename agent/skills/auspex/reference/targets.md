@@ -14,3 +14,12 @@ Change the source in the repo, never the target.
 | `~/.local/share/applications/auspex-agent-dropdown.desktop` | `config/applications/auspex-agent-dropdown.desktop` | copy | kde |
 | `~/.config/systemd/user/auspex-update-check.service` | `systemd/user/auspex-update-check.service` | copy | any |
 | `~/.config/systemd/user/auspex-update-check.timer` | `systemd/user/auspex-update-check.timer` | copy | any |
+| `~/.config/hypr/hyprland.lua` | `config/hypr/hyprland.lua` | copy | hyprland |
+| `~/.config/hypr/agent-binds.lua` | `config/hypr/agent-binds.lua` | copy | hyprland |
+| `~/.config/hypr/hypridle.conf` | `config/hypr/hypridle.conf` | copy | hyprland |
+| `~/.config/hypr/hyprlock.conf` | `config/hypr/hyprlock.conf` | copy | hyprland |
+| `~/.config/waybar/config.jsonc` | `config/waybar/config.jsonc` | copy | hyprland |
+| `~/.config/mako/config` | `config/mako/config` | copy | hyprland |
+| `~/.config/fuzzel/fuzzel.ini` | `config/fuzzel/fuzzel.ini` | copy | hyprland |
+| `~/.config/chrome-flags.conf` | `config/browser-flags/chrome-flags.conf` | copy | any |
+| `~/.config/brave-flags.conf` | `config/browser-flags/brave-flags.conf` | copy | any |

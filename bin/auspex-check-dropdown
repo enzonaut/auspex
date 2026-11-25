@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# auspex:summary=In a live Hyprland session, toggle the agent dropdown twice and verify it shows and hides
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+# auspex:display=true
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+if [[ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || ! command -v hyprctl >/dev/null 2>&1; then
+    printf 'skip: needs a live Hyprland session\n'
+    exit 77
+fi
+
+# The name of the special workspace on the focused monitor, or "".
+shown() {
+    hyprctl -j monitors | jq -r '.[] | select(.focused) | .specialWorkspace.name'
+}
+state() {
+    [[ "$(shown)" == special:agent ]] && echo shown || echo hidden
+}
+
+before="$(state)"
+"$AUSPEX/bin/auspex" agent dropdown
+sleep 0.3
+first="$(state)"
+hyprctl -j clients | jq -e 'any(.[]; .class == "auspex.dropdown" and .workspace.name == "special:agent")' >/dev/null \
+    || { printf 'FAIL no auspex.dropdown window on special:agent\n'; exit 1; }
+"$AUSPEX/bin/auspex" agent dropdown
+sleep 0.3
+second="$(state)"
+if [[ "$first" == "$before" || "$second" != "$before" ]]; then
+    printf 'FAIL toggle: before %s, after 1 %s, after 2 %s\n' "$before" "$first" "$second"
+    exit 1
+fi
+printf 'ok   the dropdown toggles (%s, %s, %s)\n' "$before" "$first" "$second"

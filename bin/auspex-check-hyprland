@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# auspex:summary=Verify config/hypr/hyprland.lua with Hyprland, the 4 NVIDIA env vars and the monitor line
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+config="$AUSPEX/config/hypr/hyprland.lua"
+[[ -f "$config" ]] || auspex_die "no $config"
+
+fail=0
+need() {
+    if grep -qxF -- "$2" "$config"; then
+        printf 'ok   %s\n' "$1"
+    else
+        printf 'FAIL %s: no line %s\n' "$1" "$2"
+        fail=1
+    fi
+}
+need LIBVA_DRIVER_NAME 'hl.env("LIBVA_DRIVER_NAME", "nvidia")'
+need __GLX_VENDOR_LIBRARY_NAME 'hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")'
+need NVD_BACKEND 'hl.env("NVD_BACKEND", "direct")'
+need GSK_RENDERER 'hl.env("GSK_RENDERER", "ngl")'
+need monitor 'hl.monitor({ output = "DP-2", mode = "5120x2160@165", position = "0x0", scale = 1 })'
+[[ "$fail" -eq 0 ]] || exit 1
+
+if ! command -v Hyprland >/dev/null 2>&1; then
+    printf 'skip: Hyprland is not installed; run step 010-hyprland-packages\n'
+    exit 77
+fi
+if out="$(Hyprland --verify-config -c "$config" 2>&1)"; then
+    printf 'ok   Hyprland --verify-config\n'
+else
+    printf '%s\nFAIL Hyprland --verify-config\n' "$out"
+    exit 1
+fi
