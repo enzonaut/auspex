@@ -14,7 +14,7 @@ system_step_resolve() {
     local -a found=()
     if [[ "$arg" =~ ^[0-9]{3}$ ]]; then
         for f in "$AUSPEX_STEPS_DIR/$arg"-*.sh; do
-            [[ -f "$f" ]] && found+=("$f")
+            [[ -f "$f" && ! -L "$f" ]] && found+=("$f")
         done
         [[ ${#found[@]} -eq 1 ]] || auspex_die "step $arg: expected 1 match in system/steps, found ${#found[@]}" 2
         f="${found[0]##*/}"

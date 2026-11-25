@@ -155,6 +155,16 @@ run_tty() {
     [ -z "$(fake_calls sudo)" ]
 }
 
+@test "apply refuses a step that is a symlink, by name or by number" {
+    ln -s "$AUSPEX/system/steps/900-fixture.sh" "$AUSPEX/system/steps/930-link.sh"
+    for arg in 930 930-link; do
+        run_tty $'y\n' auspex-system-apply "$arg"
+        [ "$status" -eq 2 ]
+    done
+    [ -z "$(fake_calls sudo)" ]
+    [ ! -e "$MARK" ]
+}
+
 # --- plan ---------------------------------------------------------------
 
 @test "plan lists pending steps with the script and a diff of installed files" {
