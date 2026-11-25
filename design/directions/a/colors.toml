@@ -1,26 +1,19 @@
-# OCVLVS LEGIONIS - auspex theme, direction a (Roman Empire x Zeon, lean Roman)
-# 1 palette file. Templates render every app config from these keys.
 # Key names follow the Omarchy colors.toml model in docs/research/omarchy-ai-first.md, section 2.
-# The names of the foreground ramp mirror the background ramp. Check them against the template set at build time.
 
-# Semantic
 accent = "#cf9a4e"                  # Bronze. Focus ring, active border, links, inscriptions.
 selection = "#4a5a2e"               # Field-green plate. Selected text and list rows.
 muted = "#8f8a6b"                   # Weathered khaki. Comments, hints, secondary labels.
 
-# Background ramp, dark to light
 darker_background = "#0a0c08"       # Hall shadow. Boot splash, screen edges.
 dark_background = "#10130c"         # Window body: ghostty, Claude Code, bar.
 background = "#161a11"              # Default surface. Panels and menus.
 lighter_background = "#232a1a"      # Raised surface. Prompt line, hover, ANSI black.
 
-# Foreground ramp, light to dark
 light_foreground = "#f4eedb"        # Marble highlight. Clock, user name, headings.
 foreground = "#e4dcc3"              # Travertine. Body text.
 dark_foreground = "#b9b091"         # Khaki stencil. Labels, inactive text.
 darker_foreground = "#6e6b54"       # Worn paint. Decoration and disabled only.
 
-# Named colors
 red = "#e0503f"                     # Commander red. Errors, shut down, wrong password.
 orange = "#d98a45"                  # Hot bronze. Warnings.
 yellow = "#d9bd4f"                  # Hazard stripe. Worker waits for you.
