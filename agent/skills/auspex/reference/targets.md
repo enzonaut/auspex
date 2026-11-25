@@ -9,3 +9,6 @@ Change the source in the repo, never the target.
 | `~/.config/auspex/claude/agent-settings.json` | `claude/agent-settings.json` | copy | any |
 | `~/.config/auspex/claude/headless-settings.json` | `claude/headless-settings.json` | copy | any |
 | `~/.claude/skills/auspex/` | `agent/skills/auspex/` | tree | any |
+| `~/.config/kglobalshortcutsrc` | `config/kde/agent-shortcuts.ini` | merge:kglobalshortcuts | kde |
+| `~/.local/share/applications/auspex-agent.desktop` | `config/applications/auspex-agent.desktop` | copy | kde |
+| `~/.local/share/applications/auspex-agent-dropdown.desktop` | `config/applications/auspex-agent-dropdown.desktop` | copy | kde |

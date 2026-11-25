@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=auspex agent dropdown
+Comment=Show or hide the auspex agent dropdown console
+Exec=sh -c "exec \\"\\$HOME/.local/bin/auspex\\" agent dropdown"
+Icon=utilities-terminal
+Terminal=false
+NoDisplay=true
+StartupNotify=false

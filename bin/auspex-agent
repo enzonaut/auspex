@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# auspex:summary=Start Claude Code as the auspex agent in this terminal, in a new window, or headless
+# auspex:args=[--here | --window | --headless] [--prompt <text>] [--cwd <dir>] [--report <file>] [--dry-run]
+# auspex:level=3
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+usage() {
+    printf 'usage: auspex agent [--here | --window] [--prompt <text>] [--cwd <dir>] [--dry-run]\n'
+    printf '       auspex agent --headless --prompt <text> [--cwd <dir>] [--report <file>] [--dry-run]\n'
+}
+
+mode=""
+prompt=""
+has_prompt=0
+cwd="$HOME/repos/auspex"
+report=""
+dry=0
+
+set_mode() {
+    [[ -z "$mode" || "$mode" == "$1" ]] || auspex_die "use only 1 of --here, --window and --headless"
+    mode="$1"
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --here) set_mode here ;;
+        --window) set_mode window ;;
+        --headless) set_mode headless ;;
+        --prompt)
+            [[ $# -ge 2 ]] || auspex_die "--prompt needs a text"
+            prompt="$2"
+            has_prompt=1
+            shift
+            ;;
+        --cwd)
+            [[ $# -ge 2 && -n "$2" ]] || auspex_die "--cwd needs a folder"
+            cwd="$2"
+            shift
+            ;;
+        --report)
+            [[ $# -ge 2 && -n "$2" ]] || auspex_die "--report needs a file"
+            report="$2"
+            shift
+            ;;
+        --dry-run) dry=1 ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        *)
+            usage >&2
+            auspex_die "unknown argument: $1"
+            ;;
+    esac
+    shift
+done
+
+if [[ -z "$mode" ]]; then
+    if [[ -t 1 ]]; then mode=here; else mode=window; fi
+fi
+if [[ "$mode" == headless ]]; then
+    [[ "$has_prompt" -eq 1 && -n "$prompt" ]] || auspex_die "--headless needs --prompt <text>"
+    [[ -n "$report" ]] || report="$AUSPEX_STATE/reports/agent-$(date +%Y%m%dT%H%M%S).md"
+else
+    [[ -z "$report" ]] || auspex_die "--report works only with --headless"
+fi
+
+# A hotkey starts this command from the desktop session. Its PATH can lack
+# ~/.local/bin, where claude and the auspex link are. Add it at the end.
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) PATH="$PATH:$HOME/.local/bin" ;;
+esac
+export PATH
+export AUSPEX_ACTOR=agent
+
+case "$mode" in
+    here)
+        cmd=(claude --settings "$HOME/.config/auspex/claude/agent-settings.json")
+        [[ "$has_prompt" -eq 0 ]] || cmd+=("$prompt")
+        ;;
+    window)
+        cmd=(ghostty --class=auspex.agent -e "$AUSPEX/bin/auspex" agent --here --cwd "$cwd")
+        [[ "$has_prompt" -eq 0 ]] || cmd+=(--prompt "$prompt")
+        ;;
+    headless)
+        cmd=(claude -p --settings "$HOME/.config/auspex/claude/headless-settings.json"
+            --disallowedTools "Edit,Write,NotebookEdit" "$prompt")
+        ;;
+esac
+
+if [[ "$dry" -eq 1 ]]; then
+    printf 'mode: %s\n' "$mode"
+    printf 'cwd: %s\n' "$cwd"
+    printf 'env: AUSPEX_ACTOR=agent\n'
+    printf 'run:'
+    printf ' %q' "${cmd[@]}"
+    printf '\n'
+    [[ "$mode" != headless ]] || printf 'report: %s\n' "$report"
+    exit 0
+fi
+
+cd -- "$cwd" || auspex_die "cannot enter $cwd"
+if [[ "$mode" == headless ]]; then
+    mkdir -p -- "$(dirname -- "$report")"
+    "${cmd[@]}" >"$report"
+    printf 'report: %s\n' "$report"
+else
+    exec "${cmd[@]}"
+fi

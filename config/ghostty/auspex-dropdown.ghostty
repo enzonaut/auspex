@@ -1,0 +1,7 @@
+# ghostty config for the auspex dropdown only. auspex agent dropdown loads it
+# with --config-default-files=false. Do not add a keybind: KWin owns the key.
+quick-terminal-position = top
+quick-terminal-size = 50%
+initial-window = false
+quit-after-last-window-closed = false
+command = auspex agent --here

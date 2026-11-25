@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# auspex:summary=Make the desktop shortcut files from config/agent-keys.conf
+# auspex:args=render [--print]
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+# Each made file, its path in the repo, and the function that prints it.
+MADE=(config/kde/agent-shortcuts.ini)
+KEYS_FILE="config/agent-keys.conf"
+declare -A KEY=()
+
+usage() {
+    printf 'usage: auspex keys render [--print]\n' >&2
+    exit 2
+}
+
+# kde_key <SUPER+ALT+grave>: print the KDE form, Meta+Alt+`.
+# Modifiers come out in KDE order: Meta, Ctrl, Alt, Shift.
+kde_key() {
+    local spec="$1" part key="" out=""
+    local -A mod=()
+    local -a parts
+    IFS=+ read -r -a parts <<<"$spec"
+    [[ "$spec" != *+ && ${#parts[@]} -ge 2 ]] || return 1
+    for part in "${parts[@]::${#parts[@]}-1}"; do
+        case "$part" in
+            SUPER | ALT | CTRL | SHIFT) [[ -z "${mod[$part]:-}" ]] || return 1; mod[$part]=1 ;;
+            *) return 1 ;;
+        esac
+    done
+    part="${parts[-1]}"
+    case "$part" in
+        [A-Z] | [0-9]) key="$part" ;;
+        grave) key='`' ;;
+        F[1-9] | F1[0-9] | F2[0-4]) key="$part" ;;
+        *) return 1 ;;
+    esac
+    [[ -n "${mod[SUPER]:-}" ]] && out+="Meta+"
+    [[ -n "${mod[CTRL]:-}" ]] && out+="Ctrl+"
+    [[ -n "${mod[ALT]:-}" ]] && out+="Alt+"
+    [[ -n "${mod[SHIFT]:-}" ]] && out+="Shift+"
+    printf '%s%s\n' "$out" "$key"
+}
+
+load_keys() {
+    local line name value n=0
+    [[ -f "$AUSPEX/$KEYS_FILE" ]] || auspex_die "no $KEYS_FILE"
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        n=$((n + 1))
+        [[ -z "$line" || "$line" == '#'* ]] && continue
+        [[ "$line" =~ ^([A-Z_]+)=([A-Za-z0-9+]+)$ ]] || auspex_die "$KEYS_FILE line $n: expected NAME=KEY"
+        name="${BASH_REMATCH[1]}" value="${BASH_REMATCH[2]}"
+        case "$name" in
+            AGENT_WINDOW | AGENT_DROPDOWN) ;;
+            *) auspex_die "$KEYS_FILE line $n: unknown name $name" ;;
+        esac
+        [[ -z "${KEY[$name]:-}" ]] || auspex_die "$KEYS_FILE line $n: $name is set 2 times"
+        kde_key "$value" >/dev/null || auspex_die "$KEYS_FILE line $n: bad key $value"
+        KEY[$name]="$value"
+    done <"$AUSPEX/$KEYS_FILE"
+    for name in AGENT_WINDOW AGENT_DROPDOWN; do
+        [[ -n "${KEY[$name]:-}" ]] || auspex_die "$KEYS_FILE: $name is missing"
+    done
+    [[ "${KEY[AGENT_WINDOW]}" != "${KEY[AGENT_DROPDOWN]}" ]] || auspex_die "$KEYS_FILE: the 2 keys are the same"
+}
+
+print_kde() {
+    printf '# Made by auspex keys render from %s. Do not edit.\n' "$KEYS_FILE"
+    printf '[services][auspex-agent.desktop]\n_launch=%s\n' "$(kde_key "${KEY[AGENT_WINDOW]}")"
+    printf '\n[services][auspex-agent-dropdown.desktop]\n_launch=%s\n' "$(kde_key "${KEY[AGENT_DROPDOWN]}")"
+}
+
+made() {
+    case "$1" in
+        config/kde/agent-shortcuts.ini) print_kde ;;
+    esac
+}
+
+[[ "${1:-}" == render ]] || usage
+shift
+print=false
+case "${1:-}" in
+    "") ;;
+    --print) print=true; shift ;;
+    *) usage ;;
+esac
+[[ $# -eq 0 ]] || usage
+load_keys
+for f in "${MADE[@]}"; do
+    if $print; then
+        printf '==> %s <==\n' "$f"
+        made "$f"
+    else
+        tmp="$(mktemp)"
+        made "$f" >"$tmp"
+        if [[ -f "$AUSPEX/$f" ]] && cmp -s "$tmp" "$AUSPEX/$f"; then
+            rm -f -- "$tmp"
+            printf 'unchanged %s\n' "$f"
+        else
+            mkdir -p -- "$(dirname -- "$AUSPEX/$f")"
+            mv -f -- "$tmp" "$AUSPEX/$f"
+            chmod 644 -- "$AUSPEX/$f"
+            printf 'wrote %s\n' "$f"
+        fi
+    fi
+done

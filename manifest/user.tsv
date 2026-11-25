@@ -3,3 +3,6 @@ claude/deny.json	~/.claude/settings.json	merge:claude-settings	any
 claude/agent-settings.json	~/.config/auspex/claude/agent-settings.json	copy	any
 claude/headless-settings.json	~/.config/auspex/claude/headless-settings.json	copy	any
 agent/skills/auspex/	~/.claude/skills/auspex/	tree	any
+config/kde/agent-shortcuts.ini	~/.config/kglobalshortcutsrc	merge:kglobalshortcuts	kde
+config/applications/auspex-agent.desktop	~/.local/share/applications/auspex-agent.desktop	copy	kde
+config/applications/auspex-agent-dropdown.desktop	~/.local/share/applications/auspex-agent-dropdown.desktop	copy	kde

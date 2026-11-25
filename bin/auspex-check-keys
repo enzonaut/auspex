@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# auspex:summary=Verify that each file made from config/agent-keys.conf is up to date
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+want="$("$AUSPEX/bin/auspex-keys" render --print)" || exit 1
+fail=0
+file=""
+body=""
+compare() {
+    [[ -n "$file" ]] || return 0
+    if [[ ! -f "$AUSPEX/$file" ]]; then
+        printf 'FAIL %s is missing; run: auspex keys render\n' "$file"
+        fail=1
+    elif ! printf '%s\n' "$body" | cmp -s - "$AUSPEX/$file"; then
+        printf 'FAIL %s differs from config/agent-keys.conf; run: auspex keys render\n' "$file"
+        fail=1
+    else
+        printf 'ok   %s\n' "$file"
+    fi
+}
+while IFS= read -r line; do
+    if [[ "$line" =~ ^'==> '(.+)' <=='$ ]]; then
+        compare
+        file="${BASH_REMATCH[1]}" body=""
+        first=true
+        continue
+    fi
+    if $first; then body="$line" first=false; else body+=$'\n'"$line"; fi
+done <<<"$want"
+compare
+exit "$fail"

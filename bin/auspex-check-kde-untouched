@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# auspex:summary=Verify that the manifest changes no KDE or Plasma file except the agent shortcuts
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+# Spec section 10. The only KDE items are the shortcut merge and the 2
+# agent .desktop files. Any other target under ~/.config/ whose path has a
+# part that matches k*, plasma*, kwin*, kde* or *rc fails.
+allowed=$'config/kde/agent-shortcuts.ini\t~/.config/kglobalshortcutsrc\tmerge:kglobalshortcuts'
+manifest="$AUSPEX/manifest/user.tsv"
+[[ -f "$manifest" ]] || auspex_die "no manifest at $manifest"
+
+fail=0 n=0 kde=0
+while IFS=$'\t' read -r src tgt mode _ || [[ -n "${src:-}" ]]; do
+    n=$((n + 1))
+    [[ -z "${src:-}" || "$src" == '#'* ]] && continue
+    if [[ "$tgt" == \~/.local/share/applications/auspex-agent*.desktop ]]; then
+        kde=$((kde + 1))
+        continue
+    fi
+    [[ "$tgt" == \~/.config/* ]] || continue
+    if [[ "$src"$'\t'"$tgt"$'\t'"$mode" == "$allowed" ]]; then
+        kde=$((kde + 1))
+        continue
+    fi
+    IFS=/ read -ra parts <<<"${tgt#\~/.config/}"
+    for p in "${parts[@]}"; do
+        case "$p" in
+            k* | plasma* | *rc)
+                printf 'FAIL manifest line %d: %s touches a KDE file (%s)\n' "$n" "$tgt" "$p"
+                fail=1
+                break
+                ;;
+        esac
+    done
+done <"$manifest"
+
+if [[ "$kde" -ne 3 ]]; then
+    printf 'FAIL the manifest has %d KDE rows; want the shortcut merge and the 2 agent .desktop files\n' "$kde"
+    fail=1
+fi
+[[ "$fail" -ne 0 ]] || printf 'ok   the manifest changes only the agent shortcuts and the 2 agent .desktop files\n'
+exit "$fail"

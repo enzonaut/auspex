@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Load the agent shortcuts into the running kglobalaccel after a change to
+# ~/.config/kglobalshortcutsrc or to the agent .desktop files. Outside a KDE
+# session the merger prints a note and exits 0.
+set -euo pipefail
+meta="${AUSPEX_GEN_DIR:-${AUSPEX_STATE:-$HOME/.local/state/auspex}/generations/$(printf %04d "$1")}/meta.json"
+jq -e 'any(.targets[]; .path == ".config/kglobalshortcutsrc"
+    or (.path | startswith(".local/share/applications/auspex-agent")))' "$meta" >/dev/null || exit 0
+repo="${AUSPEX:-$(dirname "$(readlink -f "$0")")/../..}"
+exec "$repo/lib/merge/kglobalshortcuts" reload "$repo/config/kde/agent-shortcuts.ini" \
+    "$HOME/.config/kglobalshortcutsrc" \
+    "${AUSPEX_STATE:-$HOME/.local/state/auspex}/owned/kglobalshortcuts.json"
