@@ -86,8 +86,6 @@ system_step_show() {
     done < <(system_step_installs "$step")
 }
 
-# system_step_guard <action>: the 2nd guard behind the permission rules.
-# The agent never runs apply or undo. They need an operator at a TTY.
 system_step_guard() {
     if [[ "${AUSPEX_ACTOR:-}" == agent ]]; then
         auspex_die "system $1 refuses to run with AUSPEX_ACTOR=agent; run auspex system prepare" 3
@@ -97,7 +95,6 @@ system_step_guard() {
     fi
 }
 
-# system_step_record <step> <action> <hash> <result> <check>
 system_step_record() {
     local dir tmp
     dir="$AUSPEX_STATE/system-steps"
@@ -149,7 +146,6 @@ system_step_run() {
         return 1
     fi
     rc=0
-    # The root shell runs the script only if it still has the hash shown above.
     # shellcheck disable=SC2016
     sudo bash -c 'set -o pipefail
 h="$(sha256sum <"$1")" || exit 98

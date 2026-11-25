@@ -24,16 +24,12 @@ teardown() {
     auspex_test_teardown
 }
 
-# run_tty <input> <command...>: run the command with a TTY on stdin and
-# stdout, and type <input> into it.
 run_tty() {
     local input="$1" cmd
     shift
     printf -v cmd '%q ' "$@"
     run bash -c 'printf "%s" "$1" | SHELL=/bin/bash script -qec "$2" /dev/null' _ "$input" "$cmd"
 }
-
-# --- guards -------------------------------------------------------------
 
 @test "apply refuses with AUSPEX_ACTOR=agent, also at a TTY" {
     export AUSPEX_ACTOR=agent
@@ -72,8 +68,6 @@ run_tty() {
     [ "$status" -eq 3 ]
     [ -z "$(fake_calls sudo)" ]
 }
-
-# --- apply and undo -----------------------------------------------------
 
 @test "apply on y runs the step through sudo, records it and runs the hooks" {
     run_tty $'y\n' auspex-system-apply 900-fixture
@@ -165,8 +159,6 @@ run_tty() {
     [ ! -e "$MARK" ]
 }
 
-# --- plan ---------------------------------------------------------------
-
 @test "plan lists pending steps with the script and a diff of installed files" {
     target="$TEST_TMP/etc/demo.conf"
     mkdir -p "$(dirname "$target")"
@@ -197,8 +189,6 @@ run_tty() {
     run auspex-system-plan </dev/null
     [ "$status" -ne 0 ]
 }
-
-# --- prepare ------------------------------------------------------------
 
 @test "prepare outside herdr prints the exact command" {
     make_fake herdr-app 'exit 1'
@@ -243,8 +233,6 @@ esac'
     [ "$status" -eq 2 ]
 }
 
-# --- check system-steps (static part) -----------------------------------
-
 @test "the static check passes on good steps" {
     run auspex-check-system-steps --static
     [ "$status" -eq 0 ]
@@ -260,8 +248,6 @@ esac'
     done
 }
 
-# --- step 040-snapper-home-user -------------------------------------------
-
 step040() {
     run bash -c 'source "$1"; "$2"' _ "$STEP040" "$1"
 }
@@ -271,7 +257,6 @@ setup_snapper() {
     export AUSPEX_SYSTEM_STATE="$TEST_TMP/system-state"
     mkdir -p "$SNAPPER_CONFIG_DIR"
     cp "$FIX/snapper/home" "$FIX/snapper/root" "$SNAPPER_CONFIG_DIR/"
-    # Fake snapper: set-config edits the config file as snapper does.
     make_fake snapper '
 [[ "$1" == -c && "$3" == set-config ]] || exit 2
 key="${4%%=*}" val="${4#*=}"

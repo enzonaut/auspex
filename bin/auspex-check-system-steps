@@ -16,7 +16,6 @@ case "${1:-}" in
     *) auspex_die "usage: auspex check system-steps [--static]" 2 ;;
 esac
 
-# Paths that no step may name (spec section 10).
 deny_re='(\.config/plasma|\.config/k|~/\.config/k|/etc/sddm\.conf\.d|/usr/share/sddm|/usr/share/plasma)'
 
 fail=0

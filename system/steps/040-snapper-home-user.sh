@@ -3,19 +3,12 @@
 # auspex:args=check | apply | undo
 # auspex:level=3
 # auspex:requires-sudo=true
-#
-# check runs as the user and only reads the home config. apply and undo run
-# as root. apply adds lordvader to ALLOW_USERS in the snapper home config
-# with snapper set-config, and records the earlier value in
-# $AUSPEX_SYSTEM_STATE/040-snapper-home-user.before (default /var/lib/auspex).
-# undo sets the recorded value again. The root config does not change.
 
 STEP_NAME=040-snapper-home-user
 STEP_USER=lordvader
 STEP_CONFIG="${SNAPPER_CONFIG_DIR:-/etc/snapper/configs}/home"
 STEP_RECORD="${AUSPEX_SYSTEM_STATE:-/var/lib/auspex}/$STEP_NAME.before"
 
-# step_allow_users: print the ALLOW_USERS value of the home config.
 step_allow_users() {
     local line
     [[ -r "$STEP_CONFIG" ]] || return 1
