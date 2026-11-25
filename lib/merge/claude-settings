@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Merger for ~/.claude/settings.json (spec section 4.2). It changes only
-# permissions.deny and keeps every other key. The owned list holds the deny
-# rules that auspex added, so a rule the operator had already is never removed.
 set -euo pipefail
 
 die() {
@@ -9,13 +6,9 @@ die() {
     exit 1
 }
 
-# One JSON object; permissions, when present, is an object; deny, when present,
-# is an array of strings.
 SETTINGS='length == 1 and (.[0] | type == "object"
     and ((.permissions // {}) | type == "object")
     and ((.permissions.deny // []) | type == "array" and all(type == "string")))'
-# Only {"permissions": {"deny": [non-empty strings]}}. A source with an allow
-# rule or any other key is refused: this file must only add deny rules.
 SOURCE='length == 1 and (.[0] | type == "object" and keys == ["permissions"]
     and (.permissions | type == "object" and keys == ["deny"])
     and (.permissions.deny | type == "array" and length > 0
@@ -24,8 +17,6 @@ OWNED='length == 1 and (.[0] | type == "array" and all(type == "string"))'
 
 args=()
 
-# load <var> <file> <filter> <default>: bind $var to [content], or to
-# [default] when the file is missing. Stop if the file fails the filter.
 load() {
     if [[ -e "$2" ]]; then
         jq -s -e "$3" "$2" >/dev/null 2>&1 || die "$2 is not valid"
@@ -74,8 +65,6 @@ case "${1:-}" in
         load tgt "$3" "$SETTINGS" null
         load now "$4" "$OWNED" '[]'
         load ob "$5" "$OWNED" '[]'
-        # Deny = the target rules auspex does not own now, plus the rules it
-        # owned before. Rules from the before file keep their order there.
         jq -n "${args[@]}" '
             $bef[0] as $b | $tgt[0] as $t
             | ($b.permissions.deny // []) as $bd

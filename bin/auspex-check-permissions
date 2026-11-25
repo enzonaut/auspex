@@ -3,9 +3,6 @@
 # auspex:args=[--print]
 # auspex:level=1
 # auspex:requires-sudo=false
-#
-# --print writes the Edit and Write deny rules for each manifest target, as
-# they belong in claude/deny.json.
 set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=../lib/common.sh
 source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
@@ -30,8 +27,6 @@ AGENT="$AUSPEX/claude/agent-settings.json"
 HEADLESS="$AUSPEX/claude/headless-settings.json"
 LIVE="$HOME/.claude/settings.json"
 
-# target_rules: Edit and Write deny rules for each manifest target. A tree
-# target gets a rule for the whole folder.
 target_rules() {
     local src tgt mode
     auspex_manifest_load
@@ -53,12 +48,10 @@ fail() {
     failed=1
 }
 
-# rules <file> <allow|deny>: the rules of that list, 1 per line.
 rules() {
     jq -r --arg k "$2" '.permissions[$k] // [] | .[]' "$1"
 }
 
-# matches <rule> <command>: true when the Bash rule matches the command.
 matches() {
     local p
     [[ "$1" == 'Bash('*')' ]] || return 1
@@ -71,8 +64,6 @@ matches() {
     fi
 }
 
-# allows <rule> <command>: true when the Bash rule matches the command or a
-# longer form of it ("auspex migrate --pending*" allows "auspex migrate").
 allows() {
     local p
     matches "$1" "$2" && return 0
@@ -81,7 +72,6 @@ allows() {
     [[ "$p" == "$2 "* ]]
 }
 
-# any <test> <command> <rules...>: true when a rule passes the test.
 any() {
     local test="$1" cmd="$2" r
     shift 2

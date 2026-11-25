@@ -1,11 +1,7 @@
 #!/usr/bin/env bats
-# Tests for lib/merge/claude-settings and auspex check permissions. The merger
-# runs on fixtures and on a temp copy of the live settings file. No test
-# writes the live file.
 
 load test_helper
 
-# Read before setup moves HOME into the temp folder.
 REAL_HOME="$HOME"
 
 setup() {
@@ -21,13 +17,10 @@ teardown() {
     auspex_test_teardown
 }
 
-# deny <file>: the deny rules of a settings file, 1 per line.
 deny() {
     jq -r '.permissions.deny // [] | .[]' "$1"
 }
 
-# check_merged <before> <out> <owned>: the merge kept every key and rule of
-# <before> and added each source rule once.
 check_merged() {
     jq -e . "$2" >/dev/null
     [ "$(jq -c 'del(.permissions.deny)' "$1")" = "$(jq -c 'del(.permissions.deny)' "$2")" ]
@@ -39,7 +32,6 @@ check_merged() {
     [ "$(jq -r '.[]' "$3")" = "$(deny "$SRC" | LC_ALL=C sort -u)" ]
 }
 
-# src_with <jq>: write a source made from claude/deny.json and print its path.
 src_with() {
     jq "$1" "$SRC" >"$W/src.json"
     printf '%s\n' "$W/src.json"
@@ -152,7 +144,6 @@ src_with() {
     [ "$(sha256sum <"$live")" = "$sum" ]
 }
 
-# perm_repo: a repo copy with the permission files and the manifest.
 perm_repo() {
     make_repo_copy
     cp -a "$AUSPEX_REPO/claude" "$AUSPEX_REPO/manifest" "$AUSPEX/"
