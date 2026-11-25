@@ -107,7 +107,7 @@ Checked (read only, 2026-11-25):
 - Claude Code 2.1.332, ghostty 1.4.0 and herdr 0.9.5 are installed. Claude Code has a headless mode (`claude -p`).
 - The disk uses btrfs. snapper has configs for `/` and `/home`, and `snap-pac` takes a snapshot around each package change. N1 builds on this.
 - Claude Code already has permission rules in `~/.claude/settings.json` (1 allow rule, 38 deny rules) and a herdr status hook. N2 extends these rules.
-- `horch quota` already prints the Claude limit use, and `herdr agent list` prints the worker states. N6 reads both.
+- `horch quota` already prints the Claude limit use. N6 reads it.
 - The crash dump service (`systemd-coredump`) is active. `tesseract` (OCR), `spectacle` (KDE screen capture), `wl-copy` and `notify-send` are installed.
 - Hyprland, a bar, `grim`, `slurp`, a text-typing tool and a dictation program are not installed.
 - This repo holds only `README.md` and the research report. There is no install step yet.
@@ -118,3 +118,4 @@ Not checked:
 - KDE hotkeys set from a file (T2, N4, N7 on KDE).
 - How dictated text is typed into the active window on either desktop (T7).
 - The list of existing snapshots, which needs sudo to read.
+- The worker states for N6. The command `herdr agent list` exists, but it found no server on the default socket during this check, so its output is not confirmed.
