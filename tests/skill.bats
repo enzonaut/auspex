@@ -1,12 +1,9 @@
 #!/usr/bin/env bats
-# Tests for auspex check skill.
 
 load test_helper
 
 setup() {
     auspex_test_setup
-    # A copy of each tracked top-level folder, outside git, so a test can
-    # break the skill without touching the repo.
     mkdir -p "$TEST_TMP/repo"
     local d
     while IFS= read -r d; do

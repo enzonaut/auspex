@@ -44,8 +44,6 @@ print_targets() {
     done <"$AUSPEX_MANIFEST"
 }
 
-# top_folders: the top-level repo folders, from git when the repo is a git
-# work tree, so untracked folders do not count.
 top_folders() {
     if git -C "$AUSPEX" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         git -C "$AUSPEX" ls-files | sed -n 's|^\([^/.][^/]*\)/.*|\1|p' | LC_ALL=C sort -u
@@ -54,8 +52,6 @@ top_folders() {
     fi
 }
 
-# backticked <file>: print each inline code span in <file>, 1 per line.
-# Code fence lines are skipped.
 backticked() {
     # shellcheck disable=SC2016 # The backticks are Markdown, not a command.
     grep -v '^[[:space:]]*```' -- "$1" | grep -o '`[^`]*`' | sed 's/^`//; s/`$//' || true
@@ -89,8 +85,6 @@ check_layout() {
     done
 }
 
-# routes <words...>: true when a prefix of the words names a command,
-# as bin/auspex routes it.
 routes() {
     local name=auspex w
     (($# > 0)) || return 0
