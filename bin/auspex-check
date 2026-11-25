@@ -11,7 +11,7 @@
 # A check with the header "# auspex:display=true" needs a display. It is
 # skipped with --no-display, or when neither WAYLAND_DISPLAY nor DISPLAY is set.
 set -euo pipefail
-# shellcheck source=../lib/common.sh
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
 source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
 
 SKIP_EXIT=77

@@ -14,7 +14,10 @@ if [[ -z "${AUSPEX:-}" ]]; then
 fi
 export AUSPEX
 export AUSPEX_STATE="${AUSPEX_STATE:-$HOME/.local/state/auspex}"
+# The commands that source this file use these 2 paths.
+# shellcheck disable=SC2034
 AUSPEX_BIN="$AUSPEX/bin"
+# shellcheck disable=SC2034
 AUSPEX_MANIFEST="$AUSPEX/manifest/user.tsv"
 
 # Logging. All log output goes to stderr, so stdout stays for data.

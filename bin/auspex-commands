@@ -4,7 +4,7 @@
 # auspex:level=1
 # auspex:requires-sudo=false
 set -euo pipefail
-# shellcheck source=../lib/common.sh
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
 source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
 
 HEADERS=(summary args level requires-sudo)
@@ -48,6 +48,7 @@ print_markdown() {
         level="$(auspex_header "$f" level || true)"
         sudo="$(auspex_header "$f" requires-sudo || true)"
         summary="$(auspex_header "$f" summary || true)"
+        # shellcheck disable=SC2016 # The backticks are Markdown, not a command.
         printf '| `auspex %s` | %s | %s | %s | %s |\n' \
             "$words" \
             "${args:+\`$(md_cell "$args")\`}" \
