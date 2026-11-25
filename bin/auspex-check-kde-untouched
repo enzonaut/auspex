@@ -7,9 +7,6 @@ set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=../lib/common.sh
 source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
 
-# Spec section 10. The only KDE items are the shortcut merge and the 2
-# agent .desktop files. Any other target under ~/.config/ whose path has a
-# part that matches k*, plasma*, kwin*, kde* or *rc fails.
 allowed=$'config/kde/agent-shortcuts.ini\t~/.config/kglobalshortcutsrc\tmerge:kglobalshortcuts'
 manifest="$AUSPEX/manifest/user.tsv"
 [[ -f "$manifest" ]] || auspex_die "no manifest at $manifest"

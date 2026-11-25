@@ -7,7 +7,6 @@ set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=../lib/common.sh
 source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
 
-# Each made file, its path in the repo, and the function that prints it.
 MADE=(config/kde/agent-shortcuts.ini)
 KEYS_FILE="config/agent-keys.conf"
 declare -A KEY=()
@@ -17,8 +16,6 @@ usage() {
     exit 2
 }
 
-# kde_key <SUPER+ALT+grave>: print the KDE form, Meta+Alt+`.
-# Modifiers come out in KDE order: Meta, Ctrl, Alt, Shift.
 kde_key() {
     local spec="$1" part key="" out=""
     local -A mod=()

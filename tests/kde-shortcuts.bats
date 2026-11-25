@@ -1,8 +1,4 @@
 #!/usr/bin/env bats
-# Tests for lib/merge/kglobalshortcuts and the 40-kglobalaccel hooks.
-# All writes go to a fixture copy in a temp HOME, through a guard
-# kwriteconfig6 that refuses any file outside $TEST_TMP. The live
-# ~/.config/kglobalshortcutsrc is only read, by the conflict test.
 
 load test_helper
 
@@ -33,7 +29,6 @@ teardown() {
     auspex_test_teardown
 }
 
-# The gdbus fake answers NameHasOwner with $1 (true or false).
 fake_gdbus() {
     make_fake gdbus "if [[ \"\$*\" == *NameHasOwner* ]]; then echo '($1,)'; fi"
 }
@@ -175,8 +170,6 @@ hook_meta() {
     done
 }
 
-# Reads the live file only. A key from the key file must not be bound to
-# any action other than the auspex groups.
 @test "the agent keys are not bound to another action in the live file" {
     live="$REAL_HOME/.config/kglobalshortcutsrc"
     [ -f "$live" ] || skip "no live $live"

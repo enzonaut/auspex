@@ -1,6 +1,4 @@
 #!/usr/bin/env bats
-# Tests for auspex agent, auspex agent dropdown and auspex check kde-untouched.
-# claude, ghostty and gdbus are fakes. No test starts a real agent.
 
 load test_helper
 
@@ -53,8 +51,8 @@ teardown() {
 
 @test "no mode passes --dangerously-skip-permissions" {
     for m in --here --window "--headless --prompt x"; do
-        # shellcheck disable=SC2086
-        run auspex agent $m --dry-run
+        read -ra args <<<"$m"
+        run auspex agent "${args[@]}" --dry-run
         [ "$status" -eq 0 ]
         [[ "$output" != *dangerously* ]]
     done
@@ -94,8 +92,6 @@ teardown() {
     [ "$(fake_calls ghostty)" = "--class=auspex.agent -e $AUSPEX/bin/auspex agent --here --cwd $W" ]
 }
 
-# The gdbus fake owns auspex.dropdown when $TEST_TMP/up exists. The ghostty
-# fake makes that file.
 fake_gdbus() {
     make_fake gdbus 'if [[ "$*" == *NameHasOwner* ]]; then
     if [[ -e "$TEST_TMP/up" ]]; then echo "(true,)"; else echo "(false,)"; fi

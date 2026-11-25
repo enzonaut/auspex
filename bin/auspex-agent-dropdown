@@ -44,8 +44,6 @@ has_name() {
         --method org.freedesktop.DBus.NameHasOwner "$NAME" 2>/dev/null | grep -q true
 }
 
-# The dropdown config runs "auspex agent --here". The desktop session PATH
-# can lack ~/.local/bin, and bootstrap can be pending, so add both folders.
 case ":$PATH:" in
     *":$HOME/.local/bin:"*) ;;
     *) PATH="$PATH:$HOME/.local/bin" ;;
