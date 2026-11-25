@@ -33,7 +33,6 @@
   --radius: 0;
   --u: 1px;
   --dur-ui: 200ms;
-  --dur-flight: 7000ms;
   --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
 }
 * { box-sizing: border-box; border-radius: 0; }
@@ -50,8 +49,6 @@ a { color: var(--color-bronze); }
 .head .kicker { font-family: var(--font-display); letter-spacing: .24em; color: var(--color-text-faint); font-size: 15px; }
 .head h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(4rem, 15vw, 20rem); line-height: .9; letter-spacing: .14em; margin: .1em 0 .15em; color: var(--color-text-bright); }
 .head .band { position: relative; height: 22px; margin: 8px 0 40px; background: var(--color-bg-dark); border-top: 2px solid var(--color-bronze); border-bottom: 2px solid var(--color-bronze); overflow: hidden; }
-.head .band .bird { width: 44px; height: 13px; margin: -6.5px 0 0 -22px; stroke-width: 4.4; animation: boardflight var(--dur-flight) linear infinite; }
-@keyframes boardflight { 0% { left: -2%; opacity: 0; } 6% { opacity: 1; } 92% { opacity: 1; } 100% { left: 102%; opacity: 0; } }
 .mood { max-width: 62ch; font-size: clamp(17px, 1.3vw, 22px); color: var(--color-text); margin: 0; }
 .mood + .meta { margin-top: 28px; color: var(--color-text-faint); font-size: 14px; font-family: var(--font-mono); }
 
@@ -70,7 +67,6 @@ section.item { padding-top: 120px; }
 .abs { position: absolute; }
 .fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-.bird { position: absolute; top: 50%; color: var(--color-bronze); fill: none; stroke-width: 4; overflow: visible; }
 .dentil { position: absolute; left: 0; right: 0; height: calc(var(--u) * 26);
   border-top: calc(var(--u) * 3) solid var(--color-bronze-dark);
   background: repeating-linear-gradient(90deg, var(--color-surface) 0 calc(var(--u) * 28), transparent calc(var(--u) * 28) calc(var(--u) * 44)) 0 calc(var(--u) * 5) / 100% calc(var(--u) * 18) no-repeat; }
@@ -102,22 +98,15 @@ section.item { padding-top: 120px; }
 .seg { display: flex; gap: 0; }
 .seg span { font-size: calc(var(--u) * 22); font-weight: 500; letter-spacing: .16em; padding: calc(var(--u) * 10) calc(var(--u) * 22); color: var(--color-text-muted); border: calc(var(--u) * 2) solid var(--color-surface); }
 .seg span.on { background: var(--color-porphyry); color: var(--color-text-bright); border-color: var(--color-porphyry); border-bottom: calc(var(--u) * 3) solid var(--color-bronze); }
-.login .bird { width: calc(var(--u) * 120); height: calc(var(--u) * 36); margin: calc(var(--u) * -18) 0 0 calc(var(--u) * -60); stroke-width: 3.6; animation: loginflight 11s ease-out infinite; }
-@keyframes loginflight {
-  0% { left: 1%; opacity: 0; } 5% { opacity: 1; } 36%, 100% { left: 61.6%; opacity: 1; }
-}
 .hint { left: 0; right: 0; text-align: center; font-size: calc(var(--u) * 19); color: var(--color-text-muted); letter-spacing: .04em; }
 .hint b { color: var(--color-text); font-weight: 600; }
 
 .boot .trailbox { left: 0; right: 0; height: calc(var(--u) * 40); }
 .trail { position: absolute; left: 0; top: calc(var(--u) * 9); bottom: calc(var(--u) * 9); width: 0;
   background: repeating-linear-gradient(90deg, var(--color-bronze) 0 calc(var(--u) * 28), transparent calc(var(--u) * 28) calc(var(--u) * 44)); }
-.boot .bird { width: calc(var(--u) * 120); height: calc(var(--u) * 36); margin: calc(var(--u) * -20) 0 0 calc(var(--u) * -60); stroke-width: 3.6; left: 0; }
 .ticks { left: 0; right: 0; display: grid; grid-template-columns: repeat(10, 1fr); text-align: right; }
 .ticks span { font-family: var(--font-display); font-size: calc(var(--u) * 22); color: var(--color-text-faint); padding-right: calc(var(--u) * 8); border-right: calc(var(--u) * 2) solid var(--color-surface); line-height: 1.6; transition: color var(--dur-ui); }
 .ticks span.on { color: var(--color-bronze); border-right-color: var(--color-bronze); }
-
-.lock .perch { left: 50%; top: 50%; width: calc(var(--u) * 60); height: calc(var(--u) * 18); margin: calc(var(--u) * -9) 0 0 calc(var(--u) * -30); color: var(--color-text-faint); stroke-width: 4.4; }
 
 .bar { left: 0; right: 0; top: 0; height: calc(var(--u) * 42); background: var(--color-bg-dark); border-bottom: calc(var(--u) * 2) solid var(--color-border); display: flex; align-items: center; padding: 0 calc(var(--u) * 18); font-size: calc(var(--u) * 16); }
 .bar .brand { display: flex; align-items: center; gap: calc(var(--u) * 10); color: var(--color-bronze); font-size: calc(var(--u) * 15); margin-right: calc(var(--u) * 28); }
@@ -126,13 +115,6 @@ section.item { padding-top: 120px; }
 .ws span.on { background: var(--color-porphyry); color: var(--color-text-bright); box-shadow: inset 0 calc(var(--u) * -3) 0 var(--color-bronze); }
 .ws span.empty { color: var(--color-text-faint); }
 .fleet { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: calc(var(--u) * 14); height: 100%; }
-.miniband { width: calc(var(--u) * 200); height: calc(var(--u) * 22); background: var(--color-bg-darker); border-top: calc(var(--u) * 2) solid var(--color-bronze); border-bottom: calc(var(--u) * 2) solid var(--color-bronze); position: relative; overflow: hidden; }
-.miniband .bird { width: calc(var(--u) * 32); height: calc(var(--u) * 10); margin: calc(var(--u) * -6) 0 0 calc(var(--u) * -16); stroke-width: 6; animation: barflight 10s linear infinite; }
-@keyframes barflight {
-  0% { left: 2%; opacity: 0; } 3% { opacity: 1; } 22% { left: 98%; opacity: 1; } 24% { left: 98%; opacity: 0; }
-  25% { left: 2%; opacity: 0; } 28% { opacity: 1; } 47% { left: 98%; opacity: 1; } 49% { left: 98%; opacity: 0; }
-  50% { left: 2%; opacity: 0; } 53% { opacity: 1; } 64%, 100% { left: 50%; opacity: 1; transform: scale(1.3); }
-}
 .fleet .legio { font-family: var(--font-display); color: var(--color-bronze); letter-spacing: .24em; font-size: calc(var(--u) * 15); }
 .fleet .mono, .bar .stat { font-family: var(--font-mono); font-size: calc(var(--u) * 15); color: var(--color-text-muted); }
 .wait { color: var(--color-accent); font-weight: 700; }
@@ -181,9 +163,6 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
-  .head .band .bird { left: 50%; }
-  .login .bird { left: 61.6%; }
-  .miniband .bird { left: 50%; transform: scale(1.3); }
 }
 </style>
 </head>
@@ -272,8 +251,8 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
 <header class="head">
   <div class="kicker">AVSPEX · DIRECTION C · ROMAN</div>
   <h1>AVGVR</h1>
-  <div class="band" aria-hidden="true"><svg class="bird"><use href="#bird"/></svg></div>
-  <p class="mood">An augur read the future in the flight of birds. Here the augur watches your agents. Warm stone, bronze, one porphyry stripe and carved Latin capitals hold a wide and quiet field, under a crested Roman helmet in open laurel. One small bronze bird is the only thing that moves: it crosses the inscription band while your agents work, and it lands on the one thing that needs you.</p>
+  <div class="band" aria-hidden="true"></div>
+  <p class="mood">An augur read the future in the flight of birds. Here the augur watches your agents. Warm stone, bronze, one porphyry stripe and carved Latin capitals hold a wide and quiet field, under a crested Roman helmet in open laurel. The screens stay still. At boot, a row of bronze dentil blocks fills the band under the numerals I to X.</p>
   <div class="meta">5120×2160 (64:27) · mockups drawn at 1.5× scale, 3413×1440 logical px · every screen puts its main control in one horizontal inscription band</div>
 </header>
 
@@ -342,7 +321,7 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
 
 <section class="item" id="login">
   <div class="ih"><span class="num">III</span><h2>SDDM LOGIN</h2><button class="fs" data-fs>[ FULL SCREEN ]</button>
-    <p>The inscription band holds the whole form: user, password and session. The bird flies into the band from the left and lands next to the password field. Press Enter and the bird is the submit control.</p></div>
+    <p>The inscription band holds the whole form: user, password and session. Press Enter to log in.</p></div>
   <div class="frame"><div class="scr login">
     <svg class="fill" viewBox="0 0 3413 1440" preserveAspectRatio="none" aria-hidden="true">
       <defs>
@@ -378,7 +357,6 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
       <div class="zone" style="left:calc(var(--u) * 160)"><span class="lbl">OPERATOR</span><span class="val">operator <i class="chev"></i></span></div>
       <div class="field" style="left:calc(var(--u) * 1366);width:calc(var(--u) * 680)"><div class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="caret"></div><span style="margin-left:auto;font-family:var(--font-display);font-size:calc(var(--u) * 16);letter-spacing:.3em;color:var(--color-text-faint)">PASSWORD</span></div>
       <div class="zone" style="right:calc(var(--u) * 160);align-items:flex-end"><span class="lbl">SESSION</span><div class="seg"><span class="on">HYPRLAND</span><span>PLASMA</span></div></div>
-      <svg class="bird"><use href="#bird"/></svg>
     </div>
     <div class="dentil under" style="top:calc(var(--u) * 781)"></div>
     <div class="abs hint" style="top:calc(var(--u) * 846)"><b>Enter</b> to log in &nbsp;·&nbsp; <b>Tab</b> to change session &nbsp;·&nbsp; <b>F1</b> to change user</div>
@@ -390,7 +368,7 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
 
 <section class="item" id="boot">
   <div class="ih"><span class="num">IV</span><h2>PLYMOUTH BOOT</h2><button class="fs" data-fs>[ FULL SCREEN ]</button>
-    <p>The helmet sits above the word AVSPEX. The bird flies along the band from left to right and leaves a row of bronze dentil blocks behind it. The dentils are the progress bar, and the numerals I to X light up as the bird passes.</p></div>
+    <p>The helmet sits above the word AVSPEX. Below them, a row of bronze dentil blocks fills the band from left to right. The dentils are the progress bar, and the numerals I to X light up as the row reaches them.</p></div>
   <div class="frame"><div class="scr boot">
     <svg class="fill" viewBox="0 0 3413 1440" preserveAspectRatio="none" aria-hidden="true">
       <defs><radialGradient id="bh" cx=".5" cy=".42" r=".5"><stop offset="0" stop-color="#22181D"/><stop offset="1" stop-color="#110F0D"/></radialGradient></defs>
@@ -398,16 +376,16 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
     </svg>
     <svg class="abs mark" style="left:50%;top:calc(var(--u) * 300);width:calc(var(--u) * 240);height:calc(var(--u) * 240);margin-left:calc(var(--u) * -120)"><use href="#mark"/></svg>
     <div class="abs lat" style="left:0;right:0;top:calc(var(--u) * 590);text-align:center;color:var(--color-bronze);font-size:calc(var(--u) * 52);letter-spacing:.5em;padding-left:.5em">AVSPEX</div>
-    <div class="band trailbox" style="top:calc(var(--u) * 876)"><div class="trail" id="trail"></div><svg class="bird" id="bootbird"><use href="#bird"/></svg></div>
+    <div class="band trailbox" style="top:calc(var(--u) * 876)"><div class="trail" id="trail"></div></div>
     <div class="abs ticks" id="ticks" style="top:calc(var(--u) * 922)"><span>I</span><span>II</span><span>III</span><span>IV</span><span>V</span><span>VI</span><span>VII</span><span>VIII</span><span>IX</span><span>X</span></div>
     <div class="abs lat" style="left:0;right:0;top:calc(var(--u) * 1120);text-align:center;color:var(--color-text-faint);font-size:calc(var(--u) * 18);letter-spacing:.5em">AVSPICIA · CAPIVNTVR</div>
   </div></div>
-  <div class="cap">With reduced motion the bird stays at the head of the dentil row and the row fills in steps, without the glide.</div>
+  <div class="cap">With reduced motion the dentil row fills in steps, without the glide.</div>
 </section>
 
 <section class="item" id="lock">
   <div class="ih"><span class="num">V</span><h2>LOCK SCREEN</h2><button class="fs" data-fs>[ FULL SCREEN ]</button>
-    <p>The band is closed to a thin carved line and the bird perches on it, dim and still. The fleet counter stays visible so you can see from across the room that an agent waits. When you type, the band opens to the login layout.</p></div>
+    <p>The band is closed to a thin carved line. The fleet counter stays visible so you can see from across the room that an agent waits. When you type, the band opens to the login layout.</p></div>
   <div class="frame"><div class="scr lock">
     <img class="fill" src="wallpaper.svg" alt="" style="object-fit:cover;opacity:.22">
     <div class="fill" style="background:radial-gradient(ellipse at 50% 50%, rgba(23,20,15,.55), rgba(17,15,13,.95))"></div>
@@ -416,7 +394,6 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
     <div class="abs lat" style="left:0;right:0;top:calc(var(--u) * 552);text-align:center;color:var(--color-bronze);font-size:calc(var(--u) * 26)">DIES MERCVRII · XXV · XI · MMXXVI</div>
     <div class="dentil" style="top:calc(var(--u) * 690)"></div>
     <div class="band" style="top:calc(var(--u) * 716);height:calc(var(--u) * 14);box-shadow:none"></div>
-    <svg class="abs bird perch" style="top:calc(var(--u) * 706)"><use href="#bird"/></svg>
     <div class="dentil under" style="top:calc(var(--u) * 733)"></div>
     <div class="abs lat" style="left:0;right:0;top:calc(var(--u) * 806);text-align:center;color:var(--color-bronze);font-size:calc(var(--u) * 20);letter-spacing:.5em">TEMPLVM · CLAVSVM</div>
     <div class="abs" style="left:0;right:0;top:calc(var(--u) * 852);text-align:center;color:var(--color-text-muted);font-size:calc(var(--u) * 20)">Type your password to open the band</div>
@@ -426,13 +403,13 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
 
 <section class="item" id="desktop">
   <div class="ih"><span class="num">VI</span><h2>HYPRLAND DESKTOP</h2><button class="fs" data-fs>[ FULL SCREEN ]</button>
-    <p>The bar is 1 dark stone strip with the helmet mark at the left. Workspaces use Roman numerals, and the active one is a porphyry block. In the center, a small inscription band shows the fleet: the bird crosses it while agents work, then lands and grows when 1 waits. The active window has a bronze edge. No window has round corners or a title bar.</p></div>
+    <p>The bar is 1 dark stone strip with the helmet mark at the left. Workspaces use Roman numerals, and the active one is a porphyry block. In the center, the fleet counter shows LEGIO and the number of working and waiting agents. The waiting count is cinnabar. The active window has a bronze edge. No window has round corners or a title bar.</p></div>
   <div class="frame"><div class="scr desk">
     <img class="fill" src="wallpaper.svg" alt="" style="object-fit:cover">
     <div class="abs bar">
       <div class="brand"><svg class="mark"><use href="#mark"/></svg><span class="lat">AVSPEX</span></div>
       <div class="ws"><span class="on">I</span><span>II</span><span>III</span><span class="empty">IV</span><span class="empty">V</span></div>
-      <div class="fleet"><div class="miniband"><svg class="bird"><use href="#bird"/></svg></div><span class="legio">LEGIO</span><span class="mono">[ 3 working · <span class="wait">1 waiting</span> ]</span></div>
+      <div class="fleet"><span class="legio">LEGIO</span><span class="mono">[ 3 working · <span class="wait">1 waiting</span> ]</span></div>
       <div class="right">
         <span class="stat">[ CPU 12% ]</span><span class="stat">[ MEM 31% ]</span>
         <svg><use href="#i-net"/></svg><svg><use href="#i-vol"/></svg><svg><use href="#i-bell"/></svg>
@@ -504,12 +481,12 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
   <div class="ih"><span class="num">IX</span><h2>BUILD NOTES</h2>
     <p>What is hard to build, by part. Levels: easy, medium, hard.</p></div>
   <div class="notes">
-    <div class="note"><span class="id">N1</span><span class="where">SDDM</span><p><span class="lv">medium</span>Needs a hand-written <code class="k">Main.qml</code>. The full-width band, the dentil rails, the 2-button session picker (a Repeater over <code class="k">sessionModel</code>) and the bird (an SVG Image with a NumberAnimation on x) are simple QML. The Latin date needs a small JS function for Roman numerals and day names.</p></div>
+    <div class="note"><span class="id">N1</span><span class="where">SDDM</span><p><span class="lv">medium</span>Needs a hand-written <code class="k">Main.qml</code>. The full-width band, the dentil rails and the 2-button session picker (a Repeater over <code class="k">sessionModel</code>) are simple QML. Enter submits the form. The Latin date needs a small JS function for Roman numerals and day names.</p></div>
     <div class="note"><span class="id">N2</span><span class="where">SDDM</span><p><span class="lv hard">hard</span>An Omarchy theme switch does not retint the greeter. The colors must be written into <code class="k">theme.conf</code> by a script that runs with sudo, and the fonts must be installed system-wide or loaded with FontLoader from the theme folder.</p></div>
-    <div class="note"><span class="id">N3</span><span class="where">PLYMOUTH</span><p><span class="lv hard">hard</span>Use the script plugin. The mark, the bird, the dentil block and the numerals must be pre-rendered PNG sprites, because plymouth has limited vector and text support. Drive the dentil row from <code class="k">Plymouth.SetBootProgressFunction</code>. The disk password prompt must also fit in the band. Ship sprites at 2× for 5120×2160.</p></div>
+    <div class="note"><span class="id">N3</span><span class="where">PLYMOUTH</span><p><span class="lv hard">hard</span>Use the script plugin. The mark, the dentil block and the numerals must be pre-rendered PNG sprites, because plymouth has limited vector and text support. Drive the dentil row from <code class="k">Plymouth.SetBootProgressFunction</code>. The disk password prompt must also fit in the band. Ship sprites at 2× for 5120×2160.</p></div>
     <div class="note"><span class="id">N4</span><span class="where">PLYMOUTH</span><p><span class="lv">medium</span>Any font used in the splash must be in the initramfs. Rebuilding the theme and the initramfs is a separate sudo step.</p></div>
-    <div class="note"><span class="id">N5</span><span class="where">LOCK</span><p><span class="lv">medium</span>hyprlock can draw the band and the dentil rails with <code class="k">shape</code> widgets, the mark and the perched bird with <code class="k">image</code> widgets, and put an <code class="k">input-field</code> in the band. It cannot animate, so the lock stays static. The fleet line is a <code class="k">label</code> with <code class="k">cmd[update:2000]</code> that calls the horch status script.</p></div>
-    <div class="note"><span class="id">N6</span><span class="where">BAR</span><p><span class="lv">medium</span>Roman workspaces are a <code class="k">format-icons</code> map in waybar. The brand mark is an <code class="k">image</code> module at 32 px. The fleet counter is a custom module that reads horch status as JSON and sets a <code class="k">waiting</code> class. The flying bird is possible with GTK CSS keyframes on a background image but fragile. Quickshell (QML) makes the bird easy and is the better fit if the bar is rebuilt.</p></div>
+    <div class="note"><span class="id">N5</span><span class="where">LOCK</span><p><span class="lv">medium</span>hyprlock can draw the band and the dentil rails with <code class="k">shape</code> widgets, the mark with an <code class="k">image</code> widget, and put an <code class="k">input-field</code> in the band. The lock is static. The fleet line is a <code class="k">label</code> with <code class="k">cmd[update:2000]</code> that calls the horch status script.</p></div>
+    <div class="note"><span class="id">N6</span><span class="where">BAR</span><p><span class="lv">medium</span>Roman workspaces are a <code class="k">format-icons</code> map in waybar. The brand mark is an <code class="k">image</code> module at 32 px. The fleet counter is a custom module that reads horch status as JSON and sets a <code class="k">waiting</code> class. The bar has no animation.</p></div>
     <div class="note"><span class="id">N7</span><span class="where">WALLPAPER</span><p><span class="lv">easy</span>hyprpaper and SDDM need a PNG. rsvg-convert ignores the embedded font, so export with Chrome: <code class="k">google-chrome-stable --headless --screenshot=wallpaper.png --window-size=5120,2160 wallpaper.svg</code>, or convert the text to paths first.</p></div>
     <div class="note"><span class="id">N8</span><span class="where">HYPRLAND</span><p><span class="lv">easy</span>Window look is plain config: <code class="k">rounding = 0</code>, bronze <code class="k">col.active_border</code>, border-colored inactive border, no title bars. The ghostty and Claude Code colors come from <code class="k">colors.toml</code> through the normal Omarchy templates.</p></div>
   </div>
@@ -524,12 +501,11 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
       if (document.fullscreenElement) document.exitFullscreen(); else if (f.requestFullscreen) f.requestFullscreen();
     });
   });
-  var trail = document.getElementById('trail'), bird = document.getElementById('bootbird');
+  var trail = document.getElementById('trail');
   var ticks = document.querySelectorAll('#ticks span');
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function show(p) {
     trail.style.width = (p * 100) + '%';
-    bird.style.left = (p * 100) + '%';
     ticks.forEach(function (t, i) { t.classList.toggle('on', p >= (i + 1) / 10); });
   }
   if (reduce) {

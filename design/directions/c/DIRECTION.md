@@ -1,6 +1,6 @@
 # Design direction c: AVGVR
 
-Status: draft - Revision 4 - 2026-11-25
+Status: draft - Revision 5 - 2026-11-25
 Owner: design-director-4
 Review board: index.html (this folder). Palette: colors.toml. Wallpaper: wallpaper.svg. Mark: mark.svg.
 
@@ -16,7 +16,7 @@ Review board: index.html (this folder). Palette: colors.toml. Wallpaper: wallpap
 - Direction: cinematic-monumental. Borrowed trait from tactical-terminal: monospace data in bracket framing, used only in the bar and the terminals.
 - Why: 1 horizontal inscription band across the 64:27 width carries every control, as the carved band on a Roman arch carries the words.
 - Research: inferred, no film research. Sources: Roman augury (the augur marks a templum in the sky and reads the flight of birds), the crested Roman helmet, the laurel crown, dentil molding, aqueduct arcades, porphyry stone.
-- Big idea: the auspex is an augur. A bronze augur bird crosses the band while agents work and lands on the thing that needs you.
+- Big idea: the auspex is an augur. It watches your agents from a still, carved band and shows you the 1 thing that needs you.
 
 ## Shell-ban list
 - Black ground with blood red and gold raptor standards (the rejected Empire Legion look).
@@ -52,7 +52,6 @@ Review board: index.html (this folder). Palette: colors.toml. Wallpaper: wallpap
   --border: 1px solid var(--color-border);
   --shadow: none;
   --dur-ui: 200ms;
-  --dur-flight: 7000ms;
   --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 }
@@ -91,10 +90,12 @@ Contrast pairs (WCAG 2.x, AA is 4.5:1 for text and 3:1 for non-text):
 - Wallpaper: dusk over an aqueduct. The mark hangs in the sky at the right. A flock of augur birds flies up and right. A carved inscription sits low at the left. The subject fills less than a third of the frame.
 
 ## Motion character
-- The bird is the only ambient motion. It flies only left to right, 7000 ms per crossing, ease-in-out.
-- The bird lands and stays on the item that needs the operator (password field, waiting agent).
-- Boot: the bird crosses the band and leaves a dentil trail behind it. The trail is the progress bar.
-- Reduced motion: the bird stays still at its perch. The trail fills without the flight.
+- No bird moves in the UI. The augur birds appear only as a static flock in the wallpaper and the login backdrop.
+- Boot: the splash shows the helmet mark, the word AVSPEX and a dentil progress bar. Bronze dentil blocks fill the band from left to right, and the numerals I to X light up as the row reaches them.
+- Login: the inscription band holds user, password and session. Enter submits.
+- Lock: the band is closed to a thin carved line. The lock is static.
+- Bar: the fleet counter shows LEGIO and the working and waiting counts, with no bird.
+- Reduced motion: the dentil row fills in steps, without the glide.
 
 ## Do
 - Put the primary control of each screen inside the horizontal inscription band.
@@ -105,7 +106,7 @@ Contrast pairs (WCAG 2.x, AA is 4.5:1 for text and 3:1 for non-text):
 ## Do not
 - No border-radius above 0.
 - No pure black (#000000) grounds.
-- No more than 1 element in accent color per view, plus the bird.
+- No more than 1 element in accent color per view.
 - No round emblem behind the mark.
 - No bird inside the mark.
 
@@ -116,3 +117,4 @@ Contrast pairs (WCAG 2.x, AA is 4.5:1 for text and 3:1 for non-text):
 | 2 | 2026-11-25 | Helmet mark replaced by laurel and eagle mark | operator choice | operator |
 | 3 | 2026-11-25 | Roman only; helmet and laurel mark; Zeon elements removed | operator choice | operator |
 | 4 | 2026-11-25 | Approved helmet mark (orchestrator drawing) and new augur birds | operator choice | operator |
+| 5 | 2026-11-25 | Animated birds removed; dentil progress bar kept | operator choice | operator |
