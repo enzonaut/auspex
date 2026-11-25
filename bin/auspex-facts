@@ -3,11 +3,6 @@
 # auspex:args=[--json] [--logs] [--section <name>]
 # auspex:level=1
 # auspex:requires-sudo=false
-#
-# Each section runs as "auspex-facts --collect <name>" under timeout, in
-# parallel. A collector prints "key<TAB>value" lines, or 1 line
-# "unavailable<TAB><reason>". External programs come from PATH.
-# AUSPEX_PROC and AUSPEX_SYS move /proc and /sys for tests.
 set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=../lib/common.sh
 source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
@@ -191,7 +186,6 @@ collect_main() {
     "collect_$name"
 }
 
-# run_section <name> <out file>
 run_section() {
     local rc=0
     timeout "$LIMIT" "$AUSPEX_BIN/auspex-facts" --collect "$1" >"$2" 2>/dev/null || rc=$?
@@ -215,7 +209,6 @@ render_md() {
     printf '\n'
 }
 
-# section_json <file>: 1 JSON object for a section.
 section_json() {
     jq -Rn '
         [inputs | split("\t") | select(length >= 2) | {key: .[0], value: (.[1:] | join("\t"))}] as $rows
