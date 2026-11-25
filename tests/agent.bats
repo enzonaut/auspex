@@ -98,11 +98,8 @@ fake_gdbus() {
 fi'
 }
 
-@test "dropdown prints skip on Hyprland and outside KDE" {
+@test "dropdown prints skip outside KDE and Hyprland" {
     fake_gdbus
-    HYPRLAND_INSTANCE_SIGNATURE=x XDG_CURRENT_DESKTOP=KDE run auspex agent dropdown
-    [ "$status" -eq 0 ]
-    [[ "$output" == skip:* ]]
     XDG_CURRENT_DESKTOP=GNOME run auspex agent dropdown
     [ "$status" -eq 0 ]
     [[ "$output" == skip:* ]]
