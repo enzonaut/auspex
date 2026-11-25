@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CVNEVS review board</title>
+<meta name="description" content="auspex direction C, Galactic Empire Legion: name, palette, login, boot, lock, desktop, wallpaper, fonts and build notes.">
+<style>
+@font-face { font-family: "Noto Serif Display"; src: url("fonts/noto-serif-display-light.woff2") format("woff2"); font-weight: 300; font-display: swap; }
+@font-face { font-family: "Noto Serif Display"; src: url("fonts/noto-serif-display-regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Adwaita Sans"; src: url("fonts/adwaita-sans.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "Adwaita Mono"; src: url("fonts/adwaita-mono-regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Adwaita Mono"; src: url("fonts/adwaita-mono-bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+:root {
+  --bg: #0B0C0E;
+  --bg-dark: #07080A;
+  --bg-darker: #030405;
+  --panel: #15171B;
+  --input: #1E2126;
+  --fg: #D8DBDF;
+  --fg-2: #A3A9B1;
+  --fg-3: #848B95;
+  --marble: #F1EFE9;
+  --accent: #C21F27;
+  --accent-text: #EA4D55;
+  --selection: #4A1216;
+  --muted: #535A64;
+  --gold: #C9A24A;
+  --gold-hi: #E2C27A;
+  --gold-lo: #7E6126;
+  --c-black: #2A2E34;
+  --c-red: #EA4D55;
+  --c-green: #8FAE6B;
+  --c-yellow: #D8B45A;
+  --c-blue: #7C9CC0;
+  --c-magenta: #B76A9A;
+  --c-cyan: #6FB3A8;
+  --c-white: #D8DBDF;
+  --c-bright-black: #848B95;
+  --c-bright-red: #FF6A6F;
+  --c-bright-green: #A9C985;
+  --c-bright-yellow: #E9CB7E;
+  --c-bright-blue: #9DB9D9;
+  --c-bright-magenta: #D08AB5;
+  --c-bright-cyan: #8FCFC4;
+  --c-bright-white: #F1EFE9;
+  --font-display: "Noto Serif Display", "Noto Serif", serif;
+  --font-ui: "Adwaita Sans", "Inter", sans-serif;
+  --font-mono: "Adwaita Mono", "Iosevka", monospace;
+  --track-display: 0.18em;
+  --track-wide: 0.4em;
+  --radius: 0;
+  --rule: 1px;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-ui: 160ms;
+  --dur-scene: 900ms;
+  --dur-caret: 1060ms;
+  --step--1: 13px;
+  --step-0: 16px;
+  --step-1: 20px;
+  --step-2: 24px;
+  --step-3: 32px;
+  --step-4: 48px;
+  --step-hero: clamp(56px, 13cqi, 220px);
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-24: 96px;
+  --page-max: 1600px;
+  color-scheme: dark;
+}
+
+.f-bg{fill:var(--bg)}.s-bg{stroke:var(--bg)}.st-bg{stop-color:var(--bg)}
+.f-bg-dark{fill:var(--bg-dark)}.s-bg-dark{stroke:var(--bg-dark)}.st-bg-dark{stop-color:var(--bg-dark)}
+.f-bg-darker{fill:var(--bg-darker)}.s-bg-darker{stroke:var(--bg-darker)}.st-bg-darker{stop-color:var(--bg-darker)}
+.f-panel{fill:var(--panel)}.s-panel{stroke:var(--panel)}.st-panel{stop-color:var(--panel)}
+.f-input{fill:var(--input)}.s-input{stroke:var(--input)}.st-input{stop-color:var(--input)}
+.f-fg{fill:var(--fg)}.s-fg{stroke:var(--fg)}.st-fg{stop-color:var(--fg)}
+.f-fg-2{fill:var(--fg-2)}.s-fg-2{stroke:var(--fg-2)}.st-fg-2{stop-color:var(--fg-2)}
+.f-fg-3{fill:var(--fg-3)}.s-fg-3{stroke:var(--fg-3)}.st-fg-3{stop-color:var(--fg-3)}
+.f-marble{fill:var(--marble)}.s-marble{stroke:var(--marble)}.st-marble{stop-color:var(--marble)}
+.f-accent{fill:var(--accent)}.s-accent{stroke:var(--accent)}.st-accent{stop-color:var(--accent)}
+.f-accent-text{fill:var(--accent-text)}.s-accent-text{stroke:var(--accent-text)}.st-accent-text{stop-color:var(--accent-text)}
+.f-selection{fill:var(--selection)}.s-selection{stroke:var(--selection)}.st-selection{stop-color:var(--selection)}
+.f-muted{fill:var(--muted)}.s-muted{stroke:var(--muted)}.st-muted{stop-color:var(--muted)}
+.f-gold{fill:var(--gold)}.s-gold{stroke:var(--gold)}.st-gold{stop-color:var(--gold)}
+.f-gold-hi{fill:var(--gold-hi)}.s-gold-hi{stroke:var(--gold-hi)}.st-gold-hi{stop-color:var(--gold-hi)}
+.f-gold-lo{fill:var(--gold-lo)}.s-gold-lo{stroke:var(--gold-lo)}.st-gold-lo{stop-color:var(--gold-lo)}
+.f-c-black{fill:var(--c-black)}.s-c-black{stroke:var(--c-black)}.st-c-black{stop-color:var(--c-black)}
+.f-c-red{fill:var(--c-red)}.s-c-red{stroke:var(--c-red)}.st-c-red{stop-color:var(--c-red)}
+.f-c-green{fill:var(--c-green)}.s-c-green{stroke:var(--c-green)}.st-c-green{stop-color:var(--c-green)}
+.f-c-yellow{fill:var(--c-yellow)}.s-c-yellow{stroke:var(--c-yellow)}.st-c-yellow{stop-color:var(--c-yellow)}
+.f-c-blue{fill:var(--c-blue)}.s-c-blue{stroke:var(--c-blue)}.st-c-blue{stop-color:var(--c-blue)}
+.f-c-magenta{fill:var(--c-magenta)}.s-c-magenta{stroke:var(--c-magenta)}.st-c-magenta{stop-color:var(--c-magenta)}
+.f-c-cyan{fill:var(--c-cyan)}.s-c-cyan{stroke:var(--c-cyan)}.st-c-cyan{stop-color:var(--c-cyan)}
+.f-c-white{fill:var(--c-white)}.s-c-white{stroke:var(--c-white)}.st-c-white{stop-color:var(--c-white)}
+.f-c-bright-black{fill:var(--c-bright-black)}.s-c-bright-black{stroke:var(--c-bright-black)}.st-c-bright-black{stop-color:var(--c-bright-black)}
+.f-c-bright-red{fill:var(--c-bright-red)}.s-c-bright-red{stroke:var(--c-bright-red)}.st-c-bright-red{stop-color:var(--c-bright-red)}
+.f-c-bright-green{fill:var(--c-bright-green)}.s-c-bright-green{stroke:var(--c-bright-green)}.st-c-bright-green{stop-color:var(--c-bright-green)}
+.f-c-bright-yellow{fill:var(--c-bright-yellow)}.s-c-bright-yellow{stroke:var(--c-bright-yellow)}.st-c-bright-yellow{stop-color:var(--c-bright-yellow)}
+.f-c-bright-blue{fill:var(--c-bright-blue)}.s-c-bright-blue{stroke:var(--c-bright-blue)}.st-c-bright-blue{stop-color:var(--c-bright-blue)}
+.f-c-bright-magenta{fill:var(--c-bright-magenta)}.s-c-bright-magenta{stroke:var(--c-bright-magenta)}.st-c-bright-magenta{stop-color:var(--c-bright-magenta)}
+.f-c-bright-cyan{fill:var(--c-bright-cyan)}.s-c-bright-cyan{stroke:var(--c-bright-cyan)}.st-c-bright-cyan{stop-color:var(--c-bright-cyan)}
+.f-c-bright-white{fill:var(--c-bright-white)}.s-c-bright-white{stroke:var(--c-bright-white)}.st-c-bright-white{stop-color:var(--c-bright-white)}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg-dark);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: var(--step-0);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+a { color: var(--gold); text-underline-offset: 0.2em; }
+a:hover { color: var(--gold-hi); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+code { font-family: var(--font-mono); }
+h1, h2, h3 { font-weight: 400; margin: 0; }
+p { margin: 0; }
+
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* board header */
+.board-head {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-4) var(--sp-6);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--sp-4) var(--sp-6);
+  align-items: center;
+  border-bottom: var(--rule) solid var(--muted);
+}
+.board-eagle { width: 56px; height: 56px; display: block; }
+.board-title h1 {
+  font-family: var(--font-display);
+  font-size: var(--step-4);
+  line-height: 1;
+  letter-spacing: var(--track-display);
+  color: var(--marble);
+}
+.board-title p { color: var(--fg-3); margin-top: var(--sp-2); }
+.board-head nav { grid-column: 1 / -1; }
+.nav { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0 var(--sp-4); }
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  color: var(--fg-2);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--dur-ui) var(--ease);
+}
+.nav a:hover { color: var(--marble); text-decoration: underline; }
+.nav-num { font-family: var(--font-display); color: var(--gold); min-width: 2.2em; }
+
+main { max-width: var(--page-max); margin: 0 auto; padding: 0 var(--sp-4); }
+
+/* items */
+.item { padding-top: var(--sp-16); }
+.item-head { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-4); }
+.num {
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  line-height: 1;
+  color: var(--gold);
+  min-width: 2.4em;
+}
+.item-head h2 { font-family: var(--font-display); font-size: var(--step-2); color: var(--marble); flex: 1; min-width: 0; }
+.fs {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--sp-3);
+  border: var(--rule) solid var(--muted);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease);
+}
+.fs:hover { border-color: var(--fg-2); color: var(--marble); }
+.fs:active { transform: translateY(1px); }
+.fs:disabled { opacity: 0.4; cursor: not-allowed; }
+.fs svg { color: currentColor; flex: none; }
+.cap { color: var(--fg-3); max-width: 75ch; margin-top: var(--sp-3); }
+
+.stage { border: var(--rule) solid var(--muted); background: var(--bg); }
+.frame { position: relative; container-type: inline-size; aspect-ratio: 64 / 27; width: 100%; overflow: hidden; }
+.frame-text { overflow: visible; }
+.mock, .wall { display: block; width: 100%; height: auto; }
+
+.stage:fullscreen {
+  display: grid;
+  place-items: center;
+  background: var(--bg-darker);
+  border: 0;
+  overflow: auto;
+}
+.stage:fullscreen .frame { width: min(100vw, calc(100vh * 64 / 27)); }
+.stage:fullscreen .frame-text { background: var(--bg); }
+
+/* svg type */
+.ff-d { font-family: var(--font-display); font-weight: 400; }
+.ff-dl { font-family: var(--font-display); font-weight: 300; }
+.ff-u { font-family: var(--font-ui); }
+.ff-m { font-family: var(--font-mono); }
+.tr { letter-spacing: var(--track-display); }
+.tr-wide { letter-spacing: var(--track-wide); }
+.c-fg-2 { color: var(--fg-2); }
+
+/* motion */
+.rank { opacity: 1; }
+.rank.r4 { opacity: 0; }
+@keyframes caret { 50% { opacity: 0; } }
+@keyframes rk1 { 0% { opacity: 1; } 80%, 100% { opacity: 0; } }
+@keyframes rk2 { 0% { opacity: 0; } 20% { opacity: 1; } 80%, 100% { opacity: 0; } }
+@keyframes rk3 { 0% { opacity: 0; } 40% { opacity: 1; } 80%, 100% { opacity: 0; } }
+@keyframes rk4 { 0% { opacity: 0; } 60% { opacity: 1; } 80%, 100% { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .caret { animation: caret var(--dur-caret) step-end infinite; }
+  .rank { animation: rk1 calc(var(--dur-scene) * 5) step-end infinite; }
+  .rank.r2 { animation-name: rk2; }
+  .rank.r3 { animation-name: rk3; }
+  .rank.r4 { animation-name: rk4; }
+}
+
+/* I mood */
+.mood { position: relative; min-height: 100%; display: flex; align-items: center; }
+.mood-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; opacity: 0.55; }
+.mood::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(90deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 82%, transparent) 42%, transparent 72%);
+}
+.mood-copy { position: relative; z-index: 2; padding: var(--sp-8) var(--sp-6); max-width: min(100%, 680px); }
+.kicker { font-family: var(--font-mono); font-size: var(--step--1); color: var(--fg-3); letter-spacing: 0.08em; text-transform: uppercase; }
+.mood-name {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--step-hero);
+  line-height: 0.95;
+  letter-spacing: var(--track-display);
+  color: var(--marble);
+  margin-top: var(--sp-4);
+}
+.gloss { font-family: var(--font-display); color: var(--gold); font-size: var(--step-1); margin-top: var(--sp-2); }
+.mood-text { color: var(--fg); font-size: var(--step-1); line-height: 1.5; margin-top: var(--sp-6); max-width: 58ch; }
+
+/* II palette */
+.pal { padding: var(--sp-6); display: grid; gap: var(--sp-8) var(--sp-8); grid-template-columns: 1fr; }
+.pal-h { font-family: var(--font-mono); font-size: var(--step--1); color: var(--fg-3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: var(--sp-3); }
+.k { display: block; color: var(--fg); font-size: var(--step--1); overflow-wrap: anywhere; }
+.hex { display: block; color: var(--fg-2); font-size: var(--step--1); }
+.role { display: block; color: var(--fg-3); font-size: var(--step--1); line-height: 1.4; }
+.stratum {
+  background: var(--sw);
+  padding: var(--sp-3) var(--sp-4);
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) auto;
+  gap: 0 var(--sp-4);
+  border-left: var(--rule) solid var(--muted);
+}
+.stratum .role { grid-column: 1 / -1; }
+.ramp-row { display: grid; grid-template-columns: 72px 1fr; gap: var(--sp-4); align-items: center; padding: var(--sp-2) 0; border-bottom: var(--rule) solid var(--panel); }
+.aa { font-family: var(--font-display); font-size: var(--step-4); line-height: 1; color: var(--sw); }
+.ban-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-6) var(--sp-4); }
+.flag {
+  display: block;
+  height: 72px;
+  background: var(--sw);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+  margin-bottom: var(--sp-3);
+}
+.wedges { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-6) var(--sp-4); }
+.wedge { display: block; height: 40px; background: var(--sw); clip-path: polygon(0 50%, 100% 0, 100% 100%); margin-bottom: var(--sp-2); }
+
+@container (min-width: 900px) {
+  .pal { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .named { grid-column: 1 / -1; }
+  .wedges { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: var(--sp-4); }
+}
+
+/* VIII fonts */
+.fonts { padding: var(--sp-6); display: grid; gap: var(--sp-8); grid-template-columns: 1fr; height: 100%; }
+.spec { display: flex; flex-direction: column; gap: var(--sp-2); border-top: var(--rule) solid var(--gold-lo); padding-top: var(--sp-4); }
+.spec-role { font-family: var(--font-mono); font-size: var(--step--1); color: var(--fg-3); letter-spacing: 0.08em; text-transform: uppercase; }
+.spec-big { font-size: var(--step-4); line-height: 1.1; color: var(--marble); margin-top: var(--sp-2); overflow-wrap: anywhere; }
+.spec-mid { font-size: var(--step-1); color: var(--fg-2); }
+.spec-name { font-size: var(--step-2); color: var(--fg); margin-top: auto; padding-top: var(--sp-4); }
+.spec-meta { color: var(--fg-3); }
+.ff-display { font-family: var(--font-display); letter-spacing: var(--track-display); }
+.ff-display-l { font-family: var(--font-display); font-weight: 300; }
+.ff-ui { font-family: var(--font-ui); }
+.ff-ui-b { font-family: var(--font-ui); font-weight: 600; }
+.ff-mono { font-family: var(--font-mono); }
+.tri { color: var(--accent); }
+.tri-off { color: var(--fg-3); }
+.spec:nth-child(1) .spec-name { font-family: var(--font-display); }
+.spec:nth-child(3) .spec-name { font-family: var(--font-mono); }
+@container (min-width: 760px) { .fonts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* IX notes */
+.notes { padding: var(--sp-6); display: grid; gap: var(--sp-8); grid-template-columns: 1fr; }
+.note-h { font-family: var(--font-display); font-size: var(--step-2); color: var(--marble); letter-spacing: var(--track-display); text-transform: uppercase; padding-bottom: var(--sp-2); border-bottom: 2px solid var(--accent); margin-bottom: var(--sp-3); }
+.note ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-3); }
+.note li { padding-left: var(--sp-6); position: relative; color: var(--fg); max-width: 60ch; }
+.note li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 10px; height: 8px; background: var(--gold); clip-path: polygon(0 50%, 100% 0, 100% 100%); }
+@container (min-width: 640px) { .notes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (min-width: 1200px) { .notes { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.board-foot { max-width: var(--page-max); margin: var(--sp-16) auto 0; padding: var(--sp-6) var(--sp-4) var(--sp-12); border-top: var(--rule) solid var(--muted); color: var(--fg-3); }
+
+@media (min-width: 768px) {
+  .board-head, .board-foot { padding-left: var(--sp-12); padding-right: var(--sp-12); }
+  main { padding: 0 var(--sp-12); }
+}
+@media (max-width: 479px) {
+  .fs span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .num { min-width: 0; }
+}
+
+</style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false">
+<symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 9.5a15 15 0 0 1 20 0M5.5 13a10 10 0 0 1 13 0M9 16.5a5 5 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="19" width="2" height="2" fill="currentColor"/></symbol>
+<symbol id="i-vol" viewBox="0 0 24 24"><path d="M3 9h4l5-4v14l-5-4H3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+<symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="4" height="4" fill="currentColor"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" stroke="currentColor" stroke-width="1.5"/></symbol>
+<symbol id="i-power" viewBox="0 0 24 24"><path d="M7.5 6.5a8 8 0 1 0 9 0" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 2.5v9" stroke="currentColor" stroke-width="1.5"/></symbol>
+<symbol id="i-restart" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M19 3v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/></symbol>
+<symbol id="i-full" viewBox="0 0 24 24"><path d="M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+</svg>
+<header class="board-head">
+<img class="board-eagle" src="eagle.svg" alt="" width="56" height="56">
+<div class="board-title"><h1>CVNEVS</h1><p>auspex direction C · Galactic Empire Legion · mockups at 5120×2160, 64:27</p></div>
+<nav aria-label="Board items"><ol class="nav"><li><a href="#i1"><span class="nav-num">I</span> Name and mood</a></li><li><a href="#i2"><span class="nav-num">II</span> Palette</a></li><li><a href="#i3"><span class="nav-num">III</span> SDDM login</a></li><li><a href="#i4"><span class="nav-num">IV</span> Plymouth boot</a></li><li><a href="#i5"><span class="nav-num">V</span> Lock screen</a></li><li><a href="#i6"><span class="nav-num">VI</span> Hyprland desktop</a></li><li><a href="#i7"><span class="nav-num">VII</span> Wallpaper</a></li><li><a href="#i8"><span class="nav-num">VIII</span> Fonts</a></li><li><a href="#i9"><span class="nav-num">IX</span> Build notes</a></li></ol></nav>
+</header>
+<main>
+<section class="item" id="i1" aria-labelledby="i1-h">
+<header class="item-head"><span class="num" aria-hidden="true">I</span><h2 id="i1-h">Name and mood</h2>
+<button class="fs" type="button" data-fs="i1-stage" aria-label="Show Name and mood fullscreen"><svg aria-hidden="true" width="20" height="20"><use href="#i-full"/></svg><span>Fullscreen</span></button></header>
+<div class="stage" id="i1-stage"><div class="frame frame-text"><div class="mood">
+<img class="mood-bg" src="wallpaper.svg" alt="">
+<div class="mood-copy">
+<p class="kicker">auspex · direction C · Galactic Empire Legion</p>
+<h3 class="mood-name">CVNEVS</h3>
+<p class="gloss">cuneus: the Roman wedge formation</p>
+<p class="mood-text">A legion standard hangs in airless black sky: a gold eagle built from wedges above steel ships that fly in the old Roman cuneus. Every surface is cold durasteel, cut with inscribed capitals and one line of blood red that marks what is alive. The machine is the augur: it reads the flight of its agents as an auspex read birds, and the screen is its templum.</p>
+</div>
+</div></div></div>
+
+</section><section class="item" id="i2" aria-labelledby="i2-h">
+<header class="item-head"><span class="num" aria-hidden="true">II</span><h2 id="i2-h">Palette</h2>
+<button class="fs" type="button" data-fs="i2-stage" aria-label="Show Palette fullscreen"><svg aria-hidden="true" width="20" height="20"><use href="#i-full"/></svg><span>Fullscreen</span></button></header>
+<div class="stage" id="i2-stage"><div class="frame frame-text"><div class="pal"><div class="pal-group strata"><h3 class="pal-h">Background ramp</h3><div class="stratum" style="--sw:var(--bg-darker)"><code class="k">darker_background</code><code class="hex">#030405</code><span class="role">deepest void, boot splash</span></div><div class="stratum" style="--sw:var(--bg-dark)"><code class="k">dark_background</code><code class="hex">#07080A</code><span class="role">deeper void, lock and login</span></div><div class="stratum" style="--sw:var(--bg)"><code class="k">background</code><code class="hex">#0B0C0E</code><span class="role">void black, desktop and terminal</span></div><div class="stratum" style="--sw:var(--panel)"><code class="k">lighter_background</code><code class="hex">#15171B</code><span class="role">durasteel, bar, banner, panels</span></div></div><div class="pal-group ramp"><h3 class="pal-h">Foreground ramp</h3><div class="ramp-row"><span class="aa" style="--sw:var(--marble)" aria-hidden="true">Aa</span><span class="meta"><code class="k">lighter_foreground</code><code class="hex">#F1EFE9</code><span class="role">marble. clocks, headings. 17.02:1</span></span></div><div class="ramp-row"><span class="aa" style="--sw:var(--fg)" aria-hidden="true">Aa</span><span class="meta"><code class="k">foreground</code><code class="hex">#D8DBDF</code><span class="role">steel white. body text. 14.09:1</span></span></div><div class="ramp-row"><span class="aa" style="--sw:var(--fg-2)" aria-hidden="true">Aa</span><span class="meta"><code class="k">dark_foreground</code><code class="hex">#A3A9B1</code><span class="role">secondary text. 8.26:1</span></span></div><div class="ramp-row"><span class="aa" style="--sw:var(--fg-3)" aria-hidden="true">Aa</span><span class="meta"><code class="k">darker_foreground</code><code class="hex">#848B95</code><span class="role">captions, placeholders. 5.69:1</span></span></div></div><div class="pal-group banners"><h3 class="pal-h">Semantic and gold</h3><div class="ban-row"><div class="ban"><span class="flag" style="--sw:var(--accent)"></span><code class="k">accent</code><code class="hex">#C21F27</code><span class="role">blood red. active border, wedges. Non-text, 3.28:1</span></div><div class="ban"><span class="flag" style="--sw:var(--selection)"></span><code class="k">selection</code><code class="hex">#4A1216</code><span class="role">selected rows and session. Text on it 13.1:1</span></div><div class="ban"><span class="flag" style="--sw:var(--muted)"></span><code class="k">muted</code><code class="hex">#535A64</code><span class="role">inactive border, rules. Decoration only</span></div><div class="ban"><span class="flag" style="--sw:var(--gold)"></span><code class="k">gold</code><code class="hex">#C9A24A</code><span class="role">extra key. eagle and authority marks, 8.15:1</span></div></div></div><div class="pal-group named"><h3 class="pal-h">Named colors, ANSI 0 to 15</h3><ol class="wedges"><li class="wt"><span class="wedge" style="--sw:var(--c-black)"></span><code class="k">black</code><code class="hex">#2A2E34</code><span class="role">iron. ANSI 0, dim surfaces</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-red)"></span><code class="k">red</code><code class="hex">#EA4D55</code><span class="role">cinnabar. errors, deletions</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-green)"></span><code class="k">green</code><code class="hex">#8FAE6B</code><span class="role">olive. success, additions</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-yellow)"></span><code class="k">yellow</code><code class="hex">#D8B45A</code><span class="role">orichalcum. warnings, hashes</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-blue)"></span><code class="k">blue</code><code class="hex">#7C9CC0</code><span class="role">tempered steel. paths, dirs</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-magenta)"></span><code class="k">magenta</code><code class="hex">#B76A9A</code><span class="role">Tyrian. branches, keywords</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-cyan)"></span><code class="k">cyan</code><code class="hex">#6FB3A8</code><span class="role">verdigris. user, types</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-white)"></span><code class="k">white</code><code class="hex">#D8DBDF</code><span class="role">steel white. default text</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-bright-black)"></span><code class="k">bright_black</code><code class="hex">#848B95</code><span class="role">comments, hints</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-bright-red)"></span><code class="k">bright_red</code><code class="hex">#FF6A6F</code><span class="role">bright errors</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-bright-green)"></span><code class="k">bright_green</code><code class="hex">#A9C985</code><span class="role">bright success</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-bright-yellow)"></span><code class="k">bright_yellow</code><code class="hex">#E9CB7E</code><span class="role">bright warnings</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-bright-blue)"></span><code class="k">bright_blue</code><code class="hex">#9DB9D9</code><span class="role">bright paths</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-bright-magenta)"></span><code class="k">bright_magenta</code><code class="hex">#D08AB5</code><span class="role">bright keywords</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-bright-cyan)"></span><code class="k">bright_cyan</code><code class="hex">#8FCFC4</code><span class="role">bright info</span></li><li class="wt"><span class="wedge" style="--sw:var(--c-bright-white)"></span><code class="k">bright_white</code><code class="hex">#F1EFE9</code><span class="role">emphasis, marble</span></li></ol></div></div></div></div>
+<p class="cap">Every key from colors.toml, with hex and role. Ratios are against background #0B0C0E.</p>
+</section><section class="item" id="i3" aria-labelledby="i3-h">
+<header class="item-head"><span class="num" aria-hidden="true">III</span><h2 id="i3-h">SDDM login</h2>
+<button class="fs" type="button" data-fs="i3-stage" aria-label="Show SDDM login fullscreen"><svg aria-hidden="true" width="20" height="20"><use href="#i-full"/></svg><span>Fullscreen</span></button></header>
+<div class="stage" id="i3-stage"><div class="frame frame-svg"><svg class="mock" viewBox="0 0 5120 2160" role="img" aria-labelledby="t-login"><title id="t-login">SDDM login mockup</title><desc>Clock and Roman date low on the left. A banner hangs on the right under the gold eagle and holds the avatar, user name, password field and a Hyprland or Plasma session picker.</desc><defs><linearGradient id="lg-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="st-gold-hi"/><stop offset="1" class="st-gold-lo"/></linearGradient></defs><image href="login-bg.svg" x="0" y="0" width="5120" height="2160"/><text x="400" y="1320" font-size="60" class="ff-d f-gold tr">MERCVRII · XXV · NOV · MMXXVI</text><text x="380" y="1860" font-size="600" class="ff-dl f-marble">21:47</text><line x1="4390" y1="0" x2="4390" y2="60" class="s-gold" stroke-width="4"/><image href="eagle.svg" x="4190" y="50" width="400" height="400"/><polygon points="4000,459 4016,450 4764,450 4780,459 4764,468 4016,468" fill="url(#lg-gold)"/><rect x="4060" y="468" width="660" height="1212" class="f-panel"/><rect x="4060" y="468" width="12" height="1212" class="f-accent"/><rect x="4708" y="468" width="12" height="1212" class="f-accent"/><g class="s-gold" stroke-width="5"><line x1="4074" y1="1680" x2="4074" y2="1736"/><line x1="4094" y1="1680" x2="4094" y2="1748"/><line x1="4114" y1="1680" x2="4114" y2="1736"/><line x1="4134" y1="1680" x2="4134" y2="1748"/><line x1="4154" y1="1680" x2="4154" y2="1736"/><line x1="4174" y1="1680" x2="4174" y2="1748"/><line x1="4194" y1="1680" x2="4194" y2="1736"/><line x1="4214" y1="1680" x2="4214" y2="1748"/><line x1="4234" y1="1680" x2="4234" y2="1736"/><line x1="4254" y1="1680" x2="4254" y2="1748"/><line x1="4274" y1="1680" x2="4274" y2="1736"/><line x1="4294" y1="1680" x2="4294" y2="1748"/><line x1="4314" y1="1680" x2="4314" y2="1736"/><line x1="4334" y1="1680" x2="4334" y2="1748"/><line x1="4354" y1="1680" x2="4354" y2="1736"/><line x1="4374" y1="1680" x2="4374" y2="1748"/><line x1="4394" y1="1680" x2="4394" y2="1736"/><line x1="4414" y1="1680" x2="4414" y2="1748"/><line x1="4434" y1="1680" x2="4434" y2="1736"/><line x1="4454" y1="1680" x2="4454" y2="1748"/><line x1="4474" y1="1680" x2="4474" y2="1736"/><line x1="4494" y1="1680" x2="4494" y2="1748"/><line x1="4514" y1="1680" x2="4514" y2="1736"/><line x1="4534" y1="1680" x2="4534" y2="1748"/><line x1="4554" y1="1680" x2="4554" y2="1736"/><line x1="4574" y1="1680" x2="4574" y2="1748"/><line x1="4594" y1="1680" x2="4594" y2="1736"/><line x1="4614" y1="1680" x2="4614" y2="1748"/><line x1="4634" y1="1680" x2="4634" y2="1736"/><line x1="4654" y1="1680" x2="4654" y2="1748"/><line x1="4674" y1="1680" x2="4674" y2="1736"/><line x1="4694" y1="1680" x2="4694" y2="1748"/></g><text x="4397" y="560" font-size="34" class="ff-d f-gold tr-wide" text-anchor="middle">AVSPEX</text><image href="helmet.svg" x="4260" y="610" width="260" height="260"/><text x="4396" y="980" font-size="64" class="ff-d f-marble tr" text-anchor="middle">OPERATOR</text><rect x="4120" y="1060" width="452" height="96" class="f-input s-fg-2" stroke-width="2"/><text x="4166" y="1122" font-size="38" class="ff-u f-fg-3">Password</text><rect class="caret f-marble" x="4148" y="1082" width="4" height="52"/><rect x="4572" y="1060" width="88" height="96" class="f-accent"/><text x="4616" y="1124" font-size="46" class="ff-u f-marble" text-anchor="middle">→</text><text x="4120" y="1250" font-size="26" class="ff-m f-fg-3 tr-wide">SESSION</text><rect x="4120" y="1276" width="270" height="88" class="f-selection"/><rect x="4120" y="1276" width="8" height="88" class="f-accent"/><polygon points="4243,1364 4267,1364 4255,1350" class="f-accent"/><text x="4259" y="1333" font-size="36" class="ff-u f-fg" text-anchor="middle">Hyprland</text><rect x="4391" y="1277" width="268" height="86" fill="none" class="s-muted" stroke-width="2"/><text x="4525" y="1333" font-size="36" class="ff-u f-fg-2" text-anchor="middle">Plasma</text><line x1="4120" y1="1480" x2="4660" y2="1480" class="s-muted" stroke-width="2"/><text x="4120" y="1586" font-size="30" class="ff-m f-fg-3 tr">US</text><use href="#i-moon" x="4460" y="1548" width="48" height="48" class="c-fg-2"/><use href="#i-restart" x="4536" y="1548" width="48" height="48" class="c-fg-2"/><use href="#i-power" x="4612" y="1548" width="48" height="48" class="c-fg-2"/></svg></div></div>
+<p class="cap">Text contrast: user 17.0:1, date 8.2:1, placeholder 4.70:1 on the field, sessions 13.1:1 and 7.6:1. The selected session is filled, the other outlined, so state does not rely on color.</p>
+</section><section class="item" id="i4" aria-labelledby="i4-h">
+<header class="item-head"><span class="num" aria-hidden="true">IV</span><h2 id="i4-h">Plymouth boot</h2>
+<button class="fs" type="button" data-fs="i4-stage" aria-label="Show Plymouth boot fullscreen"><svg aria-hidden="true" width="20" height="20"><use href="#i-full"/></svg><span>Fullscreen</span></button></header>
+<div class="stage" id="i4-stage"><div class="frame frame-svg"><svg class="mock" viewBox="0 0 5120 2160" role="img" aria-labelledby="t-boot"><title id="t-boot">Plymouth boot splash mockup</title><desc>Near-black screen with the gold eagle, the name AVSPEX in tracked gold capitals, and ten wedges in a 1-2-3-4 formation that light red rank by rank as boot progresses.</desc><rect width="5120" height="2160" class="f-bg-darker"/><image href="eagle.svg" x="2340" y="500" width="440" height="440"/><text x="2582" y="1170" font-size="88" class="ff-d f-gold tr-wide" text-anchor="middle">AVSPEX</text><polygon points="2388,1420 2444,1400 2444,1440" fill="none" class="s-muted" stroke-width="3"/><g class="rank r1"><polygon points="2388,1420 2444,1400 2444,1440" class="f-accent"/></g><polygon points="2484,1390 2540,1370 2540,1410" fill="none" class="s-muted" stroke-width="3"/><polygon points="2484,1450 2540,1430 2540,1470" fill="none" class="s-muted" stroke-width="3"/><g class="rank r2"><polygon points="2484,1390 2540,1370 2540,1410" class="f-accent"/><polygon points="2484,1450 2540,1430 2540,1470" class="f-accent"/></g><polygon points="2580,1360 2636,1340 2636,1380" fill="none" class="s-muted" stroke-width="3"/><polygon points="2580,1420 2636,1400 2636,1440" fill="none" class="s-muted" stroke-width="3"/><polygon points="2580,1480 2636,1460 2636,1500" fill="none" class="s-muted" stroke-width="3"/><g class="rank r3"><polygon points="2580,1360 2636,1340 2636,1380" class="f-accent"/><polygon points="2580,1420 2636,1400 2636,1440" class="f-accent"/><polygon points="2580,1480 2636,1460 2636,1500" class="f-accent"/></g><polygon points="2676,1330 2732,1310 2732,1350" fill="none" class="s-muted" stroke-width="3"/><polygon points="2676,1390 2732,1370 2732,1410" fill="none" class="s-muted" stroke-width="3"/><polygon points="2676,1450 2732,1430 2732,1470" fill="none" class="s-muted" stroke-width="3"/><polygon points="2676,1510 2732,1490 2732,1530" fill="none" class="s-muted" stroke-width="3"/><g class="rank r4"><polygon points="2676,1330 2732,1310 2732,1350" class="f-accent"/><polygon points="2676,1390 2732,1370 2732,1410" class="f-accent"/><polygon points="2676,1450 2732,1430 2732,1470" class="f-accent"/><polygon points="2676,1510 2732,1490 2732,1530" class="f-accent"/></g></svg></div></div>
+<p class="cap">Ranks of the wedge light in order: 1, 2, 3, 4. With reduced motion the first three ranks stay lit.</p>
+</section><section class="item" id="i5" aria-labelledby="i5-h">
+<header class="item-head"><span class="num" aria-hidden="true">V</span><h2 id="i5-h">Lock screen</h2>
+<button class="fs" type="button" data-fs="i5-stage" aria-label="Show Lock screen fullscreen"><svg aria-hidden="true" width="20" height="20"><use href="#i-full"/></svg><span>Fullscreen</span></button></header>
+<div class="stage" id="i5-stage"><div class="frame frame-svg"><svg class="mock" viewBox="0 0 5120 2160" role="img" aria-labelledby="t-lock"><title id="t-lock">Lock screen mockup</title><desc>Blurred, darkened wallpaper. A centered eagle, clock and Roman date, one password line, and the fleet status: 3 working, 1 waiting.</desc><defs><filter id="lk-blur" x="0" y="0" width="1" height="1"><feGaussianBlur stdDeviation="28" edgeMode="duplicate"/></filter></defs><image href="wallpaper.svg" x="0" y="0" width="5120" height="2160" filter="url(#lk-blur)"/><rect width="5120" height="2160" class="f-bg-dark" opacity="0.72"/><image href="eagle.svg" x="2420" y="360" width="280" height="280"/><text x="2560" y="1100" font-size="400" class="ff-dl f-marble" text-anchor="middle">21:47</text><text x="2565" y="1232" font-size="56" class="ff-d f-gold tr" text-anchor="middle">MERCVRII · XXV · NOV · MMXXVI</text><text x="2560" y="1462" font-size="38" class="ff-u f-fg-3" text-anchor="middle">Password</text><rect class="caret f-marble" x="2470" y="1420" width="4" height="52"/><line x1="2240" y1="1500" x2="2880" y2="1500" class="s-fg-2" stroke-width="2"/><text x="2560" y="1700" font-size="34" class="ff-m" text-anchor="middle" xml:space="preserve"><tspan class="f-fg-3">COHORS  </tspan><tspan class="f-accent">▲▲▲</tspan><tspan class="f-fg-3">△</tspan><tspan class="f-fg-2">  3 working · 1 waiting</tspan></text></svg></div></div>
+<p class="cap">hyprlock over the blurred wallpaper. The fleet line repeats the bar counter.</p>
+</section><section class="item" id="i6" aria-labelledby="i6-h">
+<header class="item-head"><span class="num" aria-hidden="true">VI</span><h2 id="i6-h">Hyprland desktop</h2>
+<button class="fs" type="button" data-fs="i6-stage" aria-label="Show Hyprland desktop fullscreen"><svg aria-hidden="true" width="20" height="20"><use href="#i-full"/></svg><span>Fullscreen</span></button></header>
+<div class="stage" id="i6-stage"><div class="frame frame-svg"><svg class="mock" viewBox="0 0 5120 2160" role="img" aria-labelledby="t-desk"><title id="t-desk">Hyprland desktop mockup</title><desc>Top bar with Roman-numeral workspaces, a clock and a fleet counter reading 3 working, 1 waiting. Below, ghostty tiled left and Claude Code tiled right with the red active border.</desc><image href="wallpaper.svg" x="0" y="0" width="5120" height="2160"/><rect width="5120" height="88" class="f-panel"/><rect y="86" width="5120" height="2" class="f-muted"/><image href="eagle.svg" x="30" y="10" width="68" height="68"/><text x="170" y="58" font-size="38" class="ff-d f-fg-2" text-anchor="middle">I</text><text x="254" y="58" font-size="38" class="ff-d f-marble" text-anchor="middle">II</text><polygon points="241,84 267,84 254,70" class="f-accent"/><text x="338" y="58" font-size="38" class="ff-d f-fg-2" text-anchor="middle">III</text><text x="422" y="58" font-size="38" class="ff-d f-fg-3" text-anchor="middle">IV</text><text x="506" y="58" font-size="38" class="ff-d f-fg-3" text-anchor="middle">V</text><text x="2560" y="56" font-size="30" class="ff-m f-fg" text-anchor="middle">Wed 25 Nov  21:47</text><text x="4724" y="56" font-size="30" class="ff-m" text-anchor="end" xml:space="preserve"><tspan class="f-accent">▲▲▲</tspan><tspan class="f-fg-3">△</tspan><tspan class="f-fg-2">  3 working · 1 waiting</tspan></text><use href="#i-wifi" x="4784" y="26" width="36" height="36" class="c-fg-2"/><use href="#i-vol" x="4864" y="26" width="36" height="36" class="c-fg-2"/><use href="#i-cpu" x="4944" y="26" width="36" height="36" class="c-fg-2"/><use href="#i-power" x="5024" y="26" width="36" height="36" class="c-fg-2"/><rect x="24" y="112" width="2524" height="2024" class="f-bg s-muted" stroke-width="3" fill-opacity="0.94"/><rect x="2572" y="112" width="2524" height="2024" class="f-bg s-accent" stroke-width="3" fill-opacity="0.94"/><text x="68" y="182" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-c-cyan">operator@auspex</tspan><tspan class="f-c-blue"> ~/repos/auspex</tspan><tspan class="f-c-magenta"> main</tspan></text><text x="68" y="232" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-accent-text">❯ </tspan><tspan class="f-fg">git log --oneline --no-merges -2</tspan></text><text x="68" y="282" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-c-yellow">af802cf</tspan><tspan class="f-fg"> Add Omarchy AI-first features research report</tspan></text><text x="68" y="332" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-c-yellow">75e6cc0</tspan><tspan class="f-fg"> Initial commit</tspan></text><text x="68" y="432" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-c-cyan">operator@auspex</tspan><tspan class="f-c-blue"> ~/repos/auspex</tspan><tspan class="f-c-magenta"> main</tspan></text><text x="68" y="482" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-accent-text">❯ </tspan><tspan class="f-fg">ls design/directions/c</tspan></text><text x="68" y="532" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg">DESIGN-DIRECTION.md  colors.toml  eagle.svg  </tspan><tspan class="f-c-blue">fonts</tspan><tspan class="f-fg">  helmet.svg  index.html  login-bg.svg  wallpaper.svg</tspan></text><text x="68" y="632" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-c-cyan">operator@auspex</tspan><tspan class="f-c-blue"> ~/repos/auspex</tspan><tspan class="f-c-magenta"> main</tspan></text><text x="68" y="682" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-accent-text">❯ </tspan><tspan class="f-fg">for b in 4 10; do for i in {0..7}; do printf &quot;\e[${b}${i}m      &quot;; done; printf &quot;\e[0m\n&quot;; done</tspan></text><rect x="68" y="705" width="115" height="50" class="f-c-black"/><rect x="183" y="705" width="115" height="50" class="f-c-red"/><rect x="298" y="705" width="115" height="50" class="f-c-green"/><rect x="414" y="705" width="115" height="50" class="f-c-yellow"/><rect x="529" y="705" width="115" height="50" class="f-c-blue"/><rect x="644" y="705" width="115" height="50" class="f-c-magenta"/><rect x="759" y="705" width="115" height="50" class="f-c-cyan"/><rect x="874" y="705" width="115" height="50" class="f-c-white"/><rect x="68" y="755" width="115" height="50" class="f-c-bright-black"/><rect x="183" y="755" width="115" height="50" class="f-c-bright-red"/><rect x="298" y="755" width="115" height="50" class="f-c-bright-green"/><rect x="414" y="755" width="115" height="50" class="f-c-bright-yellow"/><rect x="529" y="755" width="115" height="50" class="f-c-bright-blue"/><rect x="644" y="755" width="115" height="50" class="f-c-bright-magenta"/><rect x="759" y="755" width="115" height="50" class="f-c-bright-cyan"/><rect x="874" y="755" width="115" height="50" class="f-c-bright-white"/><text x="68" y="882" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-c-cyan">operator@auspex</tspan><tspan class="f-c-blue"> ~/repos/auspex</tspan><tspan class="f-c-magenta"> main</tspan></text><text x="68" y="932" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-accent-text">❯ </tspan></text><rect class="caret f-fg" x="106" y="905" width="19" height="37"/><text x="2616" y="182" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">╭──────────────────────────────────────────────────────────╮</tspan></text><text x="2616" y="232" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">│ </tspan><tspan class="f-marble">Claude Code</tspan><tspan class="f-fg-3">                                              │</tspan></text><text x="2616" y="282" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">│ </tspan><tspan class="f-fg-3">  cwd: ~/repos/auspex</tspan><tspan class="f-fg-3">                                    │</tspan></text><text x="2616" y="332" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">╰──────────────────────────────────────────────────────────╯</tspan></text><text x="2616" y="432" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">&gt; </tspan><tspan class="f-fg-2">Build the direction C review board: 9 frames, 64:27, offline.</tspan></text><text x="2616" y="532" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-c-green">● </tspan><tspan class="f-marble">Read</tspan><tspan class="f-fg-2">(design/directions/c/colors.toml)</tspan></text><text x="2616" y="582" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">  └ </tspan><tspan class="f-fg-3">Read 46 lines</tspan></text><text x="2616" y="632" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-c-green">● </tspan><tspan class="f-marble">Write</tspan><tspan class="f-fg-2">(design/directions/c/index.html)</tspan></text><text x="2616" y="682" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">  └ </tspan><tspan class="f-fg-3">Wrote 9 frames, 0 network requests</tspan></text><text x="2616" y="732" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-c-green">● </tspan><tspan class="f-marble">Bash</tspan><tspan class="f-fg-2">(horch ledger progress)</tspan></text><text x="2616" y="782" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">  └ </tspan><tspan class="f-fg-3">recorded</tspan></text><text x="2616" y="882" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg">● </tspan><tspan class="f-fg">Fleet: 3 working, 1 waiting.</tspan></text><text x="2616" y="932" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-accent">  ▲ </tspan><tspan class="f-fg">T-2  direction A   </tspan><tspan class="f-c-green">working</tspan></text><text x="2616" y="982" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-accent">  ▲ </tspan><tspan class="f-fg">T-3  direction B   </tspan><tspan class="f-c-green">working</tspan></text><text x="2616" y="1032" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-accent">  ▲ </tspan><tspan class="f-fg">T-4  direction C   </tspan><tspan class="f-c-green">working</tspan></text><text x="2616" y="1082" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">  △ </tspan><tspan class="f-fg">T-5  review        </tspan><tspan class="f-c-yellow">waiting</tspan></text><text x="2616" y="1946" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮</tspan></text><text x="2616" y="1996" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">│ </tspan><tspan class="f-fg-2">&gt; </tspan><tspan class="f-fg-3">                                                                                                                         │</tspan></text><text x="2616" y="2046" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯</tspan></text><rect class="caret f-fg" x="2693" y="1969" width="19" height="37"/><text x="2616" y="2096" font-size="32" class="ff-m" xml:space="preserve"><tspan class="f-fg-3">  ? for shortcuts</tspan></text></svg></div></div>
+<p class="cap">Waybar on top. ghostty left, inactive steel border. Claude Code right, active red border. Terminal content is illustrative. The commits and file names are real.</p>
+</section><section class="item" id="i7" aria-labelledby="i7-h">
+<header class="item-head"><span class="num" aria-hidden="true">VII</span><h2 id="i7-h">Wallpaper</h2>
+<button class="fs" type="button" data-fs="i7-stage" aria-label="Show Wallpaper fullscreen"><svg aria-hidden="true" width="20" height="20"><use href="#i-full"/></svg><span>Fullscreen</span></button></header>
+<div class="stage" id="i7-stage"><div class="frame frame-svg"><img class="wall" src="wallpaper.svg" alt="Wallpaper: ten steel ships in a 1-2-3-4 wedge fly left over the dark limb of a planet with a blood-red rim. Faint cross lines quarter the sky." width="5120" height="2160"></div></div>
+<p class="cap"><a href="wallpaper.svg">wallpaper.svg</a>, 5120×2160, vector. <a href="login-bg.svg">login-bg.svg</a> is the same scene without the fleet, used behind the login.</p>
+</section><section class="item" id="i8" aria-labelledby="i8-h">
+<header class="item-head"><span class="num" aria-hidden="true">VIII</span><h2 id="i8-h">Fonts</h2>
+<button class="fs" type="button" data-fs="i8-stage" aria-label="Show Fonts fullscreen"><svg aria-hidden="true" width="20" height="20"><use href="#i-full"/></svg><span>Fullscreen</span></button></header>
+<div class="stage" id="i8-stage"><div class="frame frame-text"><div class="fonts">
+<article class="spec">
+<p class="spec-role">Display. Clocks, names, workspace numerals, the date</p>
+<p class="spec-big ff-display-l">21:47</p>
+<p class="spec-mid ff-display">MERCVRII · XXV · NOV</p>
+<h3 class="spec-name">Noto Serif Display</h3>
+<p class="spec-meta">Light 300, Regular 400. Noto project. Fallback: Noto Serif, serif.</p>
+<p class="spec-lic"><a href="fonts/OFL-noto-fonts.txt">SIL OFL 1.1</a></p>
+</article>
+<article class="spec">
+<p class="spec-role">Interface. Fields, buttons, session names</p>
+<p class="spec-big ff-ui-b">Hyprland</p>
+<p class="spec-mid ff-ui">Password · Plasma · Sign in</p>
+<h3 class="spec-name">Adwaita Sans</h3>
+<p class="spec-meta">Variable weight. GNOME, derived from Inter. Fallback: Inter, sans-serif.</p>
+<p class="spec-lic"><a href="fonts/OFL-adwaita-fonts.txt">SIL OFL 1.1</a></p>
+</article>
+<article class="spec">
+<p class="spec-role">Data. Bar, lock status, terminals</p>
+<p class="spec-big ff-mono"><span class="tri">▲▲▲</span><span class="tri-off">△</span> 3 · 1</p>
+<p class="spec-mid ff-mono">af802cf ❯ ls design/</p>
+<h3 class="spec-name">Adwaita Mono</h3>
+<p class="spec-meta">Regular 400, Bold 700. GNOME, derived from Iosevka. Fallback: Iosevka, monospace.</p>
+<p class="spec-lic"><a href="fonts/OFL-adwaita-fonts.txt">SIL OFL 1.1</a></p>
+</article>
+</div></div></div>
+<p class="cap">Three families, all SIL Open Font License 1.1, embedded as subset WOFF2 from this folder. No font is loaded from the network.</p>
+</section><section class="item" id="i9" aria-labelledby="i9-h">
+<header class="item-head"><span class="num" aria-hidden="true">IX</span><h2 id="i9-h">Build notes</h2>
+<button class="fs" type="button" data-fs="i9-stage" aria-label="Show Build notes fullscreen"><svg aria-hidden="true" width="20" height="20"><use href="#i-full"/></svg><span>Fullscreen</span></button></header>
+<div class="stage" id="i9-stage"><div class="frame frame-text"><div class="notes"><section class="note"><h3 class="note-h">SDDM</h3><ul><li>The greeter is a QML theme. Load the fonts with FontLoader and keep the files inside the theme folder, readable by the sddm user.</li><li>The banner, wedge marker and segmented session picker are custom QML over sessionModel. The stock ComboBox does not give this look.</li><li>Blur is not used on login. If wanted later it needs MultiEffect or a pre-blurred image, so login uses login-bg.svg, the wallpaper without the fleet.</li><li>At 5120x2160 set a scale factor or the banner renders at about half size.</li><li>Omarchy does not retint the greeter from colors.toml. Its greeter background is fixed at #1a1b26, so this theme must ship its own SDDM theme.</li></ul></section><section class="note"><h3 class="note-h">Plymouth</h3><ul><li>Use the script plugin. Fonts in the initramfs are limited, so AVSPEX and any text must be pre-rendered PNGs.</li><li>The 10 wedges become 10 sprites with an opacity step per rank. Boot progress is not linear, so map it to ranks, not to time.</li><li>Gold gradients and the eagle must be pre-rendered. Plymouth cannot draw SVG.</li><li>Resolution varies between simpledrm and the real driver. Center from Window.GetWidth and test both.</li><li>The LUKS password prompt needs its own sprite set in the same style.</li><li>omarchy-plymouth-set uses magick to tint images. Ship ready PNGs so the theme does not depend on it.</li></ul></section><section class="note"><h3 class="note-h">Waybar</h3><ul><li>Waybar styles with GTK3 CSS. There is no clip-path, so the active workspace wedge must be a background-image or a bottom border.</li><li>Roman numerals come from format-icons on hyprland/workspaces.</li><li>The fleet counter is a custom module that runs a script. The source of herdr worker state is not verified yet (see commit 6ea62ec).</li><li>The ▲ and △ glyphs exist in Adwaita Mono. Keep the module in that font.</li><li>Check letter-spacing support before using tracked capitals in the bar.</li></ul></section><section class="note"><h3 class="note-h">hyprlock</h3><ul><li>hyprlock supports image, label, input-field and background blur, so this screen maps closely.</li><li>The fleet line is a label with cmd[update:5000] that calls the same script as the Waybar module.</li><li>The input-field draws a box by default. Set its outline and inner color to match the single underline.</li></ul></section></div></div></div>
+<p class="cap">What will be hard when this direction becomes SDDM, plymouth and Waybar config. Nothing here is built yet.</p>
+</section>
+</main>
+<footer class="board-foot"><p>All art is original SVG made for this board. Files: <a href="colors.toml">colors.toml</a>, <a href="DESIGN-DIRECTION.md">DESIGN-DIRECTION.md</a>, <a href="eagle.svg">eagle.svg</a>, <a href="helmet.svg">helmet.svg</a>.</p></footer>
+<script>
+(function () {
+  var buttons = document.querySelectorAll('[data-fs]');
+  buttons.forEach(function (btn) {
+    var stage = document.getElementById(btn.getAttribute('data-fs'));
+    if (!stage || !stage.requestFullscreen) { btn.hidden = true; return; }
+    btn.addEventListener('click', function () {
+      if (document.fullscreenElement) { document.exitFullscreen(); } else { stage.requestFullscreen(); }
+    });
+  });
+  document.addEventListener('fullscreenchange', function () {
+    buttons.forEach(function (btn) {
+      var on = document.fullscreenElement && document.fullscreenElement.id === btn.getAttribute('data-fs');
+      btn.querySelector('span').textContent = on ? 'Exit fullscreen' : 'Fullscreen';
+    });
+  });
+})();
+</script>
+</body>
+</html>

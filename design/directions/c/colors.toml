@@ -1,0 +1,45 @@
+# CVNEVS — auspex direction C (Galactic Empire Legion)
+# Omarchy colors.toml keys: semantic, background ramp, foreground ramp, named colors.
+# Foreground ramp key names mirror the background ramp; check them against
+# Omarchy docs/theming.md before this file feeds the templates.
+# Contrast ratios are against background #0B0C0E unless noted.
+
+# Semantic
+accent = "#C21F27"            # blood red. Non-text only: active border, active workspace wedge, pips. 3.28:1
+selection = "#4A1216"         # dark red. foreground on it 13.1:1
+muted = "#535A64"             # cold steel. Non-text only: inactive border, rules
+
+# Background ramp
+background = "#0B0C0E"         # void black, desktop and terminal ground
+dark_background = "#07080A"    # deeper void, lock and boot
+darker_background = "#030405"  # deepest, boot splash
+lighter_background = "#15171B" # durasteel panel, bar and window surface
+
+# Foreground ramp
+foreground = "#D8DBDF"         # steel white, body text. 14.09:1
+dark_foreground = "#A3A9B1"    # secondary text. 8.26:1
+darker_foreground = "#848B95"  # tertiary text, captions. 5.69:1, 5.22:1 on panel
+lighter_foreground = "#F1EFE9" # marble, headings and clock. 17.02:1
+
+# Second accent (extra key): eagle gold for authority marks only
+gold = "#C9A24A"               # 8.15:1. Never put gold text on accent red (2.49:1)
+
+# Named colors (ANSI 0-7), named after Roman materials
+black = "#2A2E34"     # iron
+red = "#EA4D55"       # cinnabar, text-safe red. 5.30:1
+green = "#8FAE6B"     # olive
+yellow = "#D8B45A"    # orichalcum
+blue = "#7C9CC0"      # tempered steel
+magenta = "#B76A9A"   # Tyrian. 5.16:1
+cyan = "#6FB3A8"      # verdigris
+white = "#D8DBDF"     # steel white
+
+# Named colors (ANSI 8-15)
+bright_black = "#848B95"
+bright_red = "#FF6A6F"
+bright_green = "#A9C985"
+bright_yellow = "#E9CB7E"
+bright_blue = "#9DB9D9"
+bright_magenta = "#D08AB5"
+bright_cyan = "#8FCFC4"
+bright_white = "#F1EFE9"
