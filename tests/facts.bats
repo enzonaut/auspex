@@ -76,6 +76,7 @@ teardown() {
 }
 
 @test "missing packages are listed" {
+    make_repo_copy
     mkdir -p "$AUSPEX/packages"
     printf 'good-pkg\nmissing-pkg # note\n' >"$AUSPEX/packages/base.list"
     run bin/auspex facts --section packages
