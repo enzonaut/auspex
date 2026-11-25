@@ -50,7 +50,7 @@ a { color: var(--color-bronze); }
 .head .kicker { font-family: var(--font-display); letter-spacing: .24em; color: var(--color-text-faint); font-size: 15px; }
 .head h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(4rem, 15vw, 20rem); line-height: .9; letter-spacing: .14em; margin: .1em 0 .15em; color: var(--color-text-bright); }
 .head .band { position: relative; height: 22px; margin: 8px 0 40px; background: var(--color-bg-dark); border-top: 2px solid var(--color-bronze); border-bottom: 2px solid var(--color-bronze); overflow: hidden; }
-.head .band .bird { width: 30px; height: 27px; margin: -13.5px 0 0 -15px; animation: boardflight var(--dur-flight) linear infinite; }
+.head .band .bird { width: 44px; height: 13px; margin: -6.5px 0 0 -22px; stroke-width: 4.4; animation: boardflight var(--dur-flight) linear infinite; }
 @keyframes boardflight { 0% { left: -2%; opacity: 0; } 6% { opacity: 1; } 92% { opacity: 1; } 100% { left: 102%; opacity: 0; } }
 .mood { max-width: 62ch; font-size: clamp(17px, 1.3vw, 22px); color: var(--color-text); margin: 0; }
 .mood + .meta { margin-top: 28px; color: var(--color-text-faint); font-size: 14px; font-family: var(--font-mono); }
@@ -70,7 +70,7 @@ section.item { padding-top: 120px; }
 .abs { position: absolute; }
 .fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-.bird { position: absolute; top: 50%; fill: var(--color-accent); overflow: visible; }
+.bird { position: absolute; top: 50%; color: var(--color-bronze); fill: none; stroke-width: 4; overflow: visible; }
 .dentil { position: absolute; left: 0; right: 0; height: calc(var(--u) * 26);
   border-top: calc(var(--u) * 3) solid var(--color-bronze-dark);
   background: repeating-linear-gradient(90deg, var(--color-surface) 0 calc(var(--u) * 28), transparent calc(var(--u) * 28) calc(var(--u) * 44)) 0 calc(var(--u) * 5) / 100% calc(var(--u) * 18) no-repeat; }
@@ -102,7 +102,7 @@ section.item { padding-top: 120px; }
 .seg { display: flex; gap: 0; }
 .seg span { font-size: calc(var(--u) * 22); font-weight: 500; letter-spacing: .16em; padding: calc(var(--u) * 10) calc(var(--u) * 22); color: var(--color-text-muted); border: calc(var(--u) * 2) solid var(--color-surface); }
 .seg span.on { background: var(--color-porphyry); color: var(--color-text-bright); border-color: var(--color-porphyry); border-bottom: calc(var(--u) * 3) solid var(--color-bronze); }
-.login .bird { width: calc(var(--u) * 84); height: calc(var(--u) * 75); margin: calc(var(--u) * -37) 0 0 calc(var(--u) * -42); animation: loginflight 11s ease-out infinite; }
+.login .bird { width: calc(var(--u) * 120); height: calc(var(--u) * 36); margin: calc(var(--u) * -18) 0 0 calc(var(--u) * -60); stroke-width: 3.6; animation: loginflight 11s ease-out infinite; }
 @keyframes loginflight {
   0% { left: 1%; opacity: 0; } 5% { opacity: 1; } 36%, 100% { left: 61.6%; opacity: 1; }
 }
@@ -112,12 +112,12 @@ section.item { padding-top: 120px; }
 .boot .trailbox { left: 0; right: 0; height: calc(var(--u) * 40); }
 .trail { position: absolute; left: 0; top: calc(var(--u) * 9); bottom: calc(var(--u) * 9); width: 0;
   background: repeating-linear-gradient(90deg, var(--color-bronze) 0 calc(var(--u) * 28), transparent calc(var(--u) * 28) calc(var(--u) * 44)); }
-.boot .bird { width: calc(var(--u) * 88); height: calc(var(--u) * 79); margin: calc(var(--u) * -40) 0 0 calc(var(--u) * -10); left: 0; }
+.boot .bird { width: calc(var(--u) * 120); height: calc(var(--u) * 36); margin: calc(var(--u) * -20) 0 0 calc(var(--u) * -60); stroke-width: 3.6; left: 0; }
 .ticks { left: 0; right: 0; display: grid; grid-template-columns: repeat(10, 1fr); text-align: right; }
 .ticks span { font-family: var(--font-display); font-size: calc(var(--u) * 22); color: var(--color-text-faint); padding-right: calc(var(--u) * 8); border-right: calc(var(--u) * 2) solid var(--color-surface); line-height: 1.6; transition: color var(--dur-ui); }
 .ticks span.on { color: var(--color-bronze); border-right-color: var(--color-bronze); }
 
-.lock .perch { left: 50%; top: 50%; width: calc(var(--u) * 40); height: calc(var(--u) * 36); margin: calc(var(--u) * -18) 0 0 calc(var(--u) * -20); fill: var(--color-text-faint); }
+.lock .perch { left: 50%; top: 50%; width: calc(var(--u) * 60); height: calc(var(--u) * 18); margin: calc(var(--u) * -9) 0 0 calc(var(--u) * -30); color: var(--color-text-faint); stroke-width: 4.4; }
 
 .bar { left: 0; right: 0; top: 0; height: calc(var(--u) * 42); background: var(--color-bg-dark); border-bottom: calc(var(--u) * 2) solid var(--color-border); display: flex; align-items: center; padding: 0 calc(var(--u) * 18); font-size: calc(var(--u) * 16); }
 .bar .brand { display: flex; align-items: center; gap: calc(var(--u) * 10); color: var(--color-bronze); font-size: calc(var(--u) * 15); margin-right: calc(var(--u) * 28); }
@@ -127,7 +127,7 @@ section.item { padding-top: 120px; }
 .ws span.empty { color: var(--color-text-faint); }
 .fleet { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: calc(var(--u) * 14); height: 100%; }
 .miniband { width: calc(var(--u) * 200); height: calc(var(--u) * 22); background: var(--color-bg-darker); border-top: calc(var(--u) * 2) solid var(--color-bronze); border-bottom: calc(var(--u) * 2) solid var(--color-bronze); position: relative; overflow: hidden; }
-.miniband .bird { width: calc(var(--u) * 22); height: calc(var(--u) * 20); margin: calc(var(--u) * -10) 0 0 calc(var(--u) * -11); animation: barflight 10s linear infinite; }
+.miniband .bird { width: calc(var(--u) * 32); height: calc(var(--u) * 10); margin: calc(var(--u) * -6) 0 0 calc(var(--u) * -16); stroke-width: 6; animation: barflight 10s linear infinite; }
 @keyframes barflight {
   0% { left: 2%; opacity: 0; } 3% { opacity: 1; } 22% { left: 98%; opacity: 1; } 24% { left: 98%; opacity: 0; }
   25% { left: 2%; opacity: 0; } 28% { opacity: 1; } 47% { left: 98%; opacity: 1; } 49% { left: 98%; opacity: 0; }
@@ -189,88 +189,79 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="mark" viewBox="-212 -204 424 424">
-<title>AVGVR mark: legion galea in open laurel</title>
-<g>
-  <polyline points="-23.6,151.9 -48,145.2 -70.7,134.2 -91,119.1 -108.1,100.5 -121.5,79 -130.7,55.5 -135.4,30.6 -135.4,5.4 -130.7,-19.5" fill="none" stroke="#8C6A30" stroke-width="7"/>
-  <polygon points="-36,149.2 -51,134 -50.3,94 -49.3,89.8 -46.6,93.1 -28.8,129" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-36,149.2 -46.7,165.6 -82.9,172.6 -86.8,172.5 -84.3,169.5 -55.4,146.6" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-36,149.2 -58.3,150.3 -89.1,121.6 -91.6,117.9 -87.2,118.1 -46.6,129.4" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-59.6,140.2 -71.3,123.1 -63.4,85 -61.7,81.2 -59.7,84.9 -49.2,122.3" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-59.6,140.2 -72.8,154 -108.6,154.2 -112.3,153.4 -109.4,150.9 -77.7,134.3" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-59.6,140.2 -81.2,137.3 -105.4,104.4 -107.1,100.4 -102.9,101.4 -66.2,119.5" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-81.2,127.1 -89.3,108.7 -74.9,73.8 -72.6,70.5 -71.4,74.3 -68,111.9" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-81.2,127.1 -96.2,137.9 -130.4,131.6 -133.8,130.2 -130.6,128.3 -97.4,118.1" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-81.2,127.1 -101.2,120.4 -118.4,84.7 -119.3,80.6 -115.5,82.3 -83.8,106.1" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-100,110.2 -104.4,91.2 -84.4,60.5 -81.6,57.8 -81.2,61.7 -84.7,98.1" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-100,110.2 -116.2,117.7 -147.7,105.6 -150.6,103.7 -147.2,102.5 -113.8,98.7" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-100,110.2 -117.9,100.2 -127.8,63.1 -127.9,59.1 -124.6,61.4 -98.7,89.8" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-115.3,90.1 -116.1,71.2 -91.6,45.6 -88.5,43.6 -88.7,47.3 -98.6,81.3" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-115.3,90.1 -132.1,94.3 -159.9,77.2 -162.3,74.8 -158.9,74.3 -126.4,76.7" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-115.3,90.1 -130.6,77.4 -133.3,40.4 -132.8,36.5 -130,39.3 -110.5,70.9" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-126.7,67.5 -124,49.4 -96.2,29.5 -92.9,28.1 -93.7,31.6 -109.3,62.1" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-126.7,67.5 -143.4,68.5 -166.7,47.3 -168.6,44.6 -165.3,44.7 -134.8,52.8" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-126.7,67.5 -138.9,52.7 -134.9,17 -133.6,13.4 -131.5,16.6 -118.6,50.1" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-133.7,43.2 -127.9,26.5 -97.9,12.6 -94.5,11.9 -96,15 -116.2,41.2" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-133.7,43.2 -149.7,41.2 -168,16.9 -169.3,13.9 -166.2,14.7 -138.8,27.8" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-133.7,43.2 -142.6,27 -132.4,-6.2 -130.6,-9.4 -129.1,-6 -122.9,28.1" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-136,18 -127.6,3.3 -96.7,-4.6 -93.3,-4.7 -95.3,-1.9 -119.1,19.3" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-136,18 -150.9,13.2 -163.9,-13.1 -164.6,-16.1 -161.7,-14.8 -138.1,2.5" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-136,18 -141.6,1.1 -126,-28.6 -123.7,-31.3 -122.9,-27.8 -123.1,5.7" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-133.7,-7.2 -123.1,-19.6 -92.4,-21.6 -89.2,-21 -91.5,-18.8 -117.8,-3" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-133.7,-7.2 -146.9,-14.3 -154.5,-41.5 -154.6,-44.5 -152.2,-42.9 -132.9,-22.2" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-133.7,-7.2 -135.9,-24.2 -115.9,-49.5 -113.2,-51.6 -113.1,-48.2 -119.3,-16.5" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="-130.7,-19.5 -133.9,-37.2 -114.2,-64.6 -111.6,-67 -111.3,-63.4 -116.1,-30" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polyline points="23.6,151.9 48,145.2 70.7,134.2 91,119.1 108.1,100.5 121.5,79 130.7,55.5 135.4,30.6 135.4,5.4 130.7,-19.5" fill="none" stroke="#8C6A30" stroke-width="7"/>
-  <polygon points="36,149.2 51,134 50.3,94 49.3,89.8 46.6,93.1 28.8,129" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="36,149.2 46.7,165.6 82.9,172.6 86.8,172.5 84.3,169.5 55.4,146.6" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="36,149.2 58.3,150.3 89.1,121.6 91.6,117.9 87.2,118.1 46.6,129.4" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="59.6,140.2 71.3,123.1 63.4,85 61.7,81.2 59.7,84.9 49.2,122.3" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="59.6,140.2 72.8,154 108.6,154.2 112.3,153.4 109.4,150.9 77.7,134.3" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="59.6,140.2 81.2,137.3 105.4,104.4 107.1,100.4 102.9,101.4 66.2,119.5" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="81.2,127.1 89.3,108.7 74.9,73.8 72.6,70.5 71.4,74.3 68,111.9" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="81.2,127.1 96.2,137.9 130.4,131.6 133.8,130.2 130.6,128.3 97.4,118.1" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="81.2,127.1 101.2,120.4 118.4,84.7 119.3,80.6 115.5,82.3 83.8,106.1" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="100,110.2 104.4,91.2 84.4,60.5 81.6,57.8 81.2,61.7 84.7,98.1" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="100,110.2 116.2,117.7 147.7,105.6 150.6,103.7 147.2,102.5 113.8,98.7" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="100,110.2 117.9,100.2 127.8,63.1 127.9,59.1 124.6,61.4 98.7,89.8" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="115.3,90.1 116.1,71.2 91.6,45.6 88.5,43.6 88.7,47.3 98.6,81.3" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="115.3,90.1 132.1,94.3 159.9,77.2 162.3,74.8 158.9,74.3 126.4,76.7" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="115.3,90.1 130.6,77.4 133.3,40.4 132.8,36.5 130,39.3 110.5,70.9" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="126.7,67.5 124,49.4 96.2,29.5 92.9,28.1 93.7,31.6 109.3,62.1" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="126.7,67.5 143.4,68.5 166.7,47.3 168.6,44.6 165.3,44.7 134.8,52.8" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="126.7,67.5 138.9,52.7 134.9,17 133.6,13.4 131.5,16.6 118.6,50.1" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="133.7,43.2 127.9,26.5 97.9,12.6 94.5,11.9 96,15 116.2,41.2" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="133.7,43.2 149.7,41.2 168,16.9 169.3,13.9 166.2,14.7 138.8,27.8" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="133.7,43.2 142.6,27 132.4,-6.2 130.6,-9.4 129.1,-6 122.9,28.1" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="136,18 127.6,3.3 96.7,-4.6 93.3,-4.7 95.3,-1.9 119.1,19.3" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="136,18 150.9,13.2 163.9,-13.1 164.6,-16.1 161.7,-14.8 138.1,2.5" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="136,18 141.6,1.1 126,-28.6 123.7,-31.3 122.9,-27.8 123.1,5.7" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="133.7,-7.2 123.1,-19.6 92.4,-21.6 89.2,-21 91.5,-18.8 117.8,-3" fill="#8C6A30" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="133.7,-7.2 146.9,-14.3 154.5,-41.5 154.6,-44.5 152.2,-42.9 132.9,-22.2" fill="#C9A05A" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="133.7,-7.2 135.9,-24.2 115.9,-49.5 113.2,-51.6 113.1,-48.2 119.3,-16.5" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="130.7,-19.5 133.9,-37.2 114.2,-64.6 111.6,-67 111.3,-63.4 116.1,-30" fill="#E0BD6C" stroke="#110F0D" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="0,150 15,165 0,180 -15,165" fill="#C9A05A" stroke="#110F0D" stroke-width="3" stroke-linejoin="round"/>
-  <polygon points="0,150 0,180 -15,165" fill="#8C6A30"/>
-</g>
-<g>
-<path d="M 60,-80 C 78,-112 70,-152 30,-170 C -12,-188 -82,-178 -114,-132 C -134,-102 -132,-62 -122,-28 L -102,-34 C -98,-62 -66,-98 4,-102 C 32,-102 50,-94 60,-80 Z" fill="#EB6A43" stroke="#110F0D" stroke-width="5" stroke-linejoin="round"/>
-<g stroke="#A33B22" stroke-width="5" stroke-linecap="round" fill="none">
-<path d="M 46,-98 L 54,-122"/><path d="M 24,-108 L 30,-144"/><path d="M 0,-110 L -2,-158"/><path d="M -26,-106 L -34,-156"/><path d="M -50,-96 L -70,-144"/><path d="M -72,-82 L -100,-120"/><path d="M -94,-56 L -116,-76"/>
-</g>
-<path d="M -40,30 L -86,24 C -100,40 -116,56 -132,64 L -126,80 C -100,78 -64,66 -36,56 Z" fill="#8C6A30" stroke="#110F0D" stroke-width="5" stroke-linejoin="round"/>
-<path d="M -60,44 L -118,70" stroke="#110F0D" stroke-width="4" fill="none"/>
-<path d="M -88,30 C -98,-36 -56,-92 4,-92 C 60,-92 92,-56 94,4 L 40,8 C 30,20 8,30 -12,32 Z" fill="#C9A05A" stroke="#110F0D" stroke-width="5" stroke-linejoin="round"/>
-<path d="M -64,-36 C -52,-60 -30,-74 -6,-78" stroke="#E0BD6C" stroke-width="9" stroke-linecap="round" fill="none"/>
-<path d="M -62,-74 C -40,-94 -12,-98 4,-98 C 30,-98 46,-90 56,-80" stroke="#110F0D" stroke-width="15" fill="none" stroke-linecap="round"/>
-<path d="M -62,-74 C -40,-94 -12,-98 4,-98 C 30,-98 46,-90 56,-80" stroke="#8C6A30" stroke-width="6" fill="none" stroke-linecap="round"/>
-<path d="M -10,-6 C 30,-14 72,-14 108,-6 L 108,8 C 72,2 30,2 -10,10 Z" fill="#E0BD6C" stroke="#110F0D" stroke-width="5" stroke-linejoin="round"/>
-<path d="M 4,22 L 58,14 C 70,44 64,78 44,108 C 34,118 22,112 18,100 C 8,76 4,50 4,22 Z" fill="#C9A05A" stroke="#110F0D" stroke-width="5" stroke-linejoin="round"/>
-<path d="M 50,28 C 58,52 54,78 40,98" stroke="#E0BD6C" stroke-width="6" stroke-linecap="round" fill="none"/>
-<circle cx="-64" cy="18" r="5" fill="#110F0D"/><circle cx="-30" cy="22" r="5" fill="#110F0D"/>
+  <symbol id="mark" viewBox="0 0 400 400">
+<path d="M178.3,359.5 L152.5,353.6 L128.1,343.4 L105.7,329.3 L86.1,311.6 L69.7,290.8 L57.1,267.5 L48.6,242.5 L44.4,216.4 L44.7,189.9 L49.5,163.9 L58.6,139.1" fill="none" stroke="#8C6A30" stroke-width="4" stroke-linecap="round"/>
+<path d="M152.5,353.6 Q152.0,335.6 136.0,327.4 Q136.5,345.4 152.5,353.6Z" fill="#C9A05A"/>
+<path d="M152.5,353.6 Q134.7,351.0 123.8,365.3 Q141.7,368.0 152.5,353.6Z" fill="#C9A05A"/>
+<path d="M128.1,343.4 Q130.5,326.2 116.6,315.8 Q114.1,333.0 128.1,343.4Z" fill="#C9A05A"/>
+<path d="M128.1,343.4 Q111.5,338.0 98.8,349.9 Q115.4,355.4 128.1,343.4Z" fill="#C9A05A"/>
+<path d="M105.7,329.3 Q110.9,313.3 99.3,301.1 Q94.1,317.1 105.7,329.3Z" fill="#C9A05A"/>
+<path d="M105.7,329.3 Q90.8,321.4 76.8,330.7 Q91.7,338.6 105.7,329.3Z" fill="#C9A05A"/>
+<path d="M86.1,311.6 Q93.6,297.2 84.6,283.7 Q77.0,298.1 86.1,311.6Z" fill="#C9A05A"/>
+<path d="M86.1,311.6 Q73.2,301.7 58.4,308.2 Q71.2,318.1 86.1,311.6Z" fill="#C9A05A"/>
+<path d="M69.7,290.8 Q79.2,278.4 72.8,264.1 Q63.3,276.5 69.7,290.8Z" fill="#C9A05A"/>
+<path d="M69.7,290.8 Q59.1,279.3 43.9,283.1 Q54.5,294.6 69.7,290.8Z" fill="#C9A05A"/>
+<path d="M57.1,267.5 Q68.1,257.3 64.4,242.7 Q53.4,253.0 57.1,267.5Z" fill="#C9A05A"/>
+<path d="M57.1,267.5 Q48.9,254.9 33.9,256.0 Q42.1,268.7 57.1,267.5Z" fill="#C9A05A"/>
+<path d="M48.6,242.5 Q60.7,234.6 59.5,220.2 Q47.4,228.1 48.6,242.5Z" fill="#C9A05A"/>
+<path d="M48.6,242.5 Q42.9,229.2 28.5,227.8 Q34.2,241.1 48.6,242.5Z" fill="#C9A05A"/>
+<path d="M44.4,216.4 Q57.1,210.8 58.4,197.0 Q45.7,202.6 44.4,216.4Z" fill="#C9A05A"/>
+<path d="M44.4,216.4 Q41.2,202.9 27.8,199.3 Q31.0,212.8 44.4,216.4Z" fill="#C9A05A"/>
+<path d="M44.7,189.9 Q57.6,186.8 61.0,173.9 Q48.1,177.1 44.7,189.9Z" fill="#C9A05A"/>
+<path d="M44.7,189.9 Q43.9,176.7 31.8,171.1 Q32.7,184.3 44.7,189.9Z" fill="#C9A05A"/>
+<path d="M49.5,163.9 Q62.2,163.0 67.4,151.5 Q54.8,152.4 49.5,163.9Z" fill="#C9A05A"/>
+<path d="M49.5,163.9 Q50.8,151.3 40.4,144.1 Q39.1,156.7 49.5,163.9Z" fill="#C9A05A"/>
+<path d="M58.6,139.1 Q70.7,140.3 77.5,130.3 Q65.4,129.1 58.6,139.1Z" fill="#C9A05A"/>
+<path d="M58.6,139.1 Q61.9,127.4 53.2,119.0 Q50.0,130.6 58.6,139.1Z" fill="#C9A05A"/>
+<path d="M58.6,139.1 Q70.5,131.4 68.8,117.3 Q56.9,125.0 58.6,139.1Z" fill="#C9A05A"/>
+<path d="M221.7,359.5 L247.5,353.6 L271.9,343.4 L294.3,329.3 L313.9,311.6 L330.3,290.8 L342.9,267.5 L351.4,242.5 L355.6,216.4 L355.3,189.9 L350.5,163.9 L341.4,139.1" fill="none" stroke="#8C6A30" stroke-width="4" stroke-linecap="round"/>
+<path d="M247.5,353.6 Q258.3,368.0 276.2,365.3 Q265.3,351.0 247.5,353.6Z" fill="#C9A05A"/>
+<path d="M247.5,353.6 Q263.5,345.4 264.0,327.4 Q248.0,335.6 247.5,353.6Z" fill="#C9A05A"/>
+<path d="M271.9,343.4 Q284.6,355.4 301.2,349.9 Q288.5,338.0 271.9,343.4Z" fill="#C9A05A"/>
+<path d="M271.9,343.4 Q285.9,333.0 283.4,315.8 Q269.5,326.2 271.9,343.4Z" fill="#C9A05A"/>
+<path d="M294.3,329.3 Q308.3,338.6 323.2,330.7 Q309.2,321.4 294.3,329.3Z" fill="#C9A05A"/>
+<path d="M294.3,329.3 Q305.9,317.1 300.7,301.1 Q289.1,313.3 294.3,329.3Z" fill="#C9A05A"/>
+<path d="M313.9,311.6 Q328.8,318.1 341.6,308.2 Q326.8,301.7 313.9,311.6Z" fill="#C9A05A"/>
+<path d="M313.9,311.6 Q323.0,298.1 315.4,283.7 Q306.4,297.2 313.9,311.6Z" fill="#C9A05A"/>
+<path d="M330.3,290.8 Q345.5,294.6 356.1,283.1 Q340.9,279.3 330.3,290.8Z" fill="#C9A05A"/>
+<path d="M330.3,290.8 Q336.7,276.5 327.2,264.1 Q320.8,278.4 330.3,290.8Z" fill="#C9A05A"/>
+<path d="M342.9,267.5 Q357.9,268.7 366.1,256.0 Q351.1,254.9 342.9,267.5Z" fill="#C9A05A"/>
+<path d="M342.9,267.5 Q346.6,253.0 335.6,242.7 Q331.9,257.3 342.9,267.5Z" fill="#C9A05A"/>
+<path d="M351.4,242.5 Q365.8,241.1 371.5,227.8 Q357.1,229.2 351.4,242.5Z" fill="#C9A05A"/>
+<path d="M351.4,242.5 Q352.6,228.1 340.5,220.2 Q339.3,234.6 351.4,242.5Z" fill="#C9A05A"/>
+<path d="M355.6,216.4 Q369.0,212.8 372.2,199.3 Q358.8,202.9 355.6,216.4Z" fill="#C9A05A"/>
+<path d="M355.6,216.4 Q354.3,202.6 341.6,197.0 Q342.9,210.8 355.6,216.4Z" fill="#C9A05A"/>
+<path d="M355.3,189.9 Q367.3,184.3 368.2,171.1 Q356.1,176.7 355.3,189.9Z" fill="#C9A05A"/>
+<path d="M355.3,189.9 Q351.9,177.1 339.0,173.9 Q342.4,186.8 355.3,189.9Z" fill="#C9A05A"/>
+<path d="M350.5,163.9 Q360.9,156.7 359.6,144.1 Q349.2,151.3 350.5,163.9Z" fill="#C9A05A"/>
+<path d="M350.5,163.9 Q345.2,152.4 332.6,151.5 Q337.8,163.0 350.5,163.9Z" fill="#C9A05A"/>
+<path d="M341.4,139.1 Q350.0,130.6 346.8,119.0 Q338.1,127.4 341.4,139.1Z" fill="#C9A05A"/>
+<path d="M341.4,139.1 Q334.6,129.1 322.5,130.3 Q329.3,140.3 341.4,139.1Z" fill="#C9A05A"/>
+<path d="M341.4,139.1 Q343.1,125.0 331.2,117.3 Q329.5,131.4 341.4,139.1Z" fill="#C9A05A"/>
+
+<g transform="translate(200,214) scale(0.7) translate(-200,-230)">
+ <path d="M28.9,227.4 L28.9,213.4 Q43.3,198.7 35.7,179.4 Q52.5,167.9 48.7,147.3 Q67.4,139.4 67.5,118.5 Q87.3,114.5 91.3,94.1 Q111.5,94.1 119.3,74.8 Q139.0,79.0 150.3,61.6 Q168.9,69.6 183.2,54.8 Q200.0,66.5 216.8,54.8 Q231.1,69.6 249.7,61.6 Q261.0,79.0 280.7,74.8 Q288.5,94.1 308.7,94.1 Q312.7,114.5 332.5,118.5 Q332.6,139.4 351.3,147.3 Q347.5,167.9 364.3,179.4 Q356.7,198.7 371.1,213.4 L371.1,227.4 L298.0,230.0 L297.5,218.3 L295.9,206.7 L293.2,195.4 L289.5,184.4 L284.9,174.0 L279.3,164.2 L272.8,155.1 L265.6,146.8 L257.6,139.4 L249.0,133.0 L239.9,127.7 L230.3,123.5 L220.4,120.4 L210.2,118.6 L200.0,118.0 L189.8,118.6 L179.6,120.4 L169.7,123.5 L160.1,127.7 L151.0,133.0 L142.4,139.4 L134.4,146.8 L127.2,155.1 L120.7,164.2 L115.1,174.0 L110.5,184.4 L106.8,195.4 L104.1,206.7 L102.5,218.3 L102.0,230.0 Z" fill="#D23A2C" stroke="#1D1915" stroke-width="4" stroke-linejoin="round"/><path d="M95.6,211.2 L44.4,203.5 M99.2,194.9 L49.7,181.3 M104.7,179.4 L58.0,160.1 M112.1,164.9 L69.0,140.3 M121.2,151.7 L82.6,122.3 M131.9,140.1 L98.4,106.4 M143.8,130.2 L116.3,92.9 M156.9,122.4 L135.7,82.2 M170.8,116.6 L156.4,74.4 M185.2,113.2 L178.0,69.6 M200.0,112.0 L200.0,68.0 M214.8,113.2 L222.0,69.6 M229.2,116.6 L243.6,74.4 M243.1,122.4 L264.3,82.2 M256.2,130.2 L283.7,92.9 M268.1,140.1 L301.6,106.4 M278.8,151.7 L317.4,122.3 M287.9,164.9 L331.0,140.3 M295.3,179.4 L342.0,160.1 M300.8,194.9 L350.3,181.3 M304.4,211.2 L355.6,203.5" stroke="#8A2419" stroke-width="4" fill="none"/>
+ <g stroke="#1D1915" stroke-width="4" stroke-linejoin="round" fill="#D9A93E">
+  <path d="M102.0,230.0 L102.5,218.3 L104.1,206.7 L106.8,195.4 L110.5,184.4 L115.1,174.0 L120.7,164.2 L127.2,155.1 L134.4,146.8 L142.4,139.4 L151.0,133.0 L160.1,127.7 L169.7,123.5 L179.6,120.4 L189.8,118.6 L200.0,118.0 L210.2,118.6 L220.4,120.4 L230.3,123.5 L239.9,127.7 L249.0,133.0 L257.6,139.4 L265.6,146.8 L272.8,155.1 L279.3,164.2 L284.9,174.0 L289.5,184.4 L293.2,195.4 L295.9,206.7 L297.5,218.3 L298.0,230.0 L282.0,230.0 L281.6,220.0 L280.2,210.0 L278.0,200.3 L274.9,191.0 L271.0,182.0 L266.3,173.6 L260.9,165.8 L254.9,158.7 L248.2,152.3 L241.0,146.9 L233.4,142.3 L225.3,138.7 L217.0,136.1 L208.6,134.5 L200.0,134.0 L191.4,134.5 L183.0,136.1 L174.7,138.7 L166.6,142.3 L159.0,146.9 L151.8,152.3 L145.1,158.7 L139.1,165.8 L133.7,173.6 L129.0,182.0 L125.1,191.0 L122.0,200.3 L119.8,210.0 L118.4,220.0 L118.0,230.0 Z"/>
+  <path d="M193,122 L207,122 L207,170 L193,170 Z"/>
+  <path d="M104,262 L118,252 L120,290 L106,282 Z"/>
+  <path d="M296,262 L282,252 L280,290 L294,282 Z"/>
+  <path d="M130,236 C128,186 160,160 200,160 C240,160 272,186 270,236 Z"/>
+  <path d="M114,258 L148,262 C148,300 162,334 192,352 L192,382 C160,380 128,356 118,324 C112,302 110,280 114,258 Z"/>
+  <path d="M286,258 L252,262 C252,300 238,334 208,352 L208,382 C240,380 272,356 282,324 C288,302 290,280 286,258 Z"/>
+  <path d="M116,234 Q200,208 284,234 L286,264 Q236,252 212,256 L200,270 L188,256 Q164,252 114,264 Z"/>
+  <path d="M190,256 L210,256 L210,300 L200,318 L190,300 Z"/>
+  <circle cx="200" cy="384" r="9"/>
+ </g>
+ <circle cx="115.4" cy="194.4" r="3" fill="#1D1915" stroke="none"/><circle cx="139.8" cy="152.7" r="3" fill="#1D1915" stroke="none"/><circle cx="260.2" cy="152.7" r="3" fill="#1D1915" stroke="none"/><circle cx="284.6" cy="194.4" r="3" fill="#1D1915" stroke="none"/>
+ <path d="M200,166 L200,226" stroke="#1D1915" stroke-width="4"/>
+ <path d="M166,174 C158,194 156,214 158,232 M234,174 C242,194 244,214 242,232" fill="none" stroke="#1D1915" stroke-width="3"/>
+ <path d="M126,270 L144,272 C146,304 158,330 182,346 L182,368 C156,362 136,344 128,318 C124,302 122,286 126,270 Z" fill="none" stroke="#1D1915" stroke-width="3"/>
+ <path d="M274,270 L256,272 C254,304 242,330 218,346 L218,368 C244,362 264,344 272,318 C276,302 278,286 274,270 Z" fill="none" stroke="#1D1915" stroke-width="3"/>
+ <circle cx="132" cy="244" r="3.2" fill="#1D1915" stroke="none"/><circle cx="160" cy="236" r="3.2" fill="#1D1915" stroke="none"/><circle cx="240" cy="236" r="3.2" fill="#1D1915" stroke="none"/><circle cx="268" cy="244" r="3.2" fill="#1D1915" stroke="none"/><circle cx="134" cy="300" r="3.2" fill="#1D1915" stroke="none"/><circle cx="150" cy="336" r="3.2" fill="#1D1915" stroke="none"/><circle cx="266" cy="300" r="3.2" fill="#1D1915" stroke="none"/><circle cx="250" cy="336" r="3.2" fill="#1D1915" stroke="none"/><circle cx="200" cy="200" r="3.2" fill="#1D1915" stroke="none"/>
 </g>
   </symbol>
-  <symbol id="bird" viewBox="-64 -50 112 100"><path d="M 46,0 Q 36,-8 22,-6 L 4,-6 Q -14,-30 -42,-48 Q -20,-16 -12,-6 L -30,-4 L -62,-22 L -40,0 L -62,22 L -30,4 L -12,6 Q -20,16 -42,48 Q -14,30 4,6 L 22,6 Q 36,8 46,0 Z"/></symbol>
+  <symbol id="bird" viewBox="-4 -14 80 24"><path d="M0,0 q12,-14 24,-4 q8,4 12,8 q4,-4 12,-8 q12,-10 24,4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-net" viewBox="0 0 20 20"><path d="M2 16h3v-3H2zM7 16h3V9H7zM12 16h3V5h-3zM17 16h1V2h-1z" fill="#B8AC98"/></symbol>
   <symbol id="i-vol" viewBox="0 0 20 20"><path d="M2 7h4l5-4v14l-5-4H2z" fill="#B8AC98"/><path d="M14 6l2 4-2 4" fill="none" stroke="#B8AC98" stroke-width="2"/></symbol>
   <symbol id="i-bell" viewBox="0 0 20 20"><path d="M4 15h12l-2-3V8l-4-5-4 5v4z" fill="#B8AC98"/><rect x="8" y="16" width="4" height="2" fill="#B8AC98"/></symbol>
@@ -282,28 +273,28 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
   <div class="kicker">AVSPEX · DIRECTION C · ROMAN</div>
   <h1>AVGVR</h1>
   <div class="band" aria-hidden="true"><svg class="bird"><use href="#bird"/></svg></div>
-  <p class="mood">An augur read the future in the flight of birds. Here the augur watches your agents. Warm stone, bronze, one porphyry stripe and carved Latin capitals hold a wide and quiet field, under a legion helmet crowned with laurel. One small swallow is the only thing that moves: it crosses the inscription band while your agents work, and it lands on the one thing that needs you.</p>
+  <p class="mood">An augur read the future in the flight of birds. Here the augur watches your agents. Warm stone, bronze, one porphyry stripe and carved Latin capitals hold a wide and quiet field, under a crested Roman helmet in open laurel. One small bronze bird is the only thing that moves: it crosses the inscription band while your agents work, and it lands on the one thing that needs you.</p>
   <div class="meta">5120×2160 (64:27) · mockups drawn at 1.5× scale, 3413×1440 logical px · every screen puts its main control in one horizontal inscription band</div>
 </header>
 
 <section class="item" id="emblem">
   <div class="ih"><span class="num">I</span><h2>MARK</h2>
-    <p>An original legion galea in side profile, facing right: a red crest on a bronze holder, a bronze bowl, a gold brow ridge, a cheek guard and a neck guard. Two open laurel branches frame it and meet in a knot at the base. There is no disc behind it. The crest is the only accent color in the mark. It replaces the mark of revision 2.</p></div>
+    <p>A crested Roman helmet in open laurel, seen from the front: a red crest (#D23A2C), a gold bowl (#D9A93E) with gold shadow (#A87A22), cheek guards and a brow band. Two open laurel branches (#C9A05A leaves on #8C6A30 stems) frame it. Outlines are #1D1915 and the background is transparent. The operator approved this exact drawing in revision 4. <code class="k">mark.py</code> regenerates it.</p></div>
   <div class="markrow">
-    <figure class="mk big"><svg class="mark" role="img" aria-label="AVGVR mark: legion helmet in laurel"><use href="#mark"/></svg><figcaption class="lat">320 PX</figcaption></figure>
+    <figure class="mk big"><svg class="mark" role="img" aria-label="AVGVR mark: crested Roman helmet in open laurel"><use href="#mark"/></svg><figcaption class="lat">320 PX</figcaption></figure>
     <figure class="mk"><svg class="mark" style="width:64px;height:64px" aria-hidden="true"><use href="#mark"/></svg><figcaption class="lat">64 PX</figcaption></figure>
     <figure class="mk"><svg class="mark" style="width:32px;height:32px" aria-hidden="true"><use href="#mark"/></svg><figcaption class="lat">32 PX</figcaption></figure>
     <figure class="mk"><div class="barsample"><svg class="mark" style="width:32px;height:32px" aria-hidden="true"><use href="#mark"/></svg><span class="lat">AVSPEX</span></div><figcaption class="lat">32 PX ON THE BAR</figcaption></figure>
   </div>
-  <div class="cap">File: <code class="k">mark.svg</code>, square viewBox. Minimum size 32 px. At 32 px the crest, the bowl and the laurel ring still read. Keep clear space of 1/8 of its width on each side.</div>
+  <div class="cap">File: <code class="k">mark.svg</code>, square viewBox. Minimum size 32 px. At 32 px the red crest, the gold bowl and the laurel still read. Keep clear space of 1/8 of its width on each side.</div>
 </section>
 
 <section class="item" id="palette">
   <div class="ih"><span class="num">II</span><h2>PALETTE</h2>
-    <p>Keys follow the Omarchy <code class="k">colors.toml</code> model. Warm dark stone and bronze cover 90% of every screen. The cinnabar accent appears only on the crest, the bird and the 1 thing that needs action. Contrast values are on <code class="k">background</code> #1D1915 unless the chip says otherwise.</p></div>
+    <p>Keys follow the Omarchy <code class="k">colors.toml</code> model. Warm dark stone and bronze cover 90% of every screen. The cinnabar accent appears only on focus and the 1 thing that needs action. The mark keeps its own colors. Contrast values are on <code class="k">background</code> #1D1915 unless the chip says otherwise.</p></div>
   <div class="pal">
     <div class="pg">SEMANTIC</div>
-    <div class="chip"><div class="s" style="background:#EB6A43"></div><span class="k">accent</span><span class="h">#EB6A43</span><span class="r">cinnabar: crest, bird, focus, "needs you" (5.6:1; 4.9:1 on lighter_background)</span></div>
+    <div class="chip"><div class="s" style="background:#EB6A43"></div><span class="k">accent</span><span class="h">#EB6A43</span><span class="r">cinnabar: focus, "needs you" (5.6:1; 4.9:1 on lighter_background)</span></div>
     <div class="chip"><div class="s" style="background:#3A2E3A"></div><span class="k">selection</span><span class="h">#3A2E3A</span><span class="r">selected text ground; foreground on it is 9.5:1</span></div>
     <div class="chip"><div class="s" style="background:#988D7B"></div><span class="k">muted</span><span class="h">#988D7B</span><span class="r">captions and labels (5.4:1)</span></div>
     <div class="chip"><div class="s" style="background:#EB6A43"></div><span class="k">cursor</span><span class="h">#EB6A43</span><span class="r">terminal cursor, same as the accent</span></div>
@@ -342,12 +333,16 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
     <div class="chip"><div class="s" style="background:#E0BD6C"></div><span class="k">gold</span><span class="h">#E0BD6C</span><span class="r">highlights on bronze (9.7:1)</span></div>
     <div class="chip"><div class="s" style="background:#63A897"></div><span class="k">verdigris</span><span class="h">#63A897</span><span class="r">aged bronze, file types (6.3:1)</span></div>
     <div class="chip"><div class="s" style="background:#7A6E5F"></div><span class="k">border</span><span class="h">#7A6E5F</span><span class="r">rules, inactive borders, input edges; non-text only (3.5:1)</span></div>
+    <div class="chip"><div class="s" style="background:#D23A2C"></div><span class="k">crest</span><span class="h">#D23A2C</span><span class="r">mark only: helmet crest</span></div>
+    <div class="chip"><div class="s" style="background:#D9A93E"></div><span class="k">helmet_gold</span><span class="h">#D9A93E</span><span class="r">mark only: helmet bowl</span></div>
+    <div class="chip"><div class="s" style="background:#A87A22"></div><span class="k">gold_shadow</span><span class="h">#A87A22</span><span class="r">mark only: helmet shading</span></div>
+    <div class="chip"><div class="s" style="background:#C9A05A"></div><span class="k">laurel_bronze</span><span class="h">#C9A05A</span><span class="r">mark laurel; augur birds</span></div>
   </div>
 </section>
 
 <section class="item" id="login">
   <div class="ih"><span class="num">III</span><h2>SDDM LOGIN</h2><button class="fs" data-fs>[ FULL SCREEN ]</button>
-    <p>The inscription band holds the whole form: user, password and session. The swallow flies into the band from the left and lands next to the password field. Press Enter and the bird is the submit control.</p></div>
+    <p>The inscription band holds the whole form: user, password and session. The bird flies into the band from the left and lands next to the password field. Press Enter and the bird is the submit control.</p></div>
   <div class="frame"><div class="scr login">
     <svg class="fill" viewBox="0 0 3413 1440" preserveAspectRatio="none" aria-hidden="true">
       <defs>
@@ -362,11 +357,11 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
         <line x1="1706" y1="0" x2="1706" y2="1440"/>
         <circle cx="1706" cy="720" r="620" stroke-dasharray="4 18"/><circle cx="1706" cy="720" r="1100" stroke-dasharray="4 18"/>
       </g>
-      <g fill="#E6DCCB">
-        <use href="#bird" x="2480" y="166" width="56" height="50" opacity=".22" transform="rotate(-22 2508 191)"/>
-        <use href="#bird" x="2590" y="138" width="46" height="41" opacity=".18" transform="rotate(-22 2613 158)"/>
-        <use href="#bird" x="2690" y="118" width="40" height="36" opacity=".15" transform="rotate(-22 2710 136)"/>
-        <use href="#bird" x="2784" y="106" width="34" height="31" opacity=".12" transform="rotate(-22 2801 121)"/>
+      <g color="#C9A05A">
+        <use href="#bird" x="2470" y="170" width="76" height="23" stroke-width="3.4" opacity=".34" transform="rotate(-10 2508 181)"/>
+        <use href="#bird" x="2586" y="142" width="58" height="17" stroke-width="3.8" opacity=".26" transform="rotate(-7 2615 151)"/>
+        <use href="#bird" x="2690" y="120" width="48" height="14" stroke-width="4.2" opacity=".2" transform="rotate(-12 2714 127)"/>
+        <use href="#bird" x="2784" y="104" width="40" height="12" stroke-width="4.6" opacity=".15" transform="rotate(-6 2804 110)"/>
       </g>
       <rect width="3413" height="1440" fill="url(#lf)"/>
     </svg>
@@ -395,7 +390,7 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
 
 <section class="item" id="boot">
   <div class="ih"><span class="num">IV</span><h2>PLYMOUTH BOOT</h2><button class="fs" data-fs>[ FULL SCREEN ]</button>
-    <p>The helmet sits above the word AVSPEX. The swallow flies along the band from left to right and leaves a row of bronze dentil blocks behind it. The dentils are the progress bar, and the numerals I to X light up as the bird passes.</p></div>
+    <p>The helmet sits above the word AVSPEX. The bird flies along the band from left to right and leaves a row of bronze dentil blocks behind it. The dentils are the progress bar, and the numerals I to X light up as the bird passes.</p></div>
   <div class="frame"><div class="scr boot">
     <svg class="fill" viewBox="0 0 3413 1440" preserveAspectRatio="none" aria-hidden="true">
       <defs><radialGradient id="bh" cx=".5" cy=".42" r=".5"><stop offset="0" stop-color="#22181D"/><stop offset="1" stop-color="#110F0D"/></radialGradient></defs>
@@ -412,7 +407,7 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
 
 <section class="item" id="lock">
   <div class="ih"><span class="num">V</span><h2>LOCK SCREEN</h2><button class="fs" data-fs>[ FULL SCREEN ]</button>
-    <p>The band is closed to a thin carved line and the swallow perches on it, dim and still. The fleet counter stays visible so you can see from across the room that an agent waits. When you type, the band opens to the login layout.</p></div>
+    <p>The band is closed to a thin carved line and the bird perches on it, dim and still. The fleet counter stays visible so you can see from across the room that an agent waits. When you type, the band opens to the login layout.</p></div>
   <div class="frame"><div class="scr lock">
     <img class="fill" src="wallpaper.svg" alt="" style="object-fit:cover;opacity:.22">
     <div class="fill" style="background:radial-gradient(ellipse at 50% 50%, rgba(23,20,15,.55), rgba(17,15,13,.95))"></div>
@@ -431,7 +426,7 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
 
 <section class="item" id="desktop">
   <div class="ih"><span class="num">VI</span><h2>HYPRLAND DESKTOP</h2><button class="fs" data-fs>[ FULL SCREEN ]</button>
-    <p>The bar is 1 dark stone strip with the helmet mark at the left. Workspaces use Roman numerals, and the active one is a porphyry block. In the center, a small inscription band shows the fleet: the swallow crosses it while agents work, then lands and grows when 1 waits. The active window has a bronze edge. No window has round corners or a title bar.</p></div>
+    <p>The bar is 1 dark stone strip with the helmet mark at the left. Workspaces use Roman numerals, and the active one is a porphyry block. In the center, a small inscription band shows the fleet: the bird crosses it while agents work, then lands and grows when 1 waits. The active window has a bronze edge. No window has round corners or a title bar.</p></div>
   <div class="frame"><div class="scr desk">
     <img class="fill" src="wallpaper.svg" alt="" style="object-fit:cover">
     <div class="abs bar">
@@ -489,8 +484,8 @@ td code, .k { font-family: var(--font-mono); font-size: 14px; }
 
 <section class="item" id="wallpaper">
   <div class="ih"><span class="num">VII</span><h2>WALLPAPER</h2><button class="fs" data-fs>[ FULL SCREEN ]</button>
-    <p>Dusk over an aqueduct. The helmet and laurel mark hangs in the sky at the right, inside the faint lines and circles of an augur's templum. A flock of swallows flies right and up, which is a good omen, and 1 gold swallow leads it. A carved inscription sits low at the left. The subject fills less than a third of the frame.</p></div>
-  <div class="frame"><img class="fill" src="wallpaper.svg" alt="AVGVR wallpaper: a legion helmet in laurel in a dusk sky over an aqueduct, with swallows flying up and right"></div>
+    <p>Dusk over an aqueduct. The helmet and laurel mark hangs in the sky at the right, inside the faint lines and circles of an augur's templum. A flock of bronze augur birds flies right and up, which is a good omen, and 1 gold bird leads it. A carved inscription sits low at the left. The subject fills less than a third of the frame.</p></div>
+  <div class="frame"><img class="fill" src="wallpaper.svg" alt="AVGVR wallpaper: a crested Roman helmet in open laurel in a dusk sky over an aqueduct, with augur birds flying up and right"></div>
   <div class="cap">File: <code class="k">wallpaper.svg</code>, 5120×2160, inscription font embedded as data. Export a PNG for hyprpaper with Chrome (see note N7).</div>
 </section>
 

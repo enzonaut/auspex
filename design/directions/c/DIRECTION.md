@@ -1,6 +1,6 @@
 # Design direction c: AVGVR
 
-Status: draft - Revision 3 - 2026-11-25
+Status: draft - Revision 4 - 2026-11-25
 Owner: design-director-4
 Review board: index.html (this folder). Palette: colors.toml. Wallpaper: wallpaper.svg. Mark: mark.svg.
 
@@ -15,8 +15,8 @@ Review board: index.html (this folder). Palette: colors.toml. Wallpaper: wallpap
 ## Direction
 - Direction: cinematic-monumental. Borrowed trait from tactical-terminal: monospace data in bracket framing, used only in the bar and the terminals.
 - Why: 1 horizontal inscription band across the 64:27 width carries every control, as the carved band on a Roman arch carries the words.
-- Research: inferred, no film research. Sources: Roman augury (the augur marks a templum in the sky and reads the flight of birds), the legion galea with a transverse crest, the laurel crown, dentil molding, aqueduct arcades, porphyry stone.
-- Big idea: the auspex is an augur. A swallow crosses the band while agents work and lands on the thing that needs you.
+- Research: inferred, no film research. Sources: Roman augury (the augur marks a templum in the sky and reads the flight of birds), the crested Roman helmet, the laurel crown, dentil molding, aqueduct arcades, porphyry stone.
+- Big idea: the auspex is an augur. A bronze augur bird crosses the band while agents work and lands on the thing that needs you.
 
 ## Shell-ban list
 - Black ground with blood red and gold raptor standards (the rejected Empire Legion look).
@@ -39,7 +39,7 @@ Review board: index.html (this folder). Palette: colors.toml. Wallpaper: wallpap
   --color-text-faint: #988D7B;
   --color-text-bright: #F6F1E7;
   --color-border: #7A6E5F;
-  --color-accent: #EB6A43;     /* the only accent: crest, swallow, the 1 action */
+  --color-accent: #EB6A43;     /* the only UI accent: focus, the 1 action. The mark keeps its own red. */
   --color-bronze: #C9A05A;
   --color-bronze-dark: #8C6A30;
   --color-gold: #E0BD6C;
@@ -84,27 +84,28 @@ Contrast pairs (WCAG 2.x, AA is 4.5:1 for text and 3:1 for non-text):
 - License: all 3 families are SIL OFL 1.1. The font files and an OFL text for each family are in `fonts/`.
 
 ## Imagery
-- Original vector art only: the galea and laurel mark, swallows, dentil rails, aqueduct arcades, the faint lines and circles of the augur's templum.
-- Mark: `mark.svg`, a bronze legion helmet (galea) with an accent transverse crest, inside an open laurel wreath. No disc behind it and no bird in it. The crest is its only accent. Use it at 32 px and larger. The board shows it large, at 64 px and at 32 px.
+- Original vector art only: the helmet and laurel mark, augur birds, dentil rails, aqueduct arcades, the faint lines and circles of the augur's templum.
+- Mark: `mark.svg`, the operator-approved drawing: a crested Roman helmet in open laurel, seen from the front. Crest red #D23A2C with #8A2419 lines, helmet gold #D9A93E, gold shadow #A87A22, laurel bronze #C9A05A on #8C6A30 stems, #1D1915 outlines, transparent background. Do not redraw it. `mark.py` regenerates it. Use it at 32 px and larger. The board shows it large, at 64 px and at 32 px.
+- Augur birds: 1 stroked glyph, a curved-wing "m" (`M0,0 q12,-14 24,-4 q8,4 12,8 q4,-4 12,-8 q12,-10 24,4`), laurel bronze #C9A05A, round caps and joins. Vary size and opacity in a flock. 1 gold (#D9A93E) bird can lead it.
 - Materials: dark warm stone, bronze with a verdigris patina, gold leaf on the inscriptions, porphyry for the active state.
-- Wallpaper: dusk over an aqueduct. The mark hangs in the sky at the right. A flock of swallows flies up and right. A carved inscription sits low at the left. The subject fills less than a third of the frame.
+- Wallpaper: dusk over an aqueduct. The mark hangs in the sky at the right. A flock of augur birds flies up and right. A carved inscription sits low at the left. The subject fills less than a third of the frame.
 
 ## Motion character
-- The swallow is the only ambient motion. It flies only left to right, 7000 ms per crossing, ease-in-out.
-- The swallow lands and stays on the item that needs the operator (password field, waiting agent).
-- Boot: the swallow crosses the band and leaves a dentil trail behind it. The trail is the progress bar.
-- Reduced motion: the swallow stays still at its perch. The trail fills without the flight.
+- The bird is the only ambient motion. It flies only left to right, 7000 ms per crossing, ease-in-out.
+- The bird lands and stays on the item that needs the operator (password field, waiting agent).
+- Boot: the bird crosses the band and leaves a dentil trail behind it. The trail is the progress bar.
+- Reduced motion: the bird stays still at its perch. The trail fills without the flight.
 
 ## Do
 - Put the primary control of each screen inside the horizontal inscription band.
 - Use dentil rails above and below the band.
 - Use Roman numerals for workspaces.
-- Use warm stone, bronze and gold for 90% of the area. Use the accent only for the crest, the swallow and the 1 thing that needs action.
+- Use warm stone, bronze and gold for 90% of the area. Use the accent only for focus and the 1 thing that needs action. The mark colors stay in the mark and the birds. The accent stays #EB6A43: next to the #D23A2C crest the board does not look wrong.
 
 ## Do not
 - No border-radius above 0.
 - No pure black (#000000) grounds.
-- No more than 1 element in accent color per view, plus the swallow.
+- No more than 1 element in accent color per view, plus the bird.
 - No round emblem behind the mark.
 - No bird inside the mark.
 
@@ -114,3 +115,4 @@ Contrast pairs (WCAG 2.x, AA is 4.5:1 for text and 3:1 for non-text):
 | 1 | 2026-11-25 | Initial direction | Zeon x Rome brief, designer c | design-director-2 |
 | 2 | 2026-11-25 | Helmet mark replaced by laurel and eagle mark | operator choice | operator |
 | 3 | 2026-11-25 | Roman only; helmet and laurel mark; Zeon elements removed | operator choice | operator |
+| 4 | 2026-11-25 | Approved helmet mark (orchestrator drawing) and new augur birds | operator choice | operator |
