@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# auspex:summary=Run the command header check and every bin/auspex-check-<name>
+# auspex:args=[--no-display]
+# auspex:level=1
+# auspex:requires-sudo=false
+#
+# Contract for bin/auspex-check-<name>:
+#   exit 0   pass
+#   exit 77  cannot run here; the last output line is the reason
+#   other    fail
+# A check with the header "# auspex:display=true" needs a display. It is
+# skipped with --no-display, or when neither WAYLAND_DISPLAY nor DISPLAY is set.
+set -euo pipefail
+# shellcheck source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+SKIP_EXIT=77
+no_display=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --no-display) no_display=true ;;
+        *)
+            printf 'usage: auspex check [--no-display]\n' >&2
+            exit 2
+            ;;
+    esac
+done
+
+if [[ -z "${WAYLAND_DISPLAY:-}" && -z "${DISPLAY:-}" ]]; then
+    no_display=true
+fi
+
+passed=0
+failed=0
+skipped=0
+
+# report <name> <exit code> <output>
+report() {
+    local name="$1" rc="$2" out="$3"
+    if [[ $rc -eq 0 ]]; then
+        printf 'ok   %s\n' "$name"
+        passed=$((passed + 1))
+    elif [[ $rc -eq $SKIP_EXIT ]]; then
+        printf 'skip %s: %s\n' "$name" "${out##*$'\n'}"
+        skipped=$((skipped + 1))
+    else
+        printf 'FAIL %s (exit %d)\n' "$name" "$rc"
+        if [[ -n "$out" ]]; then
+            printf '%s\n' "$out" | sed 's/^/     /'
+        fi
+        failed=$((failed + 1))
+    fi
+}
+
+run_one() {
+    local name="$1" rc=0 out
+    shift
+    out="$("$@" 2>&1)" || rc=$?
+    report "$name" "$rc" "$out"
+}
+
+run_one commands "$AUSPEX_BIN/auspex-commands" --check
+
+for f in "$AUSPEX_BIN"/auspex-check-*; do
+    [[ -e "$f" ]] || continue
+    name="${f##*/auspex-check-}"
+    if [[ "$(auspex_header "$f" display || true)" == true && $no_display == true ]]; then
+        report "$name" "$SKIP_EXIT" "needs a display"
+        continue
+    fi
+    run_one "$name" "$f"
+done
+
+printf '%d ok, %d failed, %d skipped\n' "$passed" "$failed" "$skipped"
+[[ $failed -eq 0 ]]
