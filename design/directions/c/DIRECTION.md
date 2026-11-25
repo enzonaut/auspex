@@ -1,6 +1,6 @@
 # Design direction c: AVGVR
 
-Status: draft - Revision 1 - 2026-11-25
+Status: draft - Revision 2 - 2026-11-25
 Owner: design-director-2
 Review board: index.html (this folder). Palette: colors.toml. Wallpaper: wallpaper.svg.
 
@@ -82,6 +82,7 @@ Contrast pairs:
 
 ## Imagery
 - Original vector art only: the plate eagle, the plate laurel, augur sky lines, bird omens, hazard stripes.
+- Mark: `mark.svg`, a spread-wing bronze eagle above two open laurel branches, with no disc behind it. The pink eye is its only accent. Use it at 22 px and larger.
 - Materials: olive armor plate with rivets, bronze trim with a verdigris patina.
 
 ## Motion character
@@ -105,3 +106,4 @@ Contrast pairs:
 | Rev | Date | Change | Reason | Approved by |
 |---|---|---|---|---|
 | 1 | 2026-11-25 | Initial direction | Zeon x Rome brief, designer c | design-director-2 |
+| 2 | 2026-11-25 | Helmet mark replaced by laurel and eagle mark | operator choice | operator |
