@@ -12,3 +12,5 @@ Change the source in the repo, never the target.
 | `~/.config/kglobalshortcutsrc` | `config/kde/agent-shortcuts.ini` | merge:kglobalshortcuts | kde |
 | `~/.local/share/applications/auspex-agent.desktop` | `config/applications/auspex-agent.desktop` | copy | kde |
 | `~/.local/share/applications/auspex-agent-dropdown.desktop` | `config/applications/auspex-agent-dropdown.desktop` | copy | kde |
+| `~/.config/systemd/user/auspex-update-check.service` | `systemd/user/auspex-update-check.service` | copy | any |
+| `~/.config/systemd/user/auspex-update-check.timer` | `systemd/user/auspex-update-check.timer` | copy | any |

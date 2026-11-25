@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# auspex:summary=Verify the weekly update timer units and the update check flow
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+if ! command -v systemd-analyze >/dev/null 2>&1; then
+    printf 'systemd-analyze is missing\n'
+    exit 77
+fi
+if ! command -v bats >/dev/null 2>&1; then
+    printf 'bats is missing; run step 030-auspex-tools\n'
+    exit 77
+fi
+
+units="$AUSPEX/systemd/user"
+fail=0
+
+# systemd-analyze verify wants ExecStart to exist. Verify copies in a temp
+# folder with the command path made absolute.
+tmp="$(mktemp -d)"
+trap 'rm -rf -- "$tmp"' EXIT
+sed "s|%h/.local/bin/auspex|$AUSPEX/bin/auspex|" "$units/auspex-update-check.service" >"$tmp/auspex-update-check.service"
+cp -- "$units/auspex-update-check.timer" "$tmp/"
+if out="$(systemd-analyze --user verify "$tmp/auspex-update-check.service" "$tmp/auspex-update-check.timer" 2>&1)"; then
+    printf 'ok   systemd-analyze verify\n'
+else
+    printf 'FAIL systemd-analyze verify\n%s\n' "$out"
+    fail=1
+fi
+
+cal="$(sed -n 's/^OnCalendar=//p' "$units/auspex-update-check.timer")"
+if [[ -n "$cal" ]] && systemd-analyze calendar "$cal" >/dev/null 2>&1; then
+    printf 'ok   OnCalendar=%s\n' "$cal"
+else
+    printf 'FAIL OnCalendar is missing or invalid: %s\n' "$cal"
+    fail=1
+fi
+
+if grep -v '^# auspex:' "$AUSPEX_BIN/auspex-update-check" | grep -qE 'pacman -Syu|yay -Syu|sudo'; then
+    printf 'FAIL auspex-update-check runs a system update or sudo\n'
+    fail=1
+else
+    printf 'ok   no update or sudo command in auspex-update-check\n'
+fi
+
+if out="$("$AUSPEX_BIN/auspex" update check --dry-run 2>&1)"; then
+    for n in 1 2 3 4; do
+        grep -q "^step $n:" <<<"$out" || {
+            printf 'FAIL --dry-run does not print step %d\n' "$n"
+            fail=1
+        }
+    done
+    printf 'ok   update check --dry-run\n'
+else
+    printf 'FAIL update check --dry-run\n%s\n' "$out"
+    fail=1
+fi
+
+bats "$AUSPEX/tests/update-check.bats" || fail=1
+exit "$fail"
