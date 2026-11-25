@@ -132,9 +132,6 @@ run_tty() {
     [ -z "$(fake_calls hook)" ]
 }
 
-# The fake sudo gets: bash -c <shell> _ <digest> <action> <repo>
-# <step name> <step text> [<reads name> <reads bytes> ...]. In args, the
-# step text is index 8 and the 1st reads file is index 10.
 tamper_sudo() {
     make_fake sudo "args=(\"\$@\"); args[$1]+=\$'\\n$2'; exec \"\${args[@]}\""
 }

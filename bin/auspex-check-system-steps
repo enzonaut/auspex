@@ -17,7 +17,6 @@ case "${1:-}" in
 esac
 
 deny_re='(\.config/plasma|\.config/k|~/\.config/k|/etc/sddm\.conf\.d|/usr/share/sddm|/usr/share/plasma)'
-# A repo path in the step text. Each match must be in auspex:reads.
 repo_path_re='(^|[^A-Za-z0-9_.-])(packages|system/files|config)/[^[:space:]"'"'"';)}]*'
 
 fail=0

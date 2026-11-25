@@ -6,7 +6,6 @@
 # auspex:reads=packages/auspex-tools.list
 #
 # check runs as the user. apply and undo run as root.
-# As root, the list is the approved copy in $AUSPEX_READS_DIR.
 # apply records the packages that it installed in
 # $AUSPEX_SYSTEM_STATE/030-auspex-tools.installed (default /var/lib/auspex).
 # undo removes only those packages.

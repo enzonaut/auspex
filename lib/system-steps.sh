@@ -10,15 +10,6 @@
 # repo, for example packages/auspex-tools.list. A step can have more than
 # 1 reads line. The order of the paths is the header order.
 #
-# Read once. apply and undo read the step file and each reads file 1 time
-# into memory. The prompt shows those bytes. The approval digest is the
-# sha256 of the lines "<sha256 of part>  <repo path>", 1 line per part:
-# the step first, then each reads file in header order. sudo bash gets the
-# bytes as arguments, not the paths. The root shell computes the digest
-# again and stops on a mismatch. It writes each reads file to a new
-# root-owned dir from mktemp -d, at its repo path, then evals the step text.
-# The root shell never opens a repo file.
-#
 # Variables that a step can use:
 #   AUSPEX_REPO       the repo root.
 #   AUSPEX_STEP_DIR   $AUSPEX_REPO/system/steps.
@@ -35,8 +26,6 @@
 AUSPEX_STEPS_DIR="$AUSPEX/system/steps"
 SYSTEM_STEP_MAX_BYTES=131000
 
-# Set by system_step_load: the repo path and the bytes of each part, and
-# the approval digest.
 SYSTEM_STEP_NAMES=()
 SYSTEM_STEP_PARTS=()
 SYSTEM_STEP_DIGEST=""
