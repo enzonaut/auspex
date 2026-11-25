@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# auspex:summary=Test the ~/.claude/settings.json merger on fixtures and on a copy of the live file
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+if ! command -v bats >/dev/null 2>&1; then
+    printf 'bats is missing; run step 030-auspex-tools\n'
+    exit 77
+fi
+exec bats "$AUSPEX/tests/claude-settings.bats"

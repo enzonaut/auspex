@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yay -Pw)",
+      "Bash(checkupdates)",
+      "Bash(yay -Qua)",
+      "Bash(flatpak remote-ls --updates*)",
+      "Bash(herdr --version)",
+      "Bash(hc --version)",
+      "Bash(claude --version)",
+      "Bash(pacman -Q*)",
+      "Bash(find /etc -name '*.pacnew')",
+      "Bash(uname -r)",
+      "Bash(auspex facts*)"
+    ],
+    "deny": [
+      "Edit",
+      "Write",
+      "NotebookEdit"
+    ]
+  }
+}

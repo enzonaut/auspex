@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit(~/repos/auspex/**)",
+      "Write(~/repos/auspex/**)",
+      "Bash(auspex facts*)",
+      "Bash(auspex plan*)",
+      "Bash(auspex status*)",
+      "Bash(auspex commands*)",
+      "Bash(auspex check*)",
+      "Bash(auspex system plan*)",
+      "Bash(auspex system prepare*)",
+      "Bash(auspex migrate --pending*)",
+      "Bash(git -C ~/repos/auspex status*)",
+      "Bash(git -C ~/repos/auspex diff*)",
+      "Bash(git -C ~/repos/auspex log*)",
+      "Bash(git -C ~/repos/auspex add*)",
+      "Bash(git -C ~/repos/auspex commit*)",
+      "Bash(hyprctl -j *)",
+      "Bash(hyprctl monitors*)",
+      "Bash(kscreen-doctor -o*)",
+      "Bash(journalctl *)",
+      "Bash(systemctl --user status*)",
+      "Bash(systemctl --failed*)",
+      "Bash(pacman -Q*)",
+      "Bash(nvidia-smi*)",
+      "Bash(auspex apply*)",
+      "Bash(auspex undo*)"
+    ]
+  }
+}

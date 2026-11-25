@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# auspex:summary=Check that the permission files match the command levels and the manifest
+# auspex:args=[--print]
+# auspex:level=1
+# auspex:requires-sudo=false
+#
+# --print writes the Edit and Write deny rules for each manifest target, as
+# they belong in claude/deny.json.
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+print=false
+case "${1:-}" in
+    "") ;;
+    --print) print=true ;;
+    *)
+        printf 'usage: auspex check permissions [--print]\n' >&2
+        exit 2
+        ;;
+esac
+
+if ! command -v jq >/dev/null 2>&1; then
+    printf 'jq is missing; run step 030-auspex-tools\n'
+    exit 77
+fi
+
+DENY="$AUSPEX/claude/deny.json"
+AGENT="$AUSPEX/claude/agent-settings.json"
+HEADLESS="$AUSPEX/claude/headless-settings.json"
+LIVE="$HOME/.claude/settings.json"
+
+# target_rules: Edit and Write deny rules for each manifest target. A tree
+# target gets a rule for the whole folder.
+target_rules() {
+    local src tgt mode
+    auspex_manifest_load
+    while read -r src tgt mode _ || [[ -n "${src:-}" ]]; do
+        [[ -z "${src:-}" || "$src" == '#'* ]] && continue
+        [[ "$mode" == tree ]] && tgt="${tgt%/}/**"
+        printf 'Edit(%s)\nWrite(%s)\n' "$tgt" "$tgt"
+    done <"$AUSPEX_MANIFEST"
+}
+
+if [[ $print == true ]]; then
+    target_rules
+    exit 0
+fi
+
+failed=0
+fail() {
+    printf 'FAIL %s\n' "$*"
+    failed=1
+}
+
+# rules <file> <allow|deny>: the rules of that list, 1 per line.
+rules() {
+    jq -r --arg k "$2" '.permissions[$k] // [] | .[]' "$1"
+}
+
+# matches <rule> <command>: true when the Bash rule matches the command.
+matches() {
+    local p
+    [[ "$1" == 'Bash('*')' ]] || return 1
+    p="${1#Bash(}" p="${p%)}"
+    if [[ "$p" == *'*' ]]; then
+        p="${p%\*}"
+        [[ "$2" == "$p"* || "$2" == "${p% }" ]]
+    else
+        [[ "$2" == "$p" ]]
+    fi
+}
+
+# allows <rule> <command>: true when the Bash rule matches the command or a
+# longer form of it ("auspex migrate --pending*" allows "auspex migrate").
+allows() {
+    local p
+    matches "$1" "$2" && return 0
+    [[ "$1" == 'Bash('*')' ]] || return 1
+    p="${1#Bash(}"
+    [[ "$p" == "$2 "* ]]
+}
+
+# any <test> <command> <rules...>: true when a rule passes the test.
+any() {
+    local test="$1" cmd="$2" r
+    shift 2
+    for r in "$@"; do
+        "$test" "$r" "$cmd" && return 0
+    done
+    return 1
+}
+
+for f in "$DENY" "$AGENT" "$HEADLESS"; do
+    jq -e 'type == "object"' "$f" >/dev/null 2>&1 || fail "${f#"$AUSPEX"/} is not a JSON object"
+done
+[[ $failed -eq 0 ]] || exit 1
+
+mapfile -t deny < <(rules "$DENY" deny)
+mapfile -t allow < <(rules "$AGENT" allow)
+mapfile -t live_allow < <([[ -f "$LIVE" ]] && rules "$LIVE" allow)
+
+[[ "$(jq -c 'keys' "$DENY")" == '["permissions"]' && "$(jq -c '.permissions | keys' "$DENY")" == '["deny"]' ]] ||
+    fail "claude/deny.json may hold only permissions.deny"
+
+for f in "$AUSPEX_BIN"/auspex-*; do
+    level="$(auspex_header "$f" level || true)"
+    [[ -n "$level" ]] || continue
+    words="$(auspex_command_words "${f##*/}")"
+    cmd="auspex $words"
+    case "$level" in
+        3)
+            any matches "$cmd" "${deny[@]}" || fail "level 3 command '$cmd' has no deny rule"
+            any matches "${f##*/}" "${deny[@]}" || fail "level 3 command '${f##*/}' has no deny rule"
+            ;;
+        1 | 2)
+            any allows "$cmd" "${allow[@]}" || fail "level $level command '$cmd' has no allow rule in claude/agent-settings.json"
+            if any allows "$cmd" "${live_allow[@]}"; then
+                fail "level $level command '$cmd' has an allow rule in ~/.claude/settings.json"
+            fi
+            ;;
+    esac
+done
+
+while IFS= read -r r; do
+    printf '%s\n' "${deny[@]}" | grep -Fxq -- "$r" || fail "claude/deny.json lacks $r (see auspex check permissions --print)"
+done < <(target_rules)
+
+while IFS= read -r r; do
+    if [[ "$r" =~ ^(Edit|Write|MultiEdit|NotebookEdit)(\(|$) ]]; then
+        fail "claude/headless-settings.json allows $r"
+    fi
+done < <(rules "$HEADLESS" allow)
+
+[[ $failed -eq 0 ]] || exit 1
+printf 'permissions ok\n'

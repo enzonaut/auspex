@@ -1,1 +1,4 @@
 # source	target	mode	session
+claude/deny.json	~/.claude/settings.json	merge:claude-settings	any
+claude/agent-settings.json	~/.config/auspex/claude/agent-settings.json	copy	any
+claude/headless-settings.json	~/.config/auspex/claude/headless-settings.json	copy	any
