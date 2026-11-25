@@ -1,0 +1,48 @@
+# Aquila Nigra - Legio I Auspex (direction A, lean Roman)
+#
+# The single palette file of the theme. Templates read these keys.
+# The keys follow the Omarchy colors.toml contract. The last 2 keys
+# (blood, steel) are extensions: a template can read any key in this file.
+#
+# Contrast figures are WCAG ratios against "background" (#0b0b0d).
+
+mode = "dark"
+
+# Roles
+accent = "#d4a843"              # Eagle gold. Focus, active border, active workspace, links. 8.9:1
+selection = "#4a0d13"           # Ground of selected text (dark blood). bright_foreground on it: 13.6:1
+muted = "#5c5f68"               # ANSI color 8. Borders, separators, disabled items. 3.1:1 (not for body text)
+
+# Background ramp: black alloy, dark to light
+darker_background = "#040405"   # Wells: input fields, shadows
+dark_background = "#070708"     # Bar, boot splash field, inactive panes
+background = "#0b0b0d"          # Base ground of terminal and windows
+lighter_background = "#1a1b20"  # Raised alloy: cards, hover, current line
+
+# Foreground ramp: steel to worn marble, never pure white
+dark_foreground = "#8f929b"     # Labels, hints, comments. 6.3:1
+foreground = "#cfcbc0"          # Body text. 12.1:1
+light_foreground = "#e2ded3"    # Emphasis, active titles. 14.6:1
+bright_foreground = "#f4f0e6"   # Clock, cursor, headline numerals. 17.3:1
+
+# Named colors (ANSI 1-6 and extras)
+red = "#e5383f"                 # Red light as text: errors, urgent, a worker that waits. 4.7:1
+yellow = "#d4a843"              # Gold: strings, numbers. Same as accent
+orange = "#d07a34"              # Bronze: warnings
+green = "#7fb89a"               # Verdigris: success, added lines
+cyan = "#6fb3b8"                # Oxidised copper: info, paths
+blue = "#7f9fc6"                # Night steel: directories, keywords
+magenta = "#b86a98"             # Tyrian purple: git branch, special
+brown = "#8a5a2b"               # Old bronze: rare, decoration
+
+# Bright colors (ANSI 9-14)
+bright_red = "#ff5a5f"
+bright_yellow = "#f3d27a"
+bright_green = "#a5d8bb"
+bright_cyan = "#97d2d6"
+bright_blue = "#a9c3e4"
+bright_magenta = "#d894bd"
+
+# Extensions of this theme
+blood = "#a3141c"               # Red LIGHT only: seams, underlines, glow. 2.5:1, never use it for text
+steel = "#30323a"               # Inactive border, plate edges, unlit laurel leaves
