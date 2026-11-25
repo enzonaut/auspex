@@ -1,0 +1,49 @@
+# auspex theme "legio-oculus" (direction B: Roman legion x mono-eye mobile suit)
+# Keys follow the Omarchy colors.toml model: semantic keys, background ramp,
+# foreground ramp, named colors. [extra] holds auspex-only colors for templates.
+
+# Semantic
+accent = "#ff3b4e"  # Oculus red. The mono-eye, focus border, active workspace, caret.
+selection = "#3a4526"  # Field-green plate under selected text and chosen items.
+muted = "#85896b"  # Olive grey for comments, hints, empty workspaces.
+cursor = "#ff3b4e"  # Terminal cursor. Same as accent.
+
+# Background ramp
+darker_background = "#0a0c08"  # Boot splash, login base, deepest hull.
+dark_background = "#10130d"  # Bar, terminal background.
+background = "#171b13"  # Window base, olive-black hull.
+lighter_background = "#22281b"  # Panels, input fields, inactive tabs.
+
+# Foreground ramp
+darker_foreground = "#8c8870"  # Disabled text, rank labels.
+dark_foreground = "#b4ad90"  # Labels, secondary text.
+foreground = "#dcd6bc"  # Body text. Khaki stencil paint.
+lighter_foreground = "#f2ecd4"  # Clock, headings, bright text.
+
+# Named
+black = "#10130d"  # ANSI 0
+red = "#e04a54"  # ANSI 1. Errors, deletions.
+green = "#97ad48"  # ANSI 2. Field green. Success, additions, working.
+yellow = "#dcb44c"  # ANSI 3. Hazard stripe. Warnings.
+blue = "#6c97a6"  # ANSI 4. Cold steel blue.
+magenta = "#c06a8c"  # ANSI 5.
+cyan = "#74ab9e"  # ANSI 6. Oxidised bronze.
+white = "#dcd6bc"  # ANSI 7
+
+# Named bright
+bright_black = "#4a5238"  # ANSI 8
+bright_red = "#ff6b74"  # ANSI 9
+bright_green = "#b4c96a"  # ANSI 10
+bright_yellow = "#f0cf74"  # ANSI 11
+bright_blue = "#8fb6c4"  # ANSI 12
+bright_magenta = "#d98fab"  # ANSI 13
+bright_cyan = "#98c8bc"  # ANSI 14
+bright_white = "#f2ecd4"  # ANSI 15
+
+[extra]
+commander = "#a8202e"  # Commander red. Fill only, never text. Alert plates, gradient end.
+bronze = "#c0904c"  # Eagle insignia, laurels, Latin titles.
+khaki = "#b9ad7e"  # Stencilled unit numbers.
+field = "#4e5a33"  # Field green armor plate.
+plate = "#2e3524"  # Raised armor plate, inactive border.
+steel = "#4b5258"  # Rivets, ribs, frames.
