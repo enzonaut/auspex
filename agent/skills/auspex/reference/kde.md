@@ -49,7 +49,7 @@ Method: the ghostty quick terminal. Tested on 2026-11-25 with Plasma 6.8.2,
 KWin 6.8.2 Wayland, ghostty 1.4.0 (ticket 07). It shows at the top, 100% x
 50%, takes keyboard focus, and hides again.
 
-Dropdown config file (`config/ghostty/auspex-dropdown.ghostty`):
+Dropdown config file (ticket 08 adds it as config/ghostty/auspex-dropdown.ghostty):
 
 ```
 quick-terminal-position = top
@@ -74,7 +74,7 @@ gdbus call --session --dest auspex.dropdown --object-path /auspex/dropdown \
   --method org.gtk.Actions.Activate toggle-quick-terminal [] {}
 ```
 
-`auspex agent dropdown` does this:
+The dropdown command (auspex agent dropdown, added in ticket 08) does this:
 
 1. Test the bus name: `gdbus call --session --dest org.freedesktop.DBus
    --object-path /org/freedesktop/DBus --method
