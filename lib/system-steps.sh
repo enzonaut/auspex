@@ -3,10 +3,43 @@
 # lib/common.sh, do not run it.
 #
 # A step is system/steps/NNN-<name>.sh with check, apply and undo functions.
-# A step can declare files that it installs with header lines:
+# Header lines are the comment lines at the top of the step:
 #   # auspex:installs=system/files/<path> /<absolute target>
+#   # auspex:reads=<repo path>[ <repo path> ...]
+# A reads line names each repo file that the step reads, relative to the
+# repo, for example packages/auspex-tools.list. A step can have more than
+# 1 reads line. The order of the paths is the header order.
+#
+# Read once. apply and undo read the step file and each reads file 1 time
+# into memory. The prompt shows those bytes. The approval digest is the
+# sha256 of the lines "<sha256 of part>  <repo path>", 1 line per part:
+# the step first, then each reads file in header order. sudo bash gets the
+# bytes as arguments, not the paths. The root shell computes the digest
+# again and stops on a mismatch. It writes each reads file to a new
+# root-owned dir from mktemp -d, at its repo path, then evals the step text.
+# The root shell never opens a repo file.
+#
+# Variables that a step can use:
+#   AUSPEX_REPO       the repo root.
+#   AUSPEX_STEP_DIR   $AUSPEX_REPO/system/steps.
+#   AUSPEX_READS_DIR  as root: the mktemp -d dir with the approved copy of
+#                     each reads file. Unset in check and in a direct run.
+# A step reads a declared file at "${AUSPEX_READS_DIR:-$AUSPEX_REPO}/<path>".
+# A step sets AUSPEX_STEP_DIR and AUSPEX_REPO itself when they are empty,
+# so that "bash NNN-<name>.sh check" works. As root, a step must not read
+# other files through AUSPEX_REPO or AUSPEX_STEP_DIR.
+#
+# Limits: each part is smaller than 128 KiB (the argument size limit), and
+# a part with a NUL byte is refused (a bash variable cannot hold NUL).
 
 AUSPEX_STEPS_DIR="$AUSPEX/system/steps"
+SYSTEM_STEP_MAX_BYTES=131000
+
+# Set by system_step_load: the repo path and the bytes of each part, and
+# the approval digest.
+SYSTEM_STEP_NAMES=()
+SYSTEM_STEP_PARTS=()
+SYSTEM_STEP_DIGEST=""
 
 # system_step_resolve <name or NNN>: print the step name, or stop.
 system_step_resolve() {
@@ -38,40 +71,124 @@ system_step_list() {
         LC_ALL=C sort | sed 's/\.sh$//'
 }
 
-# system_step_check <step>: run check as the user. 0 means applied.
-system_step_check() {
-    # shellcheck disable=SC1090
-    (source "$(system_step_file "$1")" && check) >/dev/null 2>&1 </dev/null
+# system_step_read <file>: read the file 1 time into REPLY, byte for byte.
+# Fails on a symlink, a NUL byte or a file that is too large.
+system_step_read() {
+    local path="$1" size n
+    REPLY=""
+    [[ -f "$path" && ! -L "$path" ]] || return 1
+    { IFS= read -r -d '' REPLY || true; } <"$path" || return 1
+    size="$(stat -c %s -- "$path")" || return 1
+    n="$(LC_ALL=C && printf '%s' "${#REPLY}")"
+    [[ "$n" == "$size" ]] || return 1
+    ((n <= SYSTEM_STEP_MAX_BYTES))
 }
 
-# system_step_installs <step>: print "<source> <target>" for each installs line.
-system_step_installs() {
-    local file line val src tgt n=0
-    file="$(system_step_file "$1")"
-    while IFS= read -r line || [[ -n "$line" ]]; do
+# system_step_headers <text> <key>: print the value of each header line
+# "# auspex:<key>=" in the step text.
+system_step_headers() {
+    local text="$1" key="$2" line n=0
+    while IFS= read -r line; do
         n=$((n + 1))
         if [[ $n -eq 1 && "$line" == '#!'* ]]; then
             continue
         fi
         [[ "$line" == '#'* ]] || break
-        [[ "$line" == '# auspex:installs='* ]] || continue
-        val="${line#'# auspex:installs='}"
+        if [[ "$line" == "# auspex:$key="* ]]; then
+            printf '%s\n' "${line#"# auspex:$key="}"
+        fi
+    done <<<"$text"
+}
+
+# system_step_reads <step> <text>: print each reads path, 1 per line.
+system_step_reads() {
+    local val p
+    local -a paths
+    while IFS= read -r val; do
+        read -r -a paths <<<"$val"
+        for p in "${paths[@]}"; do
+            [[ "$p" =~ ^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$ && "/$p/" != */../* && "/$p/" != */./* ]] ||
+                auspex_die "$1: bad reads path '$p'"
+            printf '%s\n' "$p"
+        done
+    done < <(system_step_headers "$2" reads)
+}
+
+# system_step_digest <name> <bytes> [<name> <bytes> ...]: print the
+# approval digest. The root shell runs a copy of this function.
+system_step_digest() {
+    local h m=""
+    while (($# >= 2)); do
+        h="$(printf '%s' "$2" | sha256sum)" || return 1
+        m+="${h%% *}  $1"$'\n'
+        shift 2
+    done
+    h="$(printf '%s' "$m" | sha256sum)" || return 1
+    printf '%s\n' "${h%% *}"
+}
+
+# system_step_load <step>: read the step and its reads files 1 time, and
+# set SYSTEM_STEP_NAMES, SYSTEM_STEP_PARTS and SYSTEM_STEP_DIGEST.
+system_step_load() {
+    local step="$1" reads p i
+    local -a args=()
+    SYSTEM_STEP_NAMES=("system/steps/$step.sh")
+    SYSTEM_STEP_PARTS=()
+    system_step_read "$(system_step_file "$step")" ||
+        auspex_die "cannot read system/steps/$step.sh (missing, a symlink, a NUL byte, changed or over $SYSTEM_STEP_MAX_BYTES bytes)"
+    SYSTEM_STEP_PARTS+=("$REPLY")
+    reads="$(system_step_reads "$step" "${SYSTEM_STEP_PARTS[0]}")" || exit
+    while IFS= read -r p; do
+        [[ -n "$p" ]] || continue
+        system_step_read "$AUSPEX/$p" ||
+            auspex_die "$step: cannot read $p (missing, a symlink, a NUL byte, changed or over $SYSTEM_STEP_MAX_BYTES bytes)"
+        SYSTEM_STEP_NAMES+=("$p")
+        SYSTEM_STEP_PARTS+=("$REPLY")
+    done <<<"$reads"
+    for i in "${!SYSTEM_STEP_NAMES[@]}"; do
+        args+=("${SYSTEM_STEP_NAMES[i]}" "${SYSTEM_STEP_PARTS[i]}")
+    done
+    SYSTEM_STEP_DIGEST="$(system_step_digest "${args[@]}")" || auspex_die "cannot hash step $step"
+}
+
+# system_step_check: run check of the loaded step as the user. 0 means
+# applied.
+system_step_check() {
+    # shellcheck disable=SC2034 # The step text reads AUSPEX_REPO and AUSPEX_STEP_DIR.
+    (
+        AUSPEX_REPO="$AUSPEX"
+        AUSPEX_STEP_DIR="$AUSPEX_STEPS_DIR"
+        unset AUSPEX_READS_DIR
+        eval "${SYSTEM_STEP_PARTS[0]}" && check
+    ) >/dev/null 2>&1 </dev/null
+}
+
+# system_step_installs <step>: print "<source> <target>" for each installs
+# line of the loaded step.
+system_step_installs() {
+    local val src tgt
+    while IFS= read -r val; do
         read -r src tgt _ <<<"$val"
         [[ "$src" == system/files/* && "/$src/" != */../* ]] || auspex_die "$1: bad installs source '$src'"
         [[ "$tgt" == /* && "$tgt/" != */../* ]] || auspex_die "$1: bad installs target '$tgt'"
         printf '%s %s\n' "$src" "$tgt"
-    done <"$file"
+    done < <(system_step_headers "${SYSTEM_STEP_PARTS[0]}" installs)
 }
 
-# system_step_show <step>: print the state, the script and a diff for each
-# installed file.
+# system_step_show <step>: print the state, the script, each reads file, a
+# diff for each installed file and the approval digest of the loaded step.
 system_step_show() {
-    local step="$1" file state src tgt
-    file="$(system_step_file "$step")"
-    if system_step_check "$step"; then state=applied; else state=pending; fi
+    local step="$1" state src tgt i kind part
+    if system_step_check; then state=applied; else state=pending; fi
     printf '== step %s (%s)\n' "$step" "$state"
-    printf -- '-- script system/steps/%s.sh (sha256 %s)\n' "$step" "$(auspex_hash_file "$file")"
-    cat -- "$file"
+    for i in "${!SYSTEM_STEP_NAMES[@]}"; do
+        kind=reads
+        ((i == 0)) && kind=script
+        part="${SYSTEM_STEP_PARTS[i]}"
+        printf -- '-- %s %s (sha256 %s)\n' "$kind" "${SYSTEM_STEP_NAMES[i]}" "$(auspex_hash_string "$part")"
+        printf '%s' "$part"
+        [[ -z "$part" || "$part" == *$'\n' ]] || printf '\n'
+    done
     while read -r src tgt; do
         [[ -n "$src" ]] || continue
         printf -- '-- file %s -> %s\n' "$src" "$tgt"
@@ -84,6 +201,7 @@ system_step_show() {
             diff -u --label "$tgt (live)" --label "$tgt (new)" -- "$tgt" "$AUSPEX/$src" || true
         fi
     done < <(system_step_installs "$step")
+    printf -- '-- approval sha256 %s\n' "$SYSTEM_STEP_DIGEST"
 }
 
 system_step_guard() {
@@ -95,15 +213,18 @@ system_step_guard() {
     fi
 }
 
+# system_step_record <step> <action> <script sha256> <approval sha256>
+# <result> <check>
 system_step_record() {
     local dir tmp
     dir="$AUSPEX_STATE/system-steps"
     mkdir -p -- "$dir" || return 1
     tmp="$(mktemp "$dir/.$1.XXXXXX")" || return 1
     if jq -n --arg step "$1" --arg action "$2" --arg time "$(date -Iseconds)" \
-        --arg hash "$3" --arg result "$4" --arg check "$5" \
+        --arg hash "$3" --arg digest "$4" --arg result "$5" --arg check "$6" \
         '{step: $step, action: $action, time: $time, script_sha256: $hash,
-          result: $result, check: $check, actor: "operator"}' >"$tmp"; then
+          approval_sha256: $digest, result: $result, check: $check,
+          actor: "operator"}' >"$tmp"; then
         mv -f -T -- "$tmp" "$dir/$1.json"
         return
     fi
@@ -111,9 +232,37 @@ system_step_record() {
     return 1
 }
 
+# The root shell. Arguments: <approval digest> <action> <repo> then
+# <name> <bytes> for the step and for each reads file.
+IFS= read -r -d '' SYSTEM_STEP_ROOT_SHELL <<'EOF' || true
+set -o pipefail
+_auspex_want=$1 _auspex_action=$2 _auspex_repo=$3
+shift 3
+[[ "$(system_step_digest "$@")" == "$_auspex_want" ]] || {
+    echo "auspex: error: the step changed after the prompt" >&2
+    exit 98
+}
+_auspex_text=$2
+shift 2
+_auspex_dir="$(mktemp -d)" || exit 97
+trap 'rm -rf -- "$_auspex_dir"' EXIT
+while (($# >= 2)); do
+    [[ "$1" =~ ^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$ && "/$1/" != */../* ]] || exit 97
+    mkdir -p -- "$_auspex_dir/$(dirname -- "$1")" || exit 97
+    printf '%s' "$2" >"$_auspex_dir/$1" || exit 97
+    shift 2
+done
+AUSPEX_REPO=$_auspex_repo
+AUSPEX_STEP_DIR=$_auspex_repo/system/steps
+AUSPEX_READS_DIR=$_auspex_dir
+eval "$_auspex_text" || exit 97
+"$_auspex_action"
+EOF
+
 # system_step_run <apply|undo> [--dry-run] <step>
 system_step_run() {
-    local action="$1" dry=0 arg="" step file hash answer rc check_state verb
+    local action="$1" dry=0 arg="" step hash answer rc check_state verb i
+    local -a args=()
     shift
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -129,10 +278,11 @@ system_step_run() {
     [[ -n "$arg" ]] || auspex_die "usage: auspex system $action [--dry-run] <step>" 2
     system_step_guard "$action"
     step="$(system_step_resolve "$arg")"
-    file="$(system_step_file "$step")"
-    hash="$(auspex_hash_file "$file")" || auspex_die "cannot read $file"
+    system_step_load "$step"
+    hash="$(auspex_hash_string "${SYSTEM_STEP_PARTS[0]}")" || auspex_die "cannot hash step $step"
+    system_step_installs "$step" >/dev/null
     system_step_show "$step"
-    printf -- '-- run: sudo bash -c <verify sha256, source the step, %s> %s\n' "$action" "$file"
+    printf -- '-- run: sudo bash -c <verify the approval sha256, eval the text above, %s>\n' "$action"
     if ((dry)); then
         printf 'dry run: nothing changed\n'
         return 0
@@ -145,17 +295,16 @@ system_step_run() {
         printf 'not changed\n'
         return 1
     fi
+    for i in "${!SYSTEM_STEP_NAMES[@]}"; do
+        args+=("${SYSTEM_STEP_NAMES[i]}" "${SYSTEM_STEP_PARTS[i]}")
+    done
     rc=0
-    # shellcheck disable=SC2016
-    sudo bash -c 'set -o pipefail
-h="$(sha256sum <"$1")" || exit 98
-[[ "${h%% *}" == "$2" ]] || { echo "auspex: error: the step changed after the prompt" >&2; exit 98; }
-source "$1" || exit 97
-"$3"' _ "$file" "$hash" "$action" || rc=$?
-    if system_step_check "$step"; then check_state=pass; else check_state=fail; fi
+    sudo bash -c "$(declare -f system_step_digest)"$'\n'"$SYSTEM_STEP_ROOT_SHELL" \
+        _ "$SYSTEM_STEP_DIGEST" "$action" "$AUSPEX" "${args[@]}" || rc=$?
+    if system_step_check; then check_state=pass; else check_state=fail; fi
     local result=ok
     ((rc == 0)) || result=failed
-    system_step_record "$step" "$action" "$hash" "$result" "$check_state" ||
+    system_step_record "$step" "$action" "$hash" "$SYSTEM_STEP_DIGEST" "$result" "$check_state" ||
         auspex_warn "cannot write $AUSPEX_STATE/system-steps/$step.json"
     if ((rc != 0)); then
         auspex_die "step $step $action failed (exit $rc)"

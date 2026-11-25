@@ -3,15 +3,20 @@
 # auspex:args=check | apply | undo
 # auspex:level=3
 # auspex:requires-sudo=true
+# auspex:reads=packages/auspex-tools.list
 #
 # check runs as the user. apply and undo run as root.
+# As root, the list is the approved copy in $AUSPEX_READS_DIR.
 # apply records the packages that it installed in
 # $AUSPEX_SYSTEM_STATE/030-auspex-tools.installed (default /var/lib/auspex).
 # undo removes only those packages.
 
 STEP_NAME=030-auspex-tools
-STEP_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
-STEP_LIST="$STEP_DIR/../../packages/auspex-tools.list"
+if [[ -z "${AUSPEX_STEP_DIR:-}" ]]; then
+    AUSPEX_STEP_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
+fi
+AUSPEX_REPO="${AUSPEX_REPO:-$(cd "$AUSPEX_STEP_DIR/../.." && pwd -P)}"
+STEP_LIST="${AUSPEX_READS_DIR:-$AUSPEX_REPO}/packages/auspex-tools.list"
 STEP_RECORD="${AUSPEX_SYSTEM_STATE:-/var/lib/auspex}/$STEP_NAME.installed"
 
 step_packages() {

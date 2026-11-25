@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# auspex:summary=Check each system step (functions, headers, syntax, KDE deny list) and run the runner tests
+# auspex:summary=Check each system step (functions, headers, declared reads, syntax, KDE deny list) and run the runner tests
 # auspex:args=[--static]
 # auspex:level=1
 # auspex:requires-sudo=false
@@ -17,6 +17,8 @@ case "${1:-}" in
 esac
 
 deny_re='(\.config/plasma|\.config/k|~/\.config/k|/etc/sddm\.conf\.d|/usr/share/sddm|/usr/share/plasma)'
+# A repo path in the step text. Each match must be in auspex:reads.
+repo_path_re='(^|[^A-Za-z0-9_.-])(packages|system/files|config)/[^[:space:]"'"'"';)}]*'
 
 fail=0
 n=0
@@ -35,6 +37,26 @@ while IFS= read -r step; do
     if hits="$(grep -nE "$deny_re" "$file")"; then
         errs+=("names a KDE deny-list path: ${hits//$'\n'/; }")
     fi
+    text=""
+    if system_step_read "$file"; then
+        text="$REPLY"
+    else
+        errs+=("cannot read the step (a symlink, a NUL byte or over $SYSTEM_STEP_MAX_BYTES bytes)")
+    fi
+    declared=()
+    if reads="$(system_step_reads "$step" "$text" 2>&1)"; then
+        while IFS= read -r p; do
+            [[ -n "$p" ]] || continue
+            declared+=("$p")
+            [[ -f "$AUSPEX/$p" && ! -L "$AUSPEX/$p" ]] || errs+=("the reads file $p is missing or not a regular file")
+        done <<<"$reads"
+    else
+        errs+=("${reads#auspex: error: }")
+    fi
+    while IFS= read -r p; do
+        [[ -n "$p" ]] || continue
+        [[ " ${declared[*]} " == *" $p "* ]] || errs+=("reads $p but does not declare it in auspex:reads")
+    done < <(grep -v '^# auspex:reads=' <<<"$text" | grep -oE "$repo_path_re" | sed -E 's|^[^A-Za-z0-9_.-]||' | LC_ALL=C sort -u)
     if [[ ${#errs[@]} -eq 0 ]]; then
         printf 'ok %s\n' "$step"
     else

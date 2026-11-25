@@ -14,8 +14,9 @@ source "$AUSPEX/lib/system-steps.sh"
 n_pending=0
 while IFS= read -r step; do
     [[ -n "$step" ]] || continue
+    system_step_load "$step"
     system_step_installs "$step" >/dev/null
-    if system_step_check "$step"; then
+    if system_step_check; then
         printf 'applied %s\n' "$step"
         continue
     fi

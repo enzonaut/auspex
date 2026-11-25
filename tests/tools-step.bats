@@ -75,3 +75,31 @@ run_step() {
     [ "$status" -ne 0 ]
     [ ! -e "$AUSPEX_SYSTEM_STATE/030-auspex-tools.installed" ]
 }
+
+@test "a direct run finds the list from its own folder" {
+    printf '%s\n' bats shellcheck jq pacman-contrib >"$INSTALLED"
+    run bash "$STEP" check
+    [ "$status" -eq 0 ]
+}
+
+@test "the header declares the list in auspex:reads" {
+    grep -qx '# auspex:reads=packages/auspex-tools.list' "$STEP"
+}
+
+@test "apply reads the list from AUSPEX_READS_DIR when it is set" {
+    export AUSPEX_READS_DIR="$TEST_TMP/reads"
+    mkdir -p "$AUSPEX_READS_DIR/packages"
+    printf 'approved\n' >"$AUSPEX_READS_DIR/packages/auspex-tools.list"
+    run_step apply
+    [ "$status" -eq 0 ]
+    [ "$(grep -- '^-S' "$CALLS/pacman")" = "-S --needed --noconfirm approved" ]
+}
+
+@test "the step uses AUSPEX_REPO and AUSPEX_STEP_DIR when they are set" {
+    export AUSPEX_REPO="$TEST_TMP/repo2" AUSPEX_STEP_DIR="$TEST_TMP/repo2/system/steps"
+    mkdir -p "$AUSPEX_REPO/packages"
+    printf 'other\n' >"$AUSPEX_REPO/packages/auspex-tools.list"
+    run_step apply
+    [ "$status" -eq 0 ]
+    [ "$(grep -- '^-S' "$CALLS/pacman")" = "-S --needed --noconfirm other" ]
+}

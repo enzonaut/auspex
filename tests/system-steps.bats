@@ -132,13 +132,108 @@ run_tty() {
     [ -z "$(fake_calls hook)" ]
 }
 
-@test "the root shell refuses a step that changed after the prompt" {
-    make_fake sudo "printf '%s\n' 'apply() { : >\"\$MARK.evil\"; }' >>\"$AUSPEX/system/steps/900-fixture.sh\"; exec \"\$@\""
+# The fake sudo gets: bash -c <shell> _ <digest> <action> <repo>
+# <step name> <step text> [<reads name> <reads bytes> ...]. In args, the
+# step text is index 8 and the 1st reads file is index 10.
+tamper_sudo() {
+    make_fake sudo "args=(\"\$@\"); args[$1]+=\$'\\n$2'; exec \"\${args[@]}\""
+}
+
+add_reads_step() {
+    mkdir -p "$AUSPEX/packages"
+    printf 'alpha\nbeta\n' >"$AUSPEX/packages/demo.list"
+    cp "$FIX/reads/960-reads.sh" "$AUSPEX/system/steps/"
+}
+
+@test "the root shell refuses a step text that changed after the prompt" {
+    tamper_sudo 8 'apply() { : >"$MARK.evil"; }'
     run_tty $'y\n' auspex-system-apply 900-fixture
     [ "$status" -ne 0 ]
     [[ "$output" == *"changed after the prompt"* ]]
     [ ! -e "$MARK" ]
     [ ! -e "$MARK.evil" ]
+}
+
+@test "a step swapped on disk after the prompt: the root shell runs the approved text" {
+    make_fake sudo "printf '%s\n' 'apply() { : >\"\$MARK.evil\"; }' >>\"$AUSPEX/system/steps/900-fixture.sh\"; exec \"\$@\""
+    run_tty $'y\n' auspex-system-apply 900-fixture
+    [ "$status" -eq 0 ]
+    [ -e "$MARK" ]
+    [ ! -e "$MARK.evil" ]
+}
+
+@test "the root shell refuses a reads file that changed after the prompt" {
+    add_reads_step
+    tamper_sudo 10 'evil'
+    run_tty $'y\n' auspex-system-apply 960-reads
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"changed after the prompt"* ]]
+    [ ! -e "$MARK" ]
+}
+
+@test "a reads file swapped on disk after the prompt: the step gets the approved bytes" {
+    add_reads_step
+    make_fake sudo "printf 'evil\n' >\"$AUSPEX/packages/demo.list\"; exec \"\$@\""
+    run_tty $'y\n' auspex-system-apply 960-reads
+    [ "$status" -eq 0 ]
+    [ "$(cat "$MARK")" = $'alpha\nbeta' ]
+    mapfile -t env <"$MARK.env"
+    [ "${env[0]}" = "$AUSPEX" ]
+    [ "${env[1]}" = "$AUSPEX/system/steps" ]
+    [[ "${env[2]}" != "$AUSPEX"* ]]
+    [ ! -e "${env[2]}" ]
+    digest="$(grep -o 'approval sha256 [0-9a-f]*' <<<"$output" | cut -d' ' -f3)"
+    [ -n "$digest" ]
+    [ "$(jq -r .approval_sha256 "$AUSPEX_STATE/system-steps/960-reads.json")" = "$digest" ]
+}
+
+@test "plan prints each declared reads file and the approval sha256" {
+    add_reads_step
+    run auspex-system-plan </dev/null
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"-- reads packages/demo.list (sha256 $(sha256sum "$AUSPEX/packages/demo.list" | cut -d' ' -f1))"$'\n'"alpha"$'\n'"beta"$'\n'* ]]
+    [[ "$output" == *"-- approval sha256 "* ]]
+}
+
+@test "plan and apply refuse a bad or missing reads file" {
+    for p in ../x /etc/x a/../b ./x 'a b/../c'; do
+        sed "s|^# auspex:requires-sudo=true|&\n# auspex:reads=$p|" \
+            "$FIX/steps/900-fixture.sh" >"$AUSPEX/system/steps/930-bad.sh"
+        run auspex-system-plan </dev/null
+        [ "$status" -ne 0 ]
+        [[ "$output" == *"bad reads path"* ]]
+    done
+    rm "$AUSPEX/system/steps/930-bad.sh"
+    add_reads_step
+    rm "$AUSPEX/packages/demo.list"
+    run auspex-system-plan </dev/null
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"cannot read packages/demo.list"* ]]
+    ln -s "$FIX/reads/960-reads.sh" "$AUSPEX/packages/demo.list"
+    run_tty $'y\n' auspex-system-apply 960-reads
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"cannot read packages/demo.list"* ]]
+    [ -z "$(fake_calls sudo)" ]
+}
+
+@test "030 through the root shell installs the approved list, not the list on disk" {
+    export AUSPEX_SYSTEM_STATE="$TEST_TMP/system-state"
+    export INSTALLED="$TEST_TMP/installed"
+    printf '%s\n' jq >"$INSTALLED"
+    make_fake pacman '
+case "$1" in
+  -Qq) shift; rc=0; for p in "$@"; do grep -qx "$p" "$INSTALLED" || rc=1; done; exit $rc ;;
+  -S) shift; for p in "$@"; do [[ $p == -* ]] || grep -qx "$p" "$INSTALLED" || echo "$p" >>"$INSTALLED"; done ;;
+  *) exit 2 ;;
+esac'
+    mkdir -p "$AUSPEX/packages"
+    cp "$AUSPEX_REPO/packages/auspex-tools.list" "$AUSPEX/packages/"
+    cp "$AUSPEX_REPO/system/steps/030-auspex-tools.sh" "$AUSPEX/system/steps/"
+    make_fake sudo "printf 'jq\n' >\"$AUSPEX/packages/auspex-tools.list\"; exec \"\$@\""
+    run_tty $'y\n' auspex-system-apply 030-auspex-tools
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"-- reads packages/auspex-tools.list"* ]]
+    [ "$(grep -- '^-S' "$CALLS/pacman")" = "-S --needed --noconfirm bats shellcheck jq pacman-contrib" ]
 }
 
 @test "apply refuses bad step names" {
@@ -239,8 +334,24 @@ esac'
     [[ "$output" == *"ok 900-fixture"* ]]
 }
 
+@test "the static check passes on a step that declares its reads" {
+    add_reads_step
+    run auspex-check-system-steps --static
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ok 960-reads"* ]]
+}
+
+@test "the static check names an undeclared read" {
+    mkdir -p "$AUSPEX/packages"
+    : >"$AUSPEX/packages/demo.list"
+    cp "$FIX/bad/undeclared-read.sh" "$AUSPEX/system/steps/950-undeclared-read.sh"
+    run auspex-check-system-steps --static
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL 950-undeclared-read: reads packages/demo.list but does not declare it in auspex:reads"* ]]
+}
+
 @test "the static check fails on each bad step" {
-    for bad in no-undo level-1 sddm syntax; do
+    for bad in no-undo level-1 sddm syntax undeclared-read missing-read bad-read-path; do
         rm -f "$AUSPEX/system/steps/"*.sh
         cp "$FIX/bad/$bad.sh" "$AUSPEX/system/steps/950-$bad.sh"
         run auspex-check-system-steps --static
