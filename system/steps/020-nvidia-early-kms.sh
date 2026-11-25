@@ -10,7 +10,6 @@
 # nvidia nvidia_modeset nvidia_uvm nvidia_drm to MODULES in a drop-in.
 # The kms hook stays in HOOKS (OQ2). The main mkinitcpio config does not
 # change. nvidia_drm modeset and fbdev are already set, so no modprobe file.
-# check runs as the user. apply and undo run as root.
 
 if [[ -z "${AUSPEX_STEP_DIR:-}" ]]; then
     AUSPEX_STEP_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"

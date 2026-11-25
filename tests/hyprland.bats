@@ -30,7 +30,6 @@ run_step() {
     run bash -c 'source "$1"; "$2"' _ "$1" "$2"
 }
 
-# A copy of the repo with config/hypr, so a test can break the config.
 hypr_repo_copy() {
     make_repo_copy
     mkdir -p "$AUSPEX/config"
@@ -87,7 +86,7 @@ hypr_repo_copy() {
 @test "the main config holds no agent key and loads agent-binds.lua" {
     run grep -E '^hl\.bind\(.*auspex agent' "$AUSPEX_REPO/config/hypr/hyprland.lua"
     [ "$status" -eq 1 ]
-    grep -q 'dofile(here .. "agent-binds.lua")' "$AUSPEX_REPO/config/hypr/hyprland.lua"
+    grep -q 'dofile(config_dir .. "agent-binds.lua")' "$AUSPEX_REPO/config/hypr/hyprland.lua"
 }
 
 @test "hypridle locks at 10 min, turns the display off at 15 min, never suspends" {

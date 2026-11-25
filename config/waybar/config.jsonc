@@ -1,4 +1,3 @@
-// auspex waybar. Minimal, no theme (spec 9.4).
 {
     "layer": "top",
     "position": "top",

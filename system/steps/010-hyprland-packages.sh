@@ -4,11 +4,6 @@
 # auspex:level=3
 # auspex:requires-sudo=true
 # auspex:reads=packages/hyprland.list
-#
-# check runs as the user. apply and undo run as root.
-# apply records the packages that it installed in
-# $AUSPEX_SYSTEM_STATE/010-hyprland-packages.installed (default /var/lib/auspex).
-# undo removes only those packages.
 
 STEP_NAME=010-hyprland-packages
 if [[ -z "${AUSPEX_STEP_DIR:-}" ]]; then

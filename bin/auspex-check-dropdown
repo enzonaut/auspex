@@ -13,7 +13,6 @@ if [[ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || ! command -v hyprctl >/dev/nul
     exit 77
 fi
 
-# The name of the special workspace on the focused monitor, or "".
 shown() {
     hyprctl -j monitors | jq -r '.[] | select(.focused) | .specialWorkspace.name'
 }
