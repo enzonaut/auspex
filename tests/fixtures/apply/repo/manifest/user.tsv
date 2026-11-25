@@ -1,0 +1,4 @@
+# source	target	mode	session
+config/app/app.conf	~/.config/app/app.conf	copy	any
+config/tree/	~/.config/tree/	tree	any
+config/kv/owned.kv	~/.config/kv.conf	merge:kv	any

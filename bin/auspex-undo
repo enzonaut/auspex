@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+# auspex:summary=Undo the last generation, or each generation after <n>, as a new generation
+# auspex:args=[--to <n>] [--force] [--dry-run]
+# auspex:level=2
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+usage() {
+    printf 'usage: auspex undo [--to <n>] [--force] [--dry-run]\n' >&2
+    exit 2
+}
+
+to=""
+force=false
+dry_run=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --to)
+            [[ $# -ge 2 && "$2" =~ ^[0-9]+$ ]] || usage
+            to=$((10#$2))
+            shift
+            ;;
+        --force) force=true ;;
+        --dry-run) dry_run=true ;;
+        *) usage ;;
+    esac
+    shift
+done
+
+# A generation that undo can undo: an apply or undo whose targets were written.
+undoable() {
+    case "$(auspex_gen_status "$1")" in
+        ok | migration-failed) return 0 ;;
+    esac
+    return 1
+}
+
+# pick_generations: fill UNDO with the generations to undo, newest first.
+pick_generations() {
+    local n last expect
+    local -a list=()
+    local -A undone=()
+    mapfile -t list < <(auspex_gen_list)
+    [[ ${#list[@]} -gt 0 ]] || auspex_die "there is no generation to undo"
+    last="${list[-1]}"
+    UNDO=()
+    if [[ -n "$to" ]]; then
+        ((to < last)) || auspex_die "generation $last is the last generation; nothing comes after $to"
+        expect=$((to + 1))
+        for n in "${list[@]}"; do
+            ((n > to)) || continue
+            ((n == expect)) || auspex_die "generation $expect was pruned; auspex undo --to $to cannot run"
+            expect=$((n + 1))
+        done
+        ((expect > to + 1)) || auspex_die "generation $((to + 1)) was pruned; auspex undo --to $to cannot run"
+        for ((n = last; n > to; n--)); do
+            if undoable "$n"; then
+                UNDO+=("$n")
+            fi
+        done
+        return 0
+    fi
+    for n in "${list[@]}"; do
+        while IFS= read -r u; do
+            [[ -n "$u" ]] && undone[$u]=1
+        done < <(jq -r '.undoes // [] | .[]' "$(auspex_gen_dir "$n")/meta.json" 2>/dev/null || true)
+    done
+    for ((n = ${#list[@]} - 1; n >= 0; n--)); do
+        if [[ -z "${undone[${list[$n]}]:-}" ]] && undoable "${list[$n]}"; then
+            UNDO=("${list[$n]}")
+            return 0
+        fi
+    done
+    auspex_die "there is no generation to undo"
+}
+
+# undo_build: make the rows that restore each target to its content before
+# the oldest generation in UNDO that touched it.
+undo_build() {
+    local k n g path mode rel tgt b ob out state h want_hash
+    local -A from=() tmode=()
+    auspex_rows_reset
+    auspex_index_load
+    for ((k = ${#UNDO[@]} - 1; k >= 0; k--)); do
+        n="${UNDO[$k]}"
+        while IFS=$'\t' read -r path mode; do
+            [[ -n "$path" && -z "${from[$path]:-}" ]] || continue
+            from[$path]="$n" tmode[$path]="$mode"
+        done < <(jq -r '.targets[] | [.path, .mode] | @tsv' "$(auspex_gen_dir "$n")/meta.json")
+    done
+    while IFS= read -r rel; do
+        [[ -n "$rel" ]] || continue
+        auspex_rel_path "$rel" >/dev/null || auspex_die "generation ${from[$rel]} names a bad path $rel"
+        g="$(auspex_gen_dir "${from[$rel]}")"
+        mode="${tmode[$rel]}" tgt="$HOME/$rel" b="$g/before/$rel"
+        want_hash="${IDX_HASH[$rel]:-}"
+        if [[ "$mode" == merge:* ]]; then
+            ob="$g/owned-before/${mode#merge:}.json"
+            out="$AUSPEX_WORK/restore-${#T_REL[@]}.out"
+            "$(auspex_merger "$mode")" restore "$b" "$tgt" "$(auspex_owned_file "$mode")" "$ob" "$out" ||
+                auspex_die "merger ${mode#merge:} failed on ~/$rel"
+            if [[ -n "$want_hash" ]]; then
+                if [[ ! -e "$tgt" ]] || [[ "$(auspex_merge_digest "$mode" "$tgt")" != "$want_hash" ]]; then
+                    state=drift
+                fi
+            fi
+        else
+            ob="" out="$b"
+        fi
+        if [[ -z "${state:-}" && "$mode" != merge:* ]]; then
+            if [[ -e "$tgt" ]]; then
+                h="$(auspex_hash_file "$tgt")" || auspex_die "cannot read ~/$rel"
+                [[ "$h" == "$want_hash" ]] || state=drift
+            elif [[ -n "$want_hash" ]]; then
+                state=drift
+            fi
+        fi
+        if [[ -e "$b.absent" ]] && { [[ "$mode" != merge:* ]] || [[ ! -s "$out" ]]; }; then
+            if [[ ! -e "$tgt" ]]; then
+                state="${state:-unchanged}"
+            fi
+            auspex_row_add "$rel" "$mode" "${state:-remove}" remove "" "" ""
+        else
+            [[ -e "$out" ]] || auspex_die "generation ${from[$rel]} has no saved content for ~/$rel"
+            if [[ -z "${state:-}" ]]; then
+                if [[ ! -e "$tgt" ]]; then
+                    state=create
+                elif cmp -s "$out" "$tgt" && { [[ -z "$ob" ]] || cmp -s "$ob" "$(auspex_owned_file "$mode")"; }; then
+                    state=unchanged
+                else
+                    state=update
+                fi
+            fi
+            auspex_row_add "$rel" "$mode" "$state" write "$out" "$ob" ""
+        fi
+        state=""
+    done < <(printf '%s\n' "${!from[@]}" | LC_ALL=C sort)
+    for k in "${!T_REL[@]}"; do
+        [[ "${T_STATE[$k]}" == unchanged ]] || CH+=("$k")
+    done
+}
+
+[[ $dry_run == true ]] || auspex_lock
+pick_generations
+auspex_work_init
+state=""
+undo_build
+
+if auspex_plan_has_drift && [[ $force == false ]]; then
+    auspex_plan_print drift
+    auspex_die "drift: a target changed since auspex wrote it. Undo would overwrite it.
+Run auspex undo --force to overwrite it"
+fi
+
+if [[ $dry_run == true ]]; then
+    printf 'would undo generation(s) %s\n' "${UNDO[*]}"
+    auspex_plan_print changed
+    printf 'would write generation %d\n' "$(auspex_gen_next)"
+    exit 0
+fi
+
+GEN_REASON=""
+GEN_UNDOES="$(printf '%s\n' "${UNDO[@]}" | jq -sc .)"
+GEN_TO="${to:-null}"
+auspex_gen_begin undo
+auspex_gen_commit
+
+export AUSPEX_GEN_DIR="$GEN_DIR"
+auspex_run_hooks post-undo "$GEN_N"
+
+printf 'generation %d undoes %s\n' "$GEN_N" "${UNDO[*]}"
+while IFS=$'\t' read -r rel _ action; do
+    printf '%-9s ~/%s\n' "$action" "$rel"
+done <"$AUSPEX_WORK/targets.tsv"

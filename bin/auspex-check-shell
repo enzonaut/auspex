@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# auspex:summary=Run shellcheck on the commands, libraries, migrations, system steps and hooks
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+if ! command -v shellcheck >/dev/null 2>&1; then
+    printf 'shellcheck is missing; run step 030-auspex-tools\n'
+    exit 77
+fi
+
+files=()
+while IFS= read -r -d '' f; do
+    files+=("$f")
+done < <(find "$AUSPEX/bin" "$AUSPEX/lib" "$AUSPEX/migrations" "$AUSPEX/system/steps" "$AUSPEX/hooks" \
+    -type f ! -name .gitkeep ! -name '*.md' -print0 2>/dev/null | LC_ALL=C sort -z)
+
+[[ ${#files[@]} -gt 0 ]] || { printf 'no shell files found\n'; exit 77; }
+cd "$AUSPEX"
+exec shellcheck -x "${files[@]}"

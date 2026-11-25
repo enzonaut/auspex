@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# auspex:summary=Print the repo commit, the last generation, pending migrations and steps, and drift
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+if [[ $# -gt 0 ]]; then
+    printf 'usage: auspex status\n' >&2
+    exit 2
+fi
+
+commit="$(git -C "$AUSPEX" rev-parse --short HEAD 2>/dev/null)" || commit=unknown
+if [[ -n "$(git -C "$AUSPEX" status --porcelain 2>/dev/null)" ]]; then
+    printf 'commit %s (uncommitted changes)\n' "$commit"
+else
+    printf 'commit %s\n' "$commit"
+fi
+
+last="$(auspex_gen_list | tail -n 1)"
+if [[ -n "$last" ]]; then
+    jq -r --arg n "$last" '"last generation: generation \($n) \(.kind) \(.status) \(.time)"' \
+        "$(auspex_gen_dir "$last")/meta.json" 2>/dev/null ||
+        printf 'last generation: generation %s (no meta.json)\n' "$last"
+else
+    printf 'last generation: none\n'
+fi
+
+auspex_migrations_pending | sed 's/^/pending migration /'
+
+if [[ -d "$AUSPEX/system/steps" ]]; then
+    while IFS= read -r f; do
+        # shellcheck disable=SC1090
+        if ! (source "$f" && check) >/dev/null 2>&1 </dev/null; then
+            name="${f##*/}"
+            printf 'pending step %s\n' "${name%.sh}"
+        fi
+    done < <(find "$AUSPEX/system/steps" -mindepth 1 -maxdepth 1 -type f -name '*.sh' | LC_ALL=C sort)
+fi
+
+auspex_manifest_load
+auspex_work_init
+auspex_plan_build
+for i in "${!T_REL[@]}"; do
+    [[ "${T_STATE[$i]}" == drift ]] && printf 'drift ~/%s\n' "${T_REL[$i]}"
+done
+exit 0
