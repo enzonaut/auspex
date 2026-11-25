@@ -38,7 +38,6 @@ section > p.cap{margin:8px 0 0;color:var(--fg2);font-size:15px;max-width:1400px}
 .frame svg.mock,.frame img{display:block;width:100%;height:100%}
 .panel{position:absolute;inset:0;padding:2.2cqw 2.6cqw;background:
   repeating-linear-gradient(0deg,transparent 0 6px,rgba(0,0,0,.18) 6px 8px),linear-gradient(#171b13,#0a0c08)}
-/* title card */
 .title{display:grid;grid-template-columns:28cqw 1fr;gap:3cqw;align-items:center;height:100%}
 .title svg{width:100%;height:auto}
 .title h1{font-family:Cinzel,serif;font-weight:900;font-size:6.2cqw;letter-spacing:.12em;margin:0;color:var(--hi);line-height:1}
@@ -49,7 +48,6 @@ section > p.cap{margin:8px 0 0;color:var(--fg2);font-size:15px;max-width:1400px}
 .state svg{width:100%;height:auto;display:block}
 .state b{display:block;font-family:Cinzel,serif;color:var(--bronze);font-size:1.05cqw;letter-spacing:.15em;margin-top:.5cqw}
 .state span{font-size:.95cqw;color:var(--fg2)}
-/* palette */
 .pal{display:grid;grid-template-columns:1fr 1fr;gap:1.2cqw 2cqw;align-content:start;height:100%}
 .pgroup h4{margin:0 0 .5cqw;font-family:Cinzel,serif;color:var(--bronze);letter-spacing:.15em;font-size:1cqw}
 .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:.6cqw}
@@ -60,13 +58,11 @@ section > p.cap{margin:8px 0 0;color:var(--fg2);font-size:15px;max-width:1400px}
 .sw .chip span{opacity:.8;font-size:.62cqw}
 .sw code{display:block;font-family:"JetBrains Mono",monospace;font-size:.68cqw;color:var(--hi);margin-top:.2cqw}
 .sw p{margin:0;font-size:.6cqw;color:var(--fg2);line-height:1.25}
-/* fonts */
 .fonts{display:grid;grid-template-columns:repeat(2,1fr);gap:1.4cqw 2.4cqw;height:100%;align-content:center}
 .font{border-left:.35cqw solid var(--bronze);padding:.4cqw 0 .4cqw 1.2cqw}
 .font .spec{font-size:3cqw;color:var(--hi);line-height:1.1;white-space:nowrap;overflow:hidden}
 .font .meta{font-size:.95cqw;color:var(--fg2);margin-top:.3cqw}
 .font .meta b{color:var(--khaki);font-weight:600}
-/* notes */
 .notes{columns:2;column-gap:3cqw;font-size:.98cqw;color:var(--fg);height:100%}
 .notes h3{font-family:Cinzel,serif;color:var(--bronze);letter-spacing:.12em;font-size:1.15cqw;margin:0 0 .5cqw;break-after:avoid}
 .notes ul{margin:0 0 1.2cqw;padding-left:1.2cqw}
@@ -79,7 +75,6 @@ table.cr td:last-child{color:var(--hi);font-family:"JetBrains Mono",monospace}
 details{margin-top:10px;color:var(--fg2)}
 details summary{cursor:pointer;color:var(--fg)}
 a{color:var(--accent)}
-/* motion */
 .sweep{animation:sweep var(--dur,6s) ease-in-out infinite alternate}
 @keyframes sweep{from{transform:translateX(calc(-1 * var(--travel)))}to{transform:translateX(var(--travel))}}
 .hold{animation:hold 4s ease-in-out infinite}
