@@ -3,7 +3,6 @@
 # auspex:args=[--dry-run] [--force] [--reason <text>] | --adopt <target>
 # auspex:level=2
 # auspex:requires-sudo=false
-# The ~/ in quotes is display text for the user, not a path to expand.
 # shellcheck disable=SC2088
 set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=../lib/common.sh
@@ -39,8 +38,6 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-# adopt_target <target>: copy the live target into its repo source, and
-# record the live hash so that the next plan does not show drift.
 adopt_target() {
     local rel i src="" mode=""
     rel="$(auspex_rel_path "$1")" || auspex_die "bad target $1"

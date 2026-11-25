@@ -1,5 +1,4 @@
 #!/usr/bin/env bats
-# auspex plan, apply, undo and status in a temp HOME and a temp AUSPEX_STATE.
 
 load test_helper
 load fixtures/apply/helper

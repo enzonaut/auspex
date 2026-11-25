@@ -1,5 +1,4 @@
 # shellcheck shell=bash
-# The ~/ in quotes is display text for the user, not a path to expand.
 # shellcheck disable=SC2088
 # Shared helpers for bin/auspex-* commands. Source it, do not run it:
 #   source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
@@ -82,8 +81,6 @@ auspex_command_words() {
     printf '%s\n' "${name//-/ }"
 }
 
-# auspex_rel_path <target>: print the path of <target> relative to $HOME.
-# <target> is "~/x", "$HOME/x" or "x". A "." or ".." part is an error.
 auspex_rel_path() {
     local rel="$1"
     if [[ "$rel" == '~/'* ]]; then
@@ -98,17 +95,12 @@ auspex_rel_path() {
     printf '%s\n' "$rel"
 }
 
-# auspex_work_init: make the temp folder $AUSPEX_WORK. It is removed at exit.
 auspex_work_init() {
     AUSPEX_WORK="$(mktemp -d "${TMPDIR:-/tmp}/auspex.XXXXXX")" || auspex_die "cannot make a temp folder"
     # shellcheck disable=SC2064
     trap "rm -rf -- '$AUSPEX_WORK'" EXIT
 }
 
-# auspex_atomic_write <source> <target> [<mode reference>]
-# Copies <source> to a temp file in the target folder, then moves it onto
-# <target>. The file mode comes from the existing target, else from the
-# mode reference, else from <source>.
 auspex_atomic_write() {
     local src="$1" dst="$2" ref="${3:-}" dir tmp
     dir="$(dirname -- "$dst")"
@@ -126,11 +118,6 @@ auspex_atomic_write() {
     return 1
 }
 
-# Manifest. auspex_manifest_load fills these arrays, 1 entry per target file:
-#   M_SRC   source path relative to $AUSPEX
-#   M_REL   target path relative to $HOME
-#   M_MODE  copy, tree or merge:<name>
-# and M_PATHS with the source paths that the manifest names.
 auspex_manifest_load() {
     local src tgt mode rel f name n=0
     local -A seen=() mergers=()
@@ -174,9 +161,6 @@ auspex_manifest_load() {
     done
 }
 
-# Index. $AUSPEX_STATE/targets.tsv holds "hash<TAB>mode<TAB>path" for each
-# target that auspex wrote. path is relative to $HOME. For a merge target
-# the hash is the hash of the merger digest.
 declare -gA IDX_HASH=() IDX_MODE=()
 
 auspex_index_file() {
@@ -223,22 +207,12 @@ auspex_owned_file() {
     printf '%s\n' "$AUSPEX_STATE/owned/${1#merge:}.json"
 }
 
-# auspex_merge_digest <mode> <target> [<owned>]: the hash of the owned entries.
 auspex_merge_digest() {
     local out
     out="$("$(auspex_merger "$1")" digest "$2" "${3:-$(auspex_owned_file "$1")}")" || return 1
     auspex_hash_string "$out"
 }
 
-# Plan rows. 1 entry per row:
-#   T_REL     target path relative to $HOME
-#   T_MODE    copy, tree or merge:<name>
-#   T_STATE   unchanged, create, update, drift or remove
-#   T_ACTION  write or remove
-#   T_NEW     the file with the new content (empty for remove)
-#   T_ONEW    merge rows: the new owned file, empty for none
-#   T_SRC     source path relative to $AUSPEX (empty for remove)
-# CH holds the rows that change. STALE holds index paths with no target.
 auspex_rows_reset() {
     T_REL=() T_MODE=() T_STATE=() T_ACTION=() T_NEW=() T_ONEW=() T_SRC=()
     CH=() STALE=()
@@ -248,8 +222,6 @@ auspex_row_add() {
     T_REL+=("$1") T_MODE+=("$2") T_STATE+=("$3") T_ACTION+=("$4") T_NEW+=("$5") T_ONEW+=("$6") T_SRC+=("$7")
 }
 
-# auspex_plan_build: compare the manifest (load it first) with the live
-# targets and the index. Needs $AUSPEX_WORK.
 auspex_plan_build() {
     local i rel mode src tgt new state owned out oout h r
     local -A want=()
@@ -308,7 +280,6 @@ auspex_plan_build() {
     done
 }
 
-# auspex_plan_has_drift: return 0 when a row has drift.
 auspex_plan_has_drift() {
     local i
     for i in "${!T_REL[@]}"; do
@@ -317,7 +288,6 @@ auspex_plan_has_drift() {
     return 1
 }
 
-# auspex_row_diff <i>: print a unified diff of the live target and the new content.
 auspex_row_diff() {
     local i="$1" tgt new
     tgt="$HOME/${T_REL[$i]}" new="${T_NEW[$i]:-/dev/null}"
@@ -328,8 +298,6 @@ auspex_row_diff() {
     diff -u --label "~/${T_REL[$i]} (live)" --label "~/${T_REL[$i]} (new)" -- "$tgt" "$new" || true
 }
 
-# auspex_plan_print [all|changed|drift]: print the rows, with a diff for
-# update and drift.
 auspex_plan_print() {
     local which="${1:-all}" i st
     for i in "${!T_REL[@]}"; do
@@ -345,8 +313,6 @@ auspex_plan_print() {
     done
 }
 
-# Generations (spec 3.2).
-
 auspex_gen_root() {
     printf '%s\n' "$AUSPEX_STATE/generations"
 }
@@ -355,7 +321,6 @@ auspex_gen_dir() {
     printf '%s/%04d\n' "$(auspex_gen_root)" "$((10#$1))"
 }
 
-# auspex_gen_list: print the numbers of the existing generations, oldest first.
 auspex_gen_list() {
     local root
     root="$(auspex_gen_root)"
@@ -364,7 +329,6 @@ auspex_gen_list() {
         sed 's/^0*\([0-9]\)/\1/' | sort -n
 }
 
-# auspex_gen_next: 1 more than the highest number ever used.
 auspex_gen_next() {
     local max=0 n root
     root="$(auspex_gen_root)"
@@ -383,7 +347,6 @@ auspex_gen_status() {
     jq -r '.status // ""' "$(auspex_gen_dir "$1")/meta.json" 2>/dev/null || true
 }
 
-# auspex_row_label <i>: create, update or remove, from the live target.
 auspex_row_label() {
     if [[ "${T_ACTION[$1]}" == remove ]]; then
         printf 'remove\n'
@@ -394,7 +357,6 @@ auspex_row_label() {
     fi
 }
 
-# auspex_meta_write <status>: write meta.json of $GEN_DIR from the GEN_* values.
 auspex_meta_write() {
     local tmp actor=operator
     [[ "${AUSPEX_ACTOR:-}" == agent ]] && actor=agent
@@ -415,7 +377,6 @@ auspex_meta_write() {
     return 1
 }
 
-# auspex_meta_status <status>: set the status in meta.json of $GEN_DIR.
 auspex_meta_status() {
     local tmp
     tmp="$(mktemp "$GEN_DIR/.meta.XXXXXX")" || return 1
@@ -427,9 +388,6 @@ auspex_meta_status() {
     return 1
 }
 
-# auspex_gen_begin <kind>: make the next generation folder for the rows in
-# CH. It saves before/, owned-before/ and targets-before.tsv, and writes
-# meta.json with status "pending". Set GEN_REASON, GEN_UNDOES and GEN_TO first.
 auspex_gen_begin() {
     local i rel b tgt owned
     GEN_KIND="$1"
@@ -467,15 +425,12 @@ auspex_gen_begin() {
     auspex_meta_write pending || auspex_die "cannot write $GEN_DIR/meta.json"
 }
 
-# auspex_snapshot: try a home snapshot (spec 3.5). A failure prints 1 line.
 auspex_snapshot() {
     if ! snapper -c home create --description "auspex gen $GEN_N" </dev/null >/dev/null 2>&1; then
         auspex_log "snapper: no home snapshot; the generation folder is the undo"
     fi
 }
 
-# auspex_rows_write: write each row in CH and update the index in memory.
-# W_DONE counts the rows that it started. It returns 1 at the 1st failure.
 auspex_rows_write() {
     local i rel tgt owned h
     W_DONE=0
@@ -507,8 +462,6 @@ auspex_rows_write() {
     done
 }
 
-# auspex_rollback: restore before/ for the rows that auspex_rows_write
-# started, restore the owned files and the index, and mark the generation failed.
 auspex_rollback() {
     local k i rel tgt b owned
     for ((k = 0; k < W_DONE; k++)); do
@@ -533,8 +486,6 @@ auspex_rollback() {
     auspex_meta_status failed || auspex_warn "cannot mark generation $GEN_N failed"
 }
 
-# auspex_gen_commit: write the rows in CH, write after.sha256 and set status
-# ok. On a failure it rolls back and exits non-zero.
 auspex_gen_commit() {
     local i rel
     if ! auspex_rows_write || ! auspex_index_save; then
@@ -551,16 +502,12 @@ auspex_gen_commit() {
     auspex_meta_status ok || auspex_die "cannot write $GEN_DIR/meta.json"
 }
 
-# auspex_gen_prune: keep the newest 50 generations.
 auspex_gen_prune() {
     local n
     while IFS= read -r n; do
         rm -rf -- "$(auspex_gen_dir "$n")"
     done < <(auspex_gen_list | head -n -50)
 }
-
-# Migrations (spec 2.4). migrations/<ts>-<slug>.sh runs once, in name order.
-# The marker $AUSPEX_STATE/migrations/<file> records a completed migration.
 
 auspex_migrations_pending() {
     local f
@@ -570,8 +517,6 @@ auspex_migrations_pending() {
     done < <(find "$AUSPEX/migrations" -mindepth 1 -maxdepth 1 -type f -name '*.sh' -printf '%f\n' | LC_ALL=C sort)
 }
 
-# auspex_migrations_run: run the pending migrations. It returns 1 at the
-# 1st failure and runs no later migration.
 auspex_migrations_run() {
     local f rc
     local -a pending=()
@@ -589,8 +534,6 @@ auspex_migrations_run() {
     done
 }
 
-# Hooks (spec 2.5). auspex_run_hooks <event> <arg> runs each executable file
-# in hooks/<event>.d/ in name order with <arg> as $1. A failure is a warning.
 auspex_run_hooks() {
     local event="$1" arg="$2" d f rc
     local -a hooks=()
@@ -607,7 +550,6 @@ auspex_run_hooks() {
     return 0
 }
 
-# auspex_git_check: stop when a manifest source path has uncommitted changes.
 auspex_git_check() {
     local out
     out="$(git -C "$AUSPEX" status --porcelain -- manifest/user.tsv "${M_PATHS[@]}" 2>&1)" ||

@@ -1,5 +1,4 @@
 #!/usr/bin/env bats
-# The hook runner and the default hooks in a temp HOME and a temp AUSPEX_STATE.
 
 load test_helper
 load fixtures/apply/helper
