@@ -27,7 +27,6 @@ body{margin:0;font:400 17px/1.55 var(--ui);-webkit-font-smoothing:antialiased}
 a{color:var(--accent)}
 code{font:400 .88em var(--mono);color:var(--fg-light);background:var(--lighter);padding:.08em .35em;border-radius:3px}
 
-/* ---------- board chrome ---------- */
 .board{width:min(96vw,1900px);margin:0 auto;padding:28px 0 120px}
 .masthead{display:flex;align-items:center;gap:22px;padding:14px 0 22px;border-bottom:1px solid var(--steel);box-shadow:0 1px 0 var(--blood)}
 .masthead img{width:74px;height:auto}
@@ -70,11 +69,9 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 .cols li{margin:0 0 9px}
 .cols li b{color:var(--fg-light);font-weight:500}
 
-/* ---------- shared stage parts ---------- */
 .d{font-family:var(--display)} .u{font-family:var(--ui)} .m{font-family:var(--mono)}
 .carved{color:#7a0e16;text-shadow:0 -3px 0 #000,0 3px 2px rgba(255,110,110,.28)}
 
-/* ---------- I hero ---------- */
 .hero{background:radial-gradient(1500px 1250px at 1180px 1060px,rgba(163,20,28,.62),rgba(74,13,19,.25) 55%,transparent 75%),linear-gradient(#0b0b0d,#040405)}
 .hero .band{position:absolute;left:0;right:0;height:3px;background:var(--blood);box-shadow:0 0 26px 3px rgba(229,56,63,.55)}
 .hero .eagle{position:absolute;left:560px;top:330px;width:1240px}
@@ -88,7 +85,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 .hero .name{position:absolute;left:2260px;bottom:170px;width:2680px;font:400 50px/1.4 var(--ui);color:var(--fg-dark)}
 .hero .name b{color:var(--fg-light);font-weight:500}
 
-/* ---------- II palette ---------- */
 .pal{background:linear-gradient(#0b0b0d,#070708)}
 .pal .row{position:absolute;left:150px;right:150px;display:flex;gap:90px}
 .pal .grp h4{font:600 46px/1 var(--display);letter-spacing:.22em;color:var(--fg-dark);margin:0 0 30px}
@@ -101,7 +97,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 .pal .demo{flex:1;border:2px solid var(--steel);background:var(--bg);padding:44px 60px;font:400 46px/1.52 var(--ui)}
 .pal .demo .sel{background:var(--selection);color:var(--fg-bright);padding:0 14px}
 
-/* ---------- III login ---------- */
 .login .left{position:absolute;right:3250px;top:580px;text-align:right;text-shadow:0 2px 14px #000}
 .login .clock{font:600 390px/.92 var(--display);letter-spacing:.02em;color:var(--fg-bright)}
 .login .day{font:500 62px/1 var(--ui);letter-spacing:.24em;color:var(--fg);margin-top:52px}
@@ -139,7 +134,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 .login .power div{flex:1;height:112px;border:2px solid var(--muted);background:rgba(11,11,13,.9);display:flex;align-items:center;justify-content:center;gap:14px;font:500 32px/1 var(--ui);letter-spacing:.04em;white-space:nowrap;color:var(--fg)}
 .login .power svg{width:40px;height:40px;flex:none;stroke:var(--fg);fill:none;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
 
-/* ---------- IV plymouth ---------- */
 .ply{background:var(--dark)}
 .ply svg.wreath{position:absolute;left:1960px;top:300px;width:1200px;height:1200px;overflow:visible}
 .ply .leaf{fill:#15161a;stroke:var(--steel);stroke-width:3}
@@ -154,7 +148,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 .ply .lk{position:absolute;left:2110px;top:1760px;width:900px;height:110px;border:3px solid var(--accent);background:var(--darker);display:flex;align-items:center;gap:22px;padding:0 34px;box-shadow:0 5px 0 var(--blood)}
 .ply .lk i{width:20px;height:20px;background:var(--accent);transform:rotate(45deg)}
 
-/* ---------- V lock ---------- */
 .lock .col{position:absolute;left:1360px;width:2400px;top:250px;text-align:center;text-shadow:0 2px 18px #000}
 .lock .col img{width:300px}
 .lock .rt{font:700 330px/1 var(--display);letter-spacing:.06em;color:var(--fg-bright);margin-top:36px;white-space:nowrap}
@@ -166,14 +159,12 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 .lock .fleet{position:absolute;left:50%;transform:translateX(-50%);bottom:104px;white-space:nowrap;padding:30px 60px;background:rgba(4,4,5,.9);border:2px solid var(--steel);display:flex;justify-content:center;align-items:center;gap:20px;font:500 42px/1 var(--ui);letter-spacing:.14em;color:var(--fg);text-shadow:0 2px 18px #000}
 .lock .fleet .l{font:600 38px var(--display);letter-spacing:.3em;color:var(--fg-dark);margin-right:14px}
 
-/* fleet pips (bar and lock) */
 .pip{display:inline-block;width:22px;height:28px;border-radius:0 0 8px 8px}
 .pip.w{background:var(--accent)}
 .pip.q{background:var(--red);box-shadow:0 0 18px 3px rgba(229,56,63,.8);animation:pulse 1.6s ease-in-out infinite}
 .pip.i{background:transparent;border:3px solid var(--muted)}
 @keyframes pulse{50%{opacity:.45}}
 
-/* ---------- VI desktop ---------- */
 .desk .bar{position:absolute;left:0;right:0;top:0;height:76px;background:rgba(7,7,8,.95);border-bottom:2px solid rgba(212,168,67,.5);box-shadow:0 4px 0 var(--blood),0 8px 28px rgba(229,56,63,.4);display:flex;align-items:center;padding:0 26px;font:500 30px/1 var(--ui);letter-spacing:.05em;color:var(--fg)}
 .desk .bar .logo{width:58px;margin-right:22px}
 .desk .ws{display:flex;height:76px}
@@ -210,9 +201,7 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 .desk .foot{position:absolute;left:40px;right:40px;bottom:26px}
 .desk .foot .box{margin-bottom:8px}
 
-/* ---------- VII wallpaper has only the image ---------- */
 
-/* ---------- VIII fonts ---------- */
 .fonts{background:linear-gradient(#0b0b0d,#070708);display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:0}
 .fonts .fc{padding:170px 130px 0;border-right:2px solid var(--steel);position:relative}
 .fonts .fc:last-child{border-right:0}
@@ -223,7 +212,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 .fonts .small{margin-top:70px;font-size:54px;line-height:1.45;color:var(--fg-dark)}
 .fonts .wts{margin-top:70px;display:flex;gap:44px;font-size:110px;color:var(--fg-light)}
 
-/* ---------- IX notes ---------- */
 .notes{background:linear-gradient(#0b0b0d,#070708);display:grid;grid-template-columns:repeat(3,1fr)}
 .notes .nc{padding:160px 130px 0;border-right:2px solid var(--steel)}
 .notes .nc:last-child{border-right:0}
@@ -258,7 +246,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
   <li><a href="#s7"><b>VII</b>Wallpaper</a></li><li><a href="#s8"><b>VIII</b>Fonts</a></li><li><a href="#s9"><b>IX</b>Notes</a></li>
 </ul>
 
-<!-- ================= I ================= -->
 <section id="s1">
 <header><span class="num">I</span><h2>Name and mood</h2><div class="tools" data-for="hero"></div></header>
 <div class="frame" id="hero"><div class="stage hero">
@@ -279,7 +266,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 <p class="cap"><strong>One idea holds every screen together:</strong> the screen is a temple front. The bar is the entablature with the carved line, the eagle standard stands in the arch, the ranks stand below, and the windows march in order between them. The sci-fi is only the material: black alloy in place of marble, red light in place of paint.</p>
 </section>
 
-<!-- ================= II ================= -->
 <section id="s2">
 <header><span class="num">II</span><h2>Palette <small>colors.toml, Omarchy keys</small></h2><div class="tools" data-for="palette"></div></header>
 <div class="frame" id="palette"><div class="stage pal" id="palStage"></div></div>
@@ -287,7 +273,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 <table class="spec" id="palTable"><thead><tr><th>Key</th><th>Hex</th><th>Role</th><th>Contrast on background</th></tr></thead><tbody></tbody></table>
 </section>
 
-<!-- ================= III ================= -->
 <section id="s3">
 <header><span class="num">III</span><h2>Login screen <small>SDDM</small></h2><div class="tools" data-for="login"></div></header>
 <div class="frame" id="login"><div class="stage login">
@@ -329,7 +314,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 <p class="cap"><strong>Clock</strong> and date on the left, with the date in the Roman form and the night watch as 4 bars. <strong>User and password</strong> hang on the eagle standard as its name plate (a <em>tabula ansata</em>). <strong>Session picker</strong> on the right: Hyprland is the new camp, Plasma the old camp. Every text color on this screen has 4.5:1 or more against the surface under it; red is never a text color here, only light. The script at the end of this file measures the worst case (see Notes).</p>
 </section>
 
-<!-- ================= IV ================= -->
 <section id="s4">
 <header><span class="num">IV</span><h2>Boot splash <small>plymouth</small></h2><div class="tools" data-for="boot"></div></header>
 <div class="frame" id="boot"><div class="stage ply" data-ply="anim"></div></div>
@@ -342,7 +326,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 <p class="cap"><strong>Logo:</strong> the eagle. <strong>Progress indicator:</strong> a laurel wreath of 26 leaves that turn from steel to gold, 2 at a time, from the knot to the crown. The field is flat <code>dark_background</code>, with no gradient, so the early framebuffer shows no banding. The line under the name says <em>AVSPICIA CAPIVNTVR</em> ("the auspices are taken") and changes to <em>AVSPICIA SECVNDA</em> ("the omens are good") when boot completes.</p>
 </section>
 
-<!-- ================= V ================= -->
 <section id="s5">
 <header><span class="num">V</span><h2>Lock screen <small>hyprlock</small></h2><div class="tools" data-for="lock"></div></header>
 <div class="frame" id="lock"><div class="stage lock">
@@ -360,7 +343,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 <p class="cap"><strong>Locked means shields locked.</strong> The background is a <em>testudo</em>: a wall of shields with no gap. The time is in Roman numerals, with the plain time under it. The fleet counter stays on the lock screen, because the workers keep watch while the operator is away, and a red pip tells the operator from across the room that a worker waits.</p>
 </section>
 
-<!-- ================= VI ================= -->
 <section id="s6">
 <header><span class="num">VI</span><h2>Hyprland desktop <small>bar, ghostty, Claude Code</small></h2><div class="tools" data-for="desktop"></div></header>
 <div class="frame" id="desktop"><div class="stage desk">
@@ -382,7 +364,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
     </div>
   </div>
 
-  <!-- ghostty -->
   <div class="win" style="left:20px">
 <pre><span class="c-b">~/repos/auspex</span> <span class="c-m">main</span> <span class="c-a">&#x276F;</span> fastfetch</pre>
     <div class="ff"><img src="aquila.svg" alt="">
@@ -417,7 +398,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 <span class="c-b">~/repos/auspex</span> <span class="c-m">main</span> <span class="c-a">&#x276F;</span> <i class="cur"></i></pre>
   </div>
 
-  <!-- Claude Code -->
   <div class="win act" style="left:2570px">
     <div class="box gold" style="width:1500px"><pre><span class="c-a">&#x25CF;</span> <span class="c-w">Claude Code</span>
   <span class="c-d">~/repos/auspex</span></pre></div>
@@ -453,7 +433,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 <p class="cap"><strong>Bar = entablature.</strong> Left: the eagle and the workspaces as Roman numerals (gold with a red light under it = active, marble = has windows, steel = empty). Centre: clock and Roman date. Right: the <strong>fleet counter</strong> as shield pips (gold = working, red and pulsing = waiting for the operator, hollow = idle) with the plain words beside it, then network, volume, CPU, memory, power. <strong>Windows</strong> have square corners, a 20 px gap, and no title bar; the active border runs gold to blood red, the inactive border is steel. The window ground is 76% <code>background</code> over a blur, so the red arch glows through but text stays clean. The terminal and agent text here is sample content.</p>
 </section>
 
-<!-- ================= VII ================= -->
 <section id="s7">
 <header><span class="num">VII</span><h2>Wallpaper <small>wallpaper.svg, 5120&times;2160</small></h2><div class="tools" data-for="wallpaper"><a href="wallpaper.svg">Open the file</a></div></header>
 <div class="frame" id="wallpaper"><div class="stage"><img class="bgimg" src="wallpaper.svg" alt="Hall of black alloy columns, a red-lit arch with a gold eagle standard, and ranks of armoured legionaries with red shields"></div></div>
@@ -464,7 +443,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 </div>
 </section>
 
-<!-- ================= VIII ================= -->
 <section id="s8">
 <header><span class="num">VIII</span><h2>Fonts <small>3 families, all SIL OFL 1.1, embedded</small></h2><div class="tools" data-for="fonts"></div></header>
 <div class="frame" id="fonts"><div class="stage fonts">
@@ -501,7 +479,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 <p class="cap">The 3 files are the unchanged upstream variable fonts. This page loads them with <code>@font-face</code> from <code>fonts/</code>; it makes no network request. The wallpaper needs no font at all.</p>
 </section>
 
-<!-- ================= IX ================= -->
 <section id="s9">
 <header><span class="num">IX</span><h2>Notes <small>what is hard to build</small></h2><div class="tools" data-for="notes"></div></header>
 <div class="frame" id="notes"><div class="stage notes">
@@ -608,7 +585,6 @@ table.spec tr.grp td{font:600 12px var(--display);letter-spacing:.16em;color:var
 "use strict";
 var W=5120,H=2160;
 
-/* ---------- palette data (mirror of colors.toml) ---------- */
 var PAL=[
  ["Background ramp",[
   ["darker_background","#040405","Wells: input fields, shadows"],
@@ -693,7 +669,6 @@ var BG="#0b0b0d";
   });
 })();
 
-/* ---------- plymouth ---------- */
 var NS="http://www.w3.org/2000/svg",N=13;
 function wreath(){
   var s=document.createElementNS(NS,"svg");s.setAttribute("class","wreath");s.setAttribute("viewBox","-600 -600 1200 1200");
@@ -737,14 +712,12 @@ document.querySelectorAll("[data-ply]").forEach(function(st){
   requestAnimationFrame(tick);
 });
 
-/* ---------- scale every stage to its frame ---------- */
 var frames=[].slice.call(document.querySelectorAll(".frame"));
 function fit(f){var s=f.querySelector(".stage");if(!s)return;var w=f.clientWidth,h=f.clientHeight;if(!w||!h)return;var k=Math.min(w/W,h/H);s.style.transform="translate("+((w-W*k)/2)+"px,"+((h-H*k)/2)+"px) scale("+k+")"}
 function fitAll(){frames.forEach(fit)}
 if(window.ResizeObserver){var ro=new ResizeObserver(function(es){es.forEach(function(e){fit(e.target)})});frames.forEach(function(f){ro.observe(f)})}
 window.addEventListener("resize",fitAll);document.addEventListener("fullscreenchange",fitAll);
 
-/* ---------- tools: full screen, open alone ---------- */
 document.querySelectorAll(".tools[data-for]").forEach(function(t){
   var id=t.dataset["for"],f=document.getElementById(id);
   var b=el("button",null,"Full screen");b.type="button";
@@ -759,7 +732,6 @@ if(m){var sf=document.getElementById(m[1]);if(sf&&sf.classList.contains("frame")
 }}
 fitAll();
 
-/* ---------- login contrast report (worst case of each text color on its surface) ---------- */
 var rep=document.getElementById("contrastReport");
 if(rep){
   var pairs=[["bright_foreground on hall wall","#f4f0e6","#1a1b20"],["foreground on hall wall","#cfcbc0","#1a1b20"],
