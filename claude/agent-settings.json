@@ -11,6 +11,7 @@
       "Bash(auspex system plan*)",
       "Bash(auspex system prepare*)",
       "Bash(auspex migrate --pending*)",
+      "Bash(auspex keys*)",
       "Bash(git -C ~/repos/auspex status*)",
       "Bash(git -C ~/repos/auspex diff*)",
       "Bash(git -C ~/repos/auspex log*)",

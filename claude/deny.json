@@ -22,6 +22,8 @@
       "Bash(auspex-system-undo*)",
       "Bash(auspex bootstrap*)",
       "Bash(auspex-bootstrap*)",
+      "Bash(auspex agent*)",
+      "Bash(auspex-agent*)",
       "Bash(snapper -c * create*)",
       "Bash(snapper -c * delete*)",
       "Bash(snapper -c * undochange*)",
@@ -43,7 +45,13 @@
       "Edit(~/.config/auspex/claude/headless-settings.json)",
       "Write(~/.config/auspex/claude/headless-settings.json)",
       "Edit(~/.claude/skills/auspex/**)",
-      "Write(~/.claude/skills/auspex/**)"
+      "Write(~/.claude/skills/auspex/**)",
+      "Edit(~/.config/kglobalshortcutsrc)",
+      "Write(~/.config/kglobalshortcutsrc)",
+      "Edit(~/.local/share/applications/auspex-agent.desktop)",
+      "Write(~/.local/share/applications/auspex-agent.desktop)",
+      "Edit(~/.local/share/applications/auspex-agent-dropdown.desktop)",
+      "Write(~/.local/share/applications/auspex-agent-dropdown.desktop)"
     ]
   }
 }
