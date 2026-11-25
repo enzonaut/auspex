@@ -146,7 +146,7 @@ src_with() {
 
 perm_repo() {
     make_repo_copy
-    cp -a "$AUSPEX_REPO/claude" "$AUSPEX_REPO/manifest" "$AUSPEX/"
+    cp -a "$AUSPEX_REPO/agent" "$AUSPEX_REPO/claude" "$AUSPEX_REPO/manifest" "$AUSPEX/"
 }
 
 @test "apply merges the settings, plan shows unchanged, undo restores them" {
@@ -187,7 +187,7 @@ perm_repo() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"Edit(~/.claude/settings.json)"* ]]
     [[ "$output" == *"Write(~/.config/auspex/claude/headless-settings.json)"* ]]
-    [ "$(printf '%s\n' "$output" | wc -l)" -eq 6 ]
+    [ "$(printf '%s\n' "$output" | wc -l)" -eq 8 ]
 }
 
 @test "check permissions fails for a level 3 command with no deny rule" {

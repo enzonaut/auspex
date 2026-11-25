@@ -41,7 +41,9 @@
       "Edit(~/.config/auspex/claude/agent-settings.json)",
       "Write(~/.config/auspex/claude/agent-settings.json)",
       "Edit(~/.config/auspex/claude/headless-settings.json)",
-      "Write(~/.config/auspex/claude/headless-settings.json)"
+      "Write(~/.config/auspex/claude/headless-settings.json)",
+      "Edit(~/.claude/skills/auspex/**)",
+      "Write(~/.claude/skills/auspex/**)"
     ]
   }
 }
