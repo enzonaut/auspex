@@ -146,7 +146,7 @@ src_with() {
 
 perm_repo() {
     make_repo_copy
-    cp -a "$AUSPEX_REPO/agent" "$AUSPEX_REPO/claude" "$AUSPEX_REPO/config" "$AUSPEX_REPO/manifest" "$AUSPEX_REPO/systemd" "$AUSPEX_REPO/templates" "$AUSPEX_REPO/themes" "$AUSPEX/"
+    cp -a "$AUSPEX_REPO/agent" "$AUSPEX_REPO/claude" "$AUSPEX_REPO/config" "$AUSPEX_REPO/manifest" "$AUSPEX_REPO/system" "$AUSPEX_REPO/systemd" "$AUSPEX_REPO/templates" "$AUSPEX_REPO/themes" "$AUSPEX/"
 }
 
 @test "apply merges the settings, plan shows unchanged, undo restores them" {
