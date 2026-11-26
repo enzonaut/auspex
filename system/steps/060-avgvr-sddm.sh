@@ -17,10 +17,6 @@
 # $AUSPEX_SYSTEM_STATE/060-avgvr-sddm.made-dir (default /var/lib/auspex).
 # undo removes the conf and the theme dir. It removes the conf dir only when
 # apply made it and it is empty.
-# Test seams: AUSPEX_SDDM_THEME_DIR (the themes root), AUSPEX_SDDM_CONF_DIR
-# and AUSPEX_SYSTEM_STATE.
-# apply uses step_install_verified from lib/system-steps.sh. The root shell
-# defines it. A direct run of apply must source that file first.
 
 STEP_NAME=060-avgvr-sddm
 if [[ -z "${AUSPEX_STEP_DIR:-}" ]]; then

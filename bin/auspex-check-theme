@@ -200,10 +200,6 @@ check_game_paths() {
     printf 'ok   no game config path in the manifest or the steps\n'
 }
 
-# The built SDDM theme in system/files/avgvr/sddm. qmllint runs when it is
-# installed, else the check prints a skip line and does the other checks.
-# qmllint warnings (for example the SDDM context names) are allowed. Only a
-# non-zero exit fails.
 check_sddm() {
     local dir="$SYS/sddm" qml lint f rc=0
     if [[ ! -f "$dir/Main.qml" ]]; then

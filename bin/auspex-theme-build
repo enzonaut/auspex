@@ -101,7 +101,6 @@ if ! resvg --skip-system-fonts "${fontargs[@]}" -w "$WALL_W" -h "$WALL_H" \
 fi
 grep -v '@font-face rule is not supported' -- "$out/resvg.err" >&2 || true
 
-# The SDDM theme: the sources, theme.conf, the backdrop and the mark.
 for f in "${SDDM_FILES[@]}"; do
     mkdir -p "$(dirname "$out/$SYS/sddm/$f")"
     cp -- "$AUSPEX/$SDDM_SRC/$f" "$out/$SYS/sddm/$f"

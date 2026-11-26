@@ -1,8 +1,3 @@
-// AVGVR login theme for SDDM 0.21 (Qt 6). docs/specs/avgvr-theme.md section 6.1.
-// Every color and font name comes from theme.conf (config.<key>). This file
-// has no color literal. Sizes use u = height / 2160. The design mockup in
-// design/directions/c/index.html uses a 1440-high frame, so d = 1.5 u is
-// 1 design unit.
 import QtQuick 2.15
 
 Rectangle {
@@ -19,7 +14,6 @@ Rectangle {
     property var sessionNames: []
     property bool failed: false
 
-    // Rail and band positions: the band is in the lower third.
     readonly property real railTop: 1440 * u
     readonly property real bandTop: railTop + 29 * d
     readonly property real bandHeight: 116 * d
@@ -48,7 +42,6 @@ Rectangle {
         }
     }
 
-    // Collect the session names. The theme never writes the session default.
     Repeater {
         model: sessionModel
         delegate: Item {
@@ -81,7 +74,6 @@ Rectangle {
         color: config.text_muted
     }
 
-    // A dentil rail: a bronze_dark rule and a row of surface blocks.
     component Rail: Item {
         id: rail
         property bool under: false
@@ -108,7 +100,6 @@ Rectangle {
         }
     }
 
-    // Top left: the mark and the name.
     Row {
         x: 96 * root.d
         y: 64 * root.d
@@ -146,7 +137,6 @@ Rectangle {
         y: root.railTop
     }
 
-    // The inscription band.
     Rectangle {
         id: band
         x: 0
@@ -165,7 +155,6 @@ Rectangle {
             height: parent.height
             spacing: 80 * root.d
 
-            // User zone.
             Column {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 480 * root.d
@@ -197,7 +186,6 @@ Rectangle {
                 }
             }
 
-            // Password field.
             Rectangle {
                 y: 18 * root.d
                 width: 640 * root.d
@@ -240,7 +228,6 @@ Rectangle {
                 }
             }
 
-            // Session selector: Left and Right change the session.
             FocusScope {
                 id: sessionZone
                 anchors.verticalCenter: parent.verticalCenter
@@ -311,7 +298,6 @@ Rectangle {
             }
         }
 
-        // The clock at the right end of the band.
         Text {
             id: clock
             anchors.right: parent.right
@@ -336,7 +322,6 @@ Rectangle {
         under: true
     }
 
-    // Under the band, left: the login-failed message (the only accent) and caps lock.
     Row {
         x: 160 * root.d
         y: root.underTop + 29 * root.d + 30 * root.d
@@ -353,7 +338,6 @@ Rectangle {
         }
     }
 
-    // Under the band, right: the power actions.
     Row {
         anchors.right: parent.right
         anchors.rightMargin: 96 * root.d
