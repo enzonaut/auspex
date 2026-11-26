@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# auspex:summary=Make the generated theme assets: fonts, wallpaper PNG, SHA256SUMS and INPUTS.sha256
+# auspex:args=[--dry-run]
+# auspex:level=2
+# auspex:requires-sudo=false
+#
+# Reads only the repo files in INPUTS. Uses no network and no sudo.
+# It builds every output in a temp folder, then prints 1 line per output:
+#   create|update|unchanged <repo path>
+# With --dry-run it prints the same lines and changes nothing.
+# Outputs:
+#   system/files/avgvr/fonts/*            woff2_decompress, and the OFL texts
+#   themes/avgvr/generated/wallpaper.png  resvg --use-font-file <the TTF files>
+#   system/files/avgvr/SHA256SUMS         every file under system/files/avgvr/
+#   themes/avgvr/generated/INPUTS.sha256  each file in INPUTS and this script
+# auspex check theme compares INPUTS.sha256 with the current inputs.
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+DESIGN=design/directions/c
+SYS=system/files/avgvr
+GEN=themes/avgvr/generated
+WALL_W=5120
+WALL_H=2160
+
+# woff2 source -> TTF name in $SYS/fonts. JetBrains Mono comes from the
+# ttf-jetbrains-mono package, so it is not here.
+FONTS=(
+    "jost-latin-variable.woff2:Jost.ttf"
+    "marcellus-sc-latin-400-normal.woff2:MarcellusSC-Regular.ttf"
+)
+LICENSES=(OFL-jost.txt OFL-marcellussc.txt)
+
+# Each repo file that the build reads. Later tickets add their inputs here.
+INPUTS=(bin/auspex-theme-build "$DESIGN/wallpaper.svg")
+for f in "${FONTS[@]}"; do INPUTS+=("$DESIGN/fonts/${f%%:*}"); done
+for f in "${LICENSES[@]}"; do INPUTS+=("$DESIGN/fonts/$f"); done
+
+dry_run=false
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) dry_run=true ;;
+        *)
+            printf 'usage: auspex theme build [--dry-run]\n' >&2
+            exit 2
+            ;;
+    esac
+done
+
+for tool in woff2_decompress resvg sha256sum; do
+    command -v "$tool" >/dev/null || auspex_die "$tool is not installed"
+done
+for f in "${INPUTS[@]}"; do
+    [[ -f "$AUSPEX/$f" && ! -L "$AUSPEX/$f" ]] || auspex_die "missing input $f"
+done
+
+out="$(mktemp -d)"
+trap 'rm -rf -- "$out"' EXIT
+mkdir -p "$out/$SYS/fonts" "$out/$GEN" "$out/woff2"
+
+# Keep files under $SYS that this build does not make, so SHA256SUMS covers them.
+if [[ -d "$AUSPEX/$SYS" ]]; then
+    (cd "$AUSPEX/$SYS" && find . -type f ! -name SHA256SUMS ! -path './fonts/*' -print0) |
+        while IFS= read -r -d '' f; do
+            mkdir -p "$(dirname "$out/$SYS/$f")"
+            cp -p -- "$AUSPEX/$SYS/$f" "$out/$SYS/$f"
+        done
+fi
+
+fontargs=()
+for f in "${FONTS[@]}"; do
+    src="${f%%:*}" ttf="${f#*:}"
+    cp -- "$AUSPEX/$DESIGN/fonts/$src" "$out/woff2/$src"
+    woff2_decompress "$out/woff2/$src" >/dev/null || auspex_die "woff2_decompress failed on $src"
+    mv -- "$out/woff2/${src%.woff2}.ttf" "$out/$SYS/fonts/$ttf"
+    fontargs+=(--use-font-file "$out/$SYS/fonts/$ttf")
+done
+for f in "${LICENSES[@]}"; do
+    cp -- "$AUSPEX/$DESIGN/fonts/$f" "$out/$SYS/fonts/$f"
+done
+
+# resvg skips the @font-face data URI in the SVG and warns. The TTF files
+# above give it the same fonts, so drop only that warning.
+if ! resvg --skip-system-fonts "${fontargs[@]}" -w "$WALL_W" -h "$WALL_H" \
+    "$AUSPEX/$DESIGN/wallpaper.svg" "$out/$GEN/wallpaper.png" 2>"$out/resvg.err"; then
+    cat -- "$out/resvg.err" >&2
+    auspex_die "resvg failed on $DESIGN/wallpaper.svg"
+fi
+grep -v '@font-face rule is not supported' -- "$out/resvg.err" >&2 || true
+
+(cd "$out/$SYS" && find . -type f ! -name SHA256SUMS -printf '%P\n' | LC_ALL=C sort |
+    while IFS= read -r f; do sha256sum -- "$f"; done) >"$out/$SYS/SHA256SUMS"
+(cd "$AUSPEX" && printf '%s\n' "${INPUTS[@]}" | LC_ALL=C sort |
+    while IFS= read -r f; do sha256sum -- "$f"; done) >"$out/$GEN/INPUTS.sha256"
+
+# Remove fonts that the build no longer makes.
+if [[ -d "$AUSPEX/$SYS/fonts" ]]; then
+    (cd "$AUSPEX/$SYS/fonts" && find . -type f -printf '%P\n') | LC_ALL=C sort |
+        while IFS= read -r f; do
+            [[ -e "$out/$SYS/fonts/$f" ]] && continue
+            printf 'remove %s\n' "$SYS/fonts/$f"
+            $dry_run || rm -f -- "$AUSPEX/$SYS/fonts/$f"
+        done
+fi
+
+(cd "$out" && find "$SYS" "$GEN" -type f | LC_ALL=C sort) | while IFS= read -r f; do
+    if [[ ! -e "$AUSPEX/$f" ]]; then
+        state=create
+    elif cmp -s -- "$out/$f" "$AUSPEX/$f"; then
+        printf 'unchanged %s\n' "$f"
+        continue
+    else
+        state=update
+    fi
+    printf '%s %s\n' "$state" "$f"
+    if ! $dry_run; then
+        mkdir -p "$(dirname "$AUSPEX/$f")"
+        install -m 644 -- "$out/$f" "$AUSPEX/$f"
+    fi
+done
