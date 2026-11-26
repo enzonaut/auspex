@@ -81,7 +81,17 @@
       "Edit(~/.config/chrome-flags.conf)",
       "Write(~/.config/chrome-flags.conf)",
       "Edit(~/.config/brave-flags.conf)",
-      "Write(~/.config/brave-flags.conf)"
+      "Write(~/.config/brave-flags.conf)",
+      "Edit(~/.config/herdr-app/themes/avgvr.json)",
+      "Write(~/.config/herdr-app/themes/avgvr.json)",
+      "Edit(~/.config/herdr-app/settings.json)",
+      "Write(~/.config/herdr-app/settings.json)",
+      "Edit(~/.config/herdr-app/fonts/Jost.ttf)",
+      "Write(~/.config/herdr-app/fonts/Jost.ttf)",
+      "Edit(~/.config/herdr-app/fonts/MarcellusSC-Regular.ttf)",
+      "Write(~/.config/herdr-app/fonts/MarcellusSC-Regular.ttf)",
+      "Edit(~/.config/herdr-app/sounds/silent.mp3)",
+      "Write(~/.config/herdr-app/sounds/silent.mp3)"
     ]
   }
 }

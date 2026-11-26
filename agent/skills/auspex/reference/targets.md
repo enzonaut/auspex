@@ -26,3 +26,8 @@ Change the source in the repo, never the target.
 | `~/.config/hypr/hyprpaper.conf` | `templates/hypr/hyprpaper.conf.tpl` | render | hyprland |
 | `~/.local/share/auspex/wallpaper/avgvr.png` | `themes/avgvr/generated/wallpaper.png` | copy | hyprland |
 | `~/.config/waybar/style.css` | `templates/waybar/style.css.tpl` | render | hyprland |
+| `~/.config/herdr-app/themes/avgvr.json` | `templates/herdr-app/avgvr.json.tpl` | render | any |
+| `~/.config/herdr-app/settings.json` | `config/herdr-app/settings.json` | merge:herdr-settings | any |
+| `~/.config/herdr-app/fonts/Jost.ttf` | `system/files/avgvr/fonts/Jost.ttf` | copy | any |
+| `~/.config/herdr-app/fonts/MarcellusSC-Regular.ttf` | `system/files/avgvr/fonts/MarcellusSC-Regular.ttf` | copy | any |
+| `~/.config/herdr-app/sounds/silent.mp3` | `config/herdr-app/sounds/silent.mp3` | copy | any |

@@ -346,6 +346,23 @@ check_fuzzel() {
     printf 'ok   fuzzel --check-config passes on the rendered fuzzel.ini\n'
 }
 
+check_herdr_theme() {
+    command -v jq >/dev/null 2>&1 || {
+        printf 'jq is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local out="$work/herdr-avgvr.json"
+    auspex_render "$PALETTE" "$AUSPEX/templates/herdr-app/avgvr.json.tpl" "$out" || {
+        fail 'templates/herdr-app/avgvr.json.tpl does not render'
+        return 1
+    }
+    if ! jq -e '(.ansi | length == 16) and (.ansi | all(type == "string"))' "$out" >/dev/null 2>&1; then
+        fail 'the rendered herdr theme is not valid JSON with 16 ansi values'
+        return 1
+    fi
+    printf 'ok   the rendered herdr theme parses and has 16 ansi values\n'
+}
+
 CHECKS=(
     check_templates
     check_inputs
@@ -359,6 +376,7 @@ CHECKS=(
     check_hyprland_config
     check_waybar
     check_fuzzel
+    check_herdr_theme
 )
 
 failed=0

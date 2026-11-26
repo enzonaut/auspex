@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# Key merger for ~/.config/herdr-app/settings.json (the merger contract of lib/common.sh).
+# The source file holds the owned keys. The owned file holds 1 record
+# {p: path, has: bool, old: value} for each owned key: the value before auspex.
+set -euo pipefail
+
+die() {
+    printf 'herdr-settings: %s\n' "$*" >&2
+    exit 1
+}
+
+SETTINGS='length == 1 and (.[0] | type == "object"
+    and ((.sounds // {}) | type == "object"))'
+SOURCE='length == 1 and (.[0] | type == "object" and length > 0
+    and all(.[]; type == "string" or type == "number" or type == "boolean"
+        or (type == "object" and length > 0 and all(.[]; type == "string" or type == "number" or type == "boolean"))))'
+OWNED='length == 1 and (.[0] | type == "array"
+    and all(type == "object" and (.p | type == "array") and (.has | type == "boolean")))'
+
+args=()
+
+load() {
+    if [[ -e "$2" ]]; then
+        jq -s -e "$3" "$2" >/dev/null 2>&1 || die "$2 is not valid"
+        args+=(--slurpfile "$1" "$2")
+    else
+        args+=(--argjson "$1" "[$4]")
+    fi
+}
+
+tmp="$(mktemp)"
+trap 'rm -f -- "$tmp"' EXIT
+
+case "${1:-}" in
+    merge)
+        [[ $# -eq 6 ]] || die "usage: merge <source> <target> <owned-in> <out> <owned-out>"
+        [[ -f "$2" ]] || die "no source $2"
+        load src "$2" "$SOURCE" null
+        load cur "$3" "$SETTINGS" '{}'
+        load own "$4" "$OWNED" '[]'
+        jq -n "${args[@]}" '
+            $src[0] as $s | $cur[0] as $t | $own[0] as $o
+            | [$s | paths(scalars)] as $ps
+            | {
+                settings: (reduce $ps[] as $p ($t; setpath($p; $s | getpath($p)))),
+                owned: [$ps[] as $p
+                    | (first($o[] | select(.p == $p)) // (
+                        ($t | getpath($p)) as $v
+                        | if $v == null then {p: $p, has: false} else {p: $p, has: true, old: $v} end))]
+            } | . + {changed: (.settings != $t)}' >"$tmp"
+        if [[ -e "$3" && "$(jq '.changed' "$tmp")" == false ]]; then
+            cp -- "$3" "$5"
+        else
+            jq --indent 2 '.settings' "$tmp" >"$5"
+        fi
+        jq '.owned' "$tmp" >"$6"
+        ;;
+    restore)
+        [[ $# -eq 6 ]] || die "usage: restore <before> <target> <owned-now> <owned-before> <out>"
+        if [[ ! -e "$3" ]]; then
+            if [[ -e "$2" ]]; then cp -- "$2" "$6"; else : >"$6"; fi
+            exit 0
+        fi
+        load bef "$2" "$SETTINGS" null
+        load tgt "$3" "$SETTINGS" null
+        load now "$4" "$OWNED" '[]'
+        load ob "$5" "$OWNED" '[]'
+        jq -n "${args[@]}" '
+            $bef[0] as $b | $tgt[0] as $t | $ob[0] as $ob
+            | (reduce $now[0][] as $r ($t;
+                . as $cur
+                | (if any($ob[]; .p == $r.p) then
+                    ($b | getpath($r.p)) as $v
+                    | if $v == null then {has: false} else {has: true, old: $v} end
+                  else $r end) as $w
+                | if $w.has then setpath($r.p; $w.old)
+                  else delpaths([$r.p]) end)
+              | if (.sounds? == {}) and (($b.sounds? // null) == null) then del(.sounds) else . end) as $r
+            | {same: ($b != null and $r == $b), empty: ($b == null and $r == {}), settings: $r}' >"$tmp"
+        if [[ "$(jq '.same' "$tmp")" == true ]]; then
+            cp -- "$2" "$6"
+        elif [[ "$(jq '.empty' "$tmp")" == true ]]; then
+            : >"$6"
+        else
+            jq --indent 2 '.settings' "$tmp" >"$6"
+        fi
+        ;;
+    digest)
+        [[ $# -eq 3 ]] || die "usage: digest <target> <owned>"
+        [[ -e "$2" && -e "$3" ]] || exit 0
+        load tgt "$2" "$SETTINGS" null
+        load own "$3" "$OWNED" '[]'
+        jq -n -r "${args[@]}" '$tgt[0] as $t | $own[0][] | . as $r | "\($r.p | join(".")) = \($t | getpath($r.p) | tojson)"'
+        ;;
+    *)
+        printf 'usage: herdr-settings merge|restore|digest ...\n' >&2
+        exit 2
+        ;;
+esac
