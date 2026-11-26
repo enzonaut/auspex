@@ -681,3 +681,147 @@ font_files() {
     cmp "$AUSPEX/system/files/avgvr/fonts/MarcellusSC-Regular.ttf" "$AUSPEX_FONT_DIR/MarcellusSC-Regular.ttf"
     [ "$(fake_calls fc-cache)" = "-f $AUSPEX_FONT_DIR" ]
 }
+
+setup_060() {
+    export AUSPEX_SYSTEM_STATE="$TEST_TMP/system-state"
+    export AUSPEX_SDDM_THEME_DIR="$TEST_TMP/sddm-themes"
+    export AUSPEX_SDDM_CONF_DIR="$TEST_TMP/sddm.conf.d"
+    mkdir -p "$AUSPEX_SDDM_THEME_DIR/breeze" "$AUSPEX/system/files"
+    printf 'breeze\n' >"$AUSPEX_SDDM_THEME_DIR/breeze/Main.qml"
+    cp -r "$AUSPEX_REPO/system/files/avgvr" "$AUSPEX/system/files/"
+    cp "$AUSPEX_REPO/system/steps/060-avgvr-sddm.sh" "$AUSPEX/system/steps/"
+}
+
+step060() {
+    run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; source "$1/system/steps/060-avgvr-sddm.sh"; "$2"' _ "$AUSPEX" "$1"
+}
+
+sddm_files() {
+    (cd "$AUSPEX_SDDM_THEME_DIR/avgvr" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+}
+
+SDDM_CONF_WANT='# /etc/sddm.conf.d/zz-auspex-avgvr.conf  (written by auspex step 060)
+[Theme]
+Current=avgvr
+Font=Jost,11'
+
+@test "060 headers say level 3, requires sudo and read SHA256SUMS" {
+    local f="$AUSPEX_REPO/system/steps/060-avgvr-sddm.sh"
+    grep -qx '# auspex:level=3' "$f"
+    grep -qx '# auspex:requires-sudo=true' "$f"
+    grep -qx '# auspex:reads=system/files/avgvr/SHA256SUMS' "$f"
+}
+
+@test "060 check fails before apply" {
+    setup_060
+    step060 check
+    [ "$status" -ne 0 ]
+}
+
+@test "060 apply installs the hashed theme and the conf, and check passes" {
+    setup_060
+    step060 apply
+    [ "$status" -eq 0 ]
+    [ "$(sddm_files)" = "$(printf '%s\n' Main.qml backdrop.png mark.png metadata.desktop theme.conf)" ]
+    cmp "$AUSPEX/system/files/avgvr/sddm/Main.qml" "$AUSPEX_SDDM_THEME_DIR/avgvr/Main.qml"
+    [ "$(stat -c %a "$AUSPEX_SDDM_THEME_DIR/avgvr/theme.conf")" = 644 ]
+    [ "$(cat "$AUSPEX_SDDM_CONF_DIR/zz-auspex-avgvr.conf")" = "$SDDM_CONF_WANT" ]
+    [ "$(stat -c %a "$AUSPEX_SDDM_CONF_DIR/zz-auspex-avgvr.conf")" = 644 ]
+    [ -e "$AUSPEX_SYSTEM_STATE/060-avgvr-sddm.made-dir" ]
+    [ ! -e "$AUSPEX_SDDM_THEME_DIR/avgvr.new" ]
+    [ "$(cat "$AUSPEX_SDDM_THEME_DIR/breeze/Main.qml")" = breeze ]
+    step060 check
+    [ "$status" -eq 0 ]
+}
+
+@test "060 apply 2 times gives the same result and removes a stale theme file" {
+    setup_060
+    step060 apply
+    [ "$status" -eq 0 ]
+    printf 'old\n' >"$AUSPEX_SDDM_THEME_DIR/avgvr/stale.qml"
+    step060 check
+    [ "$status" -ne 0 ]
+    step060 apply
+    [ "$status" -eq 0 ]
+    [ "$(sddm_files)" = "$(printf '%s\n' Main.qml backdrop.png mark.png metadata.desktop theme.conf)" ]
+    [ "$(ls -A "$AUSPEX_SDDM_CONF_DIR")" = zz-auspex-avgvr.conf ]
+    step060 check
+    [ "$status" -eq 0 ]
+}
+
+@test "060 check fails on a wrong theme hash or a changed conf" {
+    setup_060
+    step060 apply
+    printf 'x' >>"$AUSPEX_SDDM_THEME_DIR/avgvr/Main.qml"
+    step060 check
+    [ "$status" -ne 0 ]
+    cp "$AUSPEX/system/files/avgvr/sddm/Main.qml" "$AUSPEX_SDDM_THEME_DIR/avgvr/Main.qml"
+    step060 check
+    [ "$status" -eq 0 ]
+    printf 'Current=breeze\n' >>"$AUSPEX_SDDM_CONF_DIR/zz-auspex-avgvr.conf"
+    step060 check
+    [ "$status" -ne 0 ]
+}
+
+@test "060 apply with a bad hash installs nothing and keeps the old theme" {
+    setup_060
+    step060 apply
+    printf 'x' >>"$AUSPEX/system/files/avgvr/sddm/Main.qml"
+    rm "$AUSPEX_SDDM_CONF_DIR/zz-auspex-avgvr.conf"
+    step060 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"hash mismatch: system/files/avgvr/sddm/Main.qml"* ]]
+    [ ! -e "$AUSPEX_SDDM_THEME_DIR/avgvr.new" ]
+    [ ! -e "$AUSPEX_SDDM_CONF_DIR/zz-auspex-avgvr.conf" ]
+    [ "$(sddm_files)" = "$(printf '%s\n' Main.qml backdrop.png mark.png metadata.desktop theme.conf)" ]
+}
+
+@test "060 undo removes the theme, the conf and the conf dir that apply made" {
+    setup_060
+    step060 apply
+    step060 undo
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_SDDM_THEME_DIR/avgvr" ]
+    [ ! -e "$AUSPEX_SDDM_CONF_DIR" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/060-avgvr-sddm.made-dir" ]
+    [ "$(cat "$AUSPEX_SDDM_THEME_DIR/breeze/Main.qml")" = breeze ]
+    step060 check
+    [ "$status" -ne 0 ]
+    step060 undo
+    [ "$status" -eq 0 ]
+}
+
+@test "060 undo keeps a conf dir that existed before apply" {
+    setup_060
+    mkdir -p "$AUSPEX_SDDM_CONF_DIR"
+    printf '[General]\n' >"$AUSPEX_SDDM_CONF_DIR/10-operator.conf"
+    step060 apply
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/060-avgvr-sddm.made-dir" ]
+    step060 undo
+    [ "$status" -eq 0 ]
+    [ "$(ls -A "$AUSPEX_SDDM_CONF_DIR")" = 10-operator.conf ]
+    rm "$AUSPEX_SDDM_CONF_DIR/10-operator.conf"
+    step060 apply
+    step060 undo
+    [ -d "$AUSPEX_SDDM_CONF_DIR" ]
+}
+
+@test "060 apply refuses without the breeze theme" {
+    setup_060
+    rm -r "$AUSPEX_SDDM_THEME_DIR/breeze"
+    step060 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"breeze SDDM theme is missing"* ]]
+    [ ! -e "$AUSPEX_SDDM_THEME_DIR/avgvr" ]
+    [ ! -e "$AUSPEX_SDDM_CONF_DIR" ]
+}
+
+@test "060 check uses no sudo and writes nothing" {
+    setup_060
+    step060 check
+    [ -z "$(fake_calls sudo)" ]
+    [ ! -e "$AUSPEX_SDDM_THEME_DIR/avgvr" ]
+    [ ! -e "$AUSPEX_SDDM_CONF_DIR" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE" ]
+}
