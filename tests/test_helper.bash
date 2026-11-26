@@ -43,8 +43,6 @@ EOF
     chmod +x "$FAKES/$name"
 }
 
-# guard_herdr: no test starts the real herdr app. These fakes stand in for
-# herdr-app (down), hc and setsid until a test replaces them with fake_herdr.
 guard_herdr() {
     make_fake herdr-app 'exit 1'
     make_fake hc 'exit 1'
