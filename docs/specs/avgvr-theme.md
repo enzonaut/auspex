@@ -23,12 +23,12 @@
 | R2 | The SDDM login is AVGVR for both sessions. The default session choice does not change. | 6 |
 | R3 | The boot shows an AVGVR plymouth splash. The kernel command line gets `quiet splash`. | 7 |
 | R4 | Hyprland, waybar, mako, fuzzel and hyprlock are AVGVR. | 8 |
-| R5 | ghostty and Claude Code use the palette. | 9 |
+| R5 | The herdr app (theme, settings, layout, 1 mod) and Claude Code use the palette. ghostty is removed from this spec; the operator uses only the herdr app. | 9 |
 | R6 | The 3 font families work for the `sddm` user and for the user session. | 5 |
 | R7 | KDE config does not change. Game config does not change. | 11 |
 | R8 | Each stage has a test that needs no reboot. Each root change has an undo. No stage can lock the operator out. | 10, 12 |
 
-Out of scope: KDE theming, AI-first slice 2 (the bar has only a placeholder slot for the fleet counter), a change to the default SDDM session, a cursor change (DIRECTION.md names no cursor, so the cursor stays as it is).
+Out of scope: KDE theming, herdr app mods other than `avgvr-spaces` (level L3, later, 1 by 1), a change to the default SDDM session, a cursor change (DIRECTION.md names no cursor, so the cursor stays as it is).
 
 ## 2. Repo layout (new and changed)
 
@@ -49,7 +49,7 @@ templates/
 ├── waybar/style.css.tpl
 ├── mako/config.tpl                 # replaces config/mako/config
 ├── fuzzel/fuzzel.ini.tpl           # replaces config/fuzzel/fuzzel.ini
-├── ghostty/avgvr.tpl
+├── herdr-app/avgvr.json.tpl       # the herdr app theme (section 9.1)
 ├── claude/avgvr.json.tpl
 ├── sddm/theme.conf.tpl             # rendered by theme build, not by apply
 └── plymouth/avgvr.script.tpl       # rendered by theme build, not by apply
@@ -70,7 +70,14 @@ lib/render.sh                       # the renderer (section 4.2)
 bin/auspex-theme-build              # level 2 (section 4.4)
 bin/auspex-check-theme              # level 1 (section 12)
 hooks/theme-set.d/                  # new event (section 4.3)
-config/ghostty/config.ghostty       # replaces .gitkeep
+config/herdr-app/
+├── layouts/avgvr.json              # level L2 layout, a clone of the shipped `main` (section 9.1)
+├── mods/avgvr-spaces/main.js       # the horizontal spaces row, a clone of the shipped `spaces` mod
+├── mods/avgvr-spaces/mod.json
+├── sounds/silent.mp3               # replaces the done sound (decision Q6)
+└── settings.json                   # source of the owned keys for the settings merger (section 9.1)
+lib/merge/herdr-settings            # key merger for ~/.config/herdr-app/settings.json
+bin/auspex-legio                    # waybar LEGIO counter from `hc ls --json` (section 8.3)
 agent/skills/auspex/reference/theme.md   # skill page: how to change the theme
 docs/checklists/avgvr-acceptance.md      # operator checklist (section 12.2)
 ```
@@ -89,11 +96,14 @@ docs/checklists/avgvr-acceptance.md      # operator checklist (section 12.2)
 | Command line | `/etc/kernel/cmdline` equals `/proc/cmdline`: `root=PARTUUID=17d6692e-… zswap.enabled=0 rootflags=subvol=@ rw rootfstype=btrfs`. No package owns the file. | Step 080 adds `quiet splash` to this file. |
 | mkinitcpio HOOKS | `base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck`. Drop-in `/etc/mkinitcpio.conf.d/auspex-nvidia.conf` exists (step 020). | A drop-in cannot insert into an array, so step 080 sets the full HOOKS array. |
 | Kernel | 7.3.4-arch1-1, NVIDIA, early KMS from step 020 | plymouth can use the DRM device early. |
-| Packages present | hyprland 0.57.2, hyprlock 0.9.7, waybar 0.16.0, mako 1.11.0, fuzzel 1.15.0, ghostty 1.4.0, resvg 0.49.0, librsvg 2.63.4, woff2 1.0.2 (`woff2_decompress`), python-fonttools | Theme build uses `resvg` and `woff2_decompress`. |
+| Packages present | hyprland 0.57.2, hyprlock 0.9.7, waybar 0.16.0, mako 1.11.0, fuzzel 1.15.0, resvg 0.49.0, librsvg 2.63.4, woff2 1.0.2 (`woff2_decompress`), python-fonttools | Theme build uses `resvg` and `woff2_decompress`. |
 | Packages absent | plymouth, hyprpaper, swaybg, ttf-jetbrains-mono | Steps 010 and 070 install them. |
 | Fonts | `fc-list` has no Jost, Marcellus SC or JetBrains Mono | Step 050 installs them. |
 | Cursors | breeze_cursors, Adwaita, Oxygen themes | No change. |
-| ghostty config | `~/.config/ghostty/config.ghostty` exists and has only comments | The render row needs `auspex apply --adopt` 1 time. |
+| herdr app | `herdr-app` 0.1.18 (the window) and `hc` 0.1.22 (herdr-core, runs the terminals). 1 home folder `~/.config/herdr-app/` for both sessions. | The herdr app replaces ghostty as the terminal surface. ghostty is not used. |
+| herdr app files | `~/.config/herdr-app/` has `settings.json`, `keys.json`, `themes/`, `layouts/`, `mods/`, `fonts/`. The app writes the shipped layouts, shipped mods and `frame/` again at each start, and moves an edited shipped file to `<name>-edited`. | auspex never edits a shipped file. It adds new files with new names (`avgvr`, `avgvr-spaces`). |
+| herdr app settings | `settings.json` today: `zoom` 1.1, `sounds.enabled` true, `font_ligatures` false, `minimum_contrast` 1.0, `appearance` "dark", `theme` "gruvbox". The app reads it live. | A `copy` row would remove the keys of the operator. A key merger is necessary (section 9.1). |
+| herdr app keys | `keys.json` uses alt, ctrl and the prefix ctrl-b. It uses no SUPER key. | No key collides with Hyprland. |
 | Claude Code | 2.1.332. `~/.claude/settings.json` has `"theme": "dark"`. No `~/.claude/themes/`. | Custom theme support is not verified (OQ2). |
 | Monitor | 5120x2160 ultrawide | Every layout is drawn for a 2160 px height and scales by height. |
 
@@ -123,6 +133,36 @@ radius = "0"
 motion_ms = "200"
 ```
 
+- Map of palette tokens to the herdr app (section 9.1). The renderer writes the theme JSON. Plain `#rrggbb` is the only form, so no new filter is necessary (X5).
+
+| herdr app value | Palette token | Source |
+|---|---|---|
+| theme `background` | `bg` | S11 |
+| theme `foreground` | `text` | S11 |
+| theme `selection` | `selection` | S11 |
+| theme `cursor` | `cursor` (the accent) | S11, decision Q2 |
+| theme `ansi` (16 values, in order) | `color0` to `color15` | S11 |
+| `colors.canvas` | `bg_darker` | S2 |
+| `colors.chrome` | `bg_dark` | S3 |
+| `colors.surface` | `surface` | S6 |
+| `colors.selected` | `porphyry` | S4 |
+| `colors.border` | `border` | S8 |
+| `colors.muted` | `text_muted` | S4 |
+| `colors.dim` | `text_faint` | S4 |
+| `colors.accent` | `accent` | S4 |
+| theme `colors.working` | `bronze` | S16, decision Q2 |
+| theme `colors.blocked` | `accent` | S16, decision Q2 |
+| theme `colors.done` | `verdigris` | S16, decision Q2 |
+| theme `colors.idle` | `text_faint` | S16, decision Q2 |
+| theme `colors.unknown` | `border` | S16 |
+| focused pane outline (layout value, 1 px) | `bronze` | S9, decision Q3 |
+| `ui_font` | `font_body` (Jost) | S13 |
+| `font` | `font_data` (JetBrains Mono), weight 400, bold 700 | S12 |
+| spaces row font (mod) | `font_display` (Marcellus SC) | S15 |
+| sound `blocked` | the shipped sound (kept) | S20, decision Q6 |
+| sound `done` | `config/herdr-app/sounds/silent.mp3` (off) | S20, decision Q6 |
+
+- The accent rule of decision Q2: in the herdr app, only the blocked state and the cursor use `accent`.
 - `auspex check theme` fails when a hex color in `design/directions/c/mark.svg` or `wallpaper.svg` is not a palette value. So the SVGs keep their own colors, but they cannot drift from the palette without a failed check.
 
 ### 4.2 Renderer and template syntax
@@ -164,7 +204,7 @@ templates/waybar/style.css.tpl	~/.config/waybar/style.css	render	hyprland
 - Hooks in this spec:
   - `10-waybar`: if waybar runs and `style.css` changed, send `SIGUSR2` to the waybar PID from `pidof waybar`. waybar reloads its style on that signal.
   - `20-hyprpaper`: if hyprpaper runs and the wallpaper or `hyprpaper.conf` changed, run `hyprctl hyprpaper reload ,<path>`.
-  - `30-ghostty`: if the ghostty theme changed, send `SIGUSR2` to each ghostty PID. The build must verify that ghostty 1.4.0 reloads its config on `SIGUSR2`. If it does not, the hook prints "open a new ghostty window to see the theme" and does nothing else.
+  - No hook for the herdr app. The app reads `settings.json` live (Guide:84). A live reload of a changed theme file is not verified (N2). The build checks it 1 time (section 12.2). If the app does not reload the theme file, the skill page tells the operator to restart the app. The ghostty hook of the old draft is removed.
 - Hyprland and mako need no new hook. `post-apply.d/10-reload-hyprland` and `30-mako` already reload on a change to their targets.
 
 ### 4.4 Theme build (generated assets)
@@ -183,7 +223,8 @@ templates/waybar/style.css.tpl	~/.config/waybar/style.css	render	hyprland
 Notes:
 
 - `resvg` does not load the `@font-face` data URIs in `wallpaper.svg`. The build passes the decompressed TTF files with `--use-font-file`, so the text renders in the correct fonts. The family names in the SVG must equal the TTF family names. `auspex check theme` compares them.
-- The woff2 files are Latin subsets. They are enough for the display and body text, which is English and Latin capitals. JetBrains Mono comes from the `ttf-jetbrains-mono` package, because a terminal needs the full set of box and symbol glyphs (OQ7).
+- The woff2 files are Latin subsets. They are enough for the display and body text, which is English and Latin capitals. JetBrains Mono comes from the `ttf-jetbrains-mono` package for waybar, mako, fuzzel and hyprlock. The herdr app ships JetBrains Mono as its default terminal font, so the app does not need the package (OQ7).
+- The manifest also copies `Jost.ttf` and `MarcellusSC-Regular.ttf` to `~/.config/herdr-app/fonts/` (section 8.1). The herdr app loads fonts from that folder at start (B4). If the app also reads the system fonts of step 050 is not verified (B5), so the copy is necessary.
 - `auspex check theme` recomputes `INPUTS.sha256` and fails when it differs ("run auspex theme build"). It compares input hashes, not output bytes, so a new `resvg` version does not fail the check.
 - The repo commits the generated assets. A root step installs only committed files with known hashes (section 5.1).
 
@@ -210,7 +251,7 @@ This keeps the foundation rule "as root, a step must not read other files throug
 | apply | `pacman -S --needed ttf-jetbrains-mono` (record what it installed, as step 010 does). `step_install_verified` into `/usr/local/share/fonts/avgvr/`. `fc-cache -f /usr/local/share/fonts/avgvr`. |
 | undo | Remove `/usr/local/share/fonts/avgvr/`. `pacman -Rns` the packages that this step installed. `fc-cache -f`. |
 
-- `/usr/local/share/fonts` is in the default fontconfig path. The `sddm` user, the user session, waybar, mako, fuzzel, hyprlock and ghostty all see the fonts. 1 install serves the login and the desktop (R6).
+- `/usr/local/share/fonts` is in the default fontconfig path. The `sddm` user, the user session, waybar, mako, fuzzel and hyprlock all see the fonts. If the herdr app sees them is not verified (B5); the app gets its own copy in `~/.config/herdr-app/fonts/` (section 4.4). 1 install serves the login and the desktop (R6).
 - plymouth does not use these fonts. Its text is pre-rendered PNG (section 7.2).
 - Only `packages/avgvr.list` names `ttf-jetbrains-mono`. Step 070 reads the same list for `plymouth`. Each step installs only its own line, by a fixed name in the step.
 
@@ -384,11 +425,17 @@ All rows below are user tier and go through `auspex apply`. None changes a KDE f
 | `templates/waybar/style.css.tpl` | `~/.config/waybar/style.css` | render | hyprland | new |
 | `templates/mako/config.tpl` | `~/.config/mako/config` | render | hyprland | was copy |
 | `templates/fuzzel/fuzzel.ini.tpl` | `~/.config/fuzzel/fuzzel.ini` | render | hyprland | was copy |
-| `templates/ghostty/avgvr.tpl` | `~/.config/ghostty/themes/avgvr` | render | any | new |
-| `config/ghostty/config.ghostty` | `~/.config/ghostty/config.ghostty` | copy | any | new, needs `--adopt` |
+| `templates/herdr-app/avgvr.json.tpl` | `~/.config/herdr-app/themes/avgvr.json` | render | any | new |
+| `config/herdr-app/layouts/avgvr.json` | `~/.config/herdr-app/layouts/avgvr.json` | copy | any | new |
+| `config/herdr-app/mods/avgvr-spaces/main.js` | `~/.config/herdr-app/mods/avgvr-spaces/main.js` | copy | any | new |
+| `config/herdr-app/mods/avgvr-spaces/mod.json` | `~/.config/herdr-app/mods/avgvr-spaces/mod.json` | copy | any | new |
+| `system/files/avgvr/fonts/Jost.ttf` | `~/.config/herdr-app/fonts/Jost.ttf` | copy | any | new |
+| `system/files/avgvr/fonts/MarcellusSC-Regular.ttf` | `~/.config/herdr-app/fonts/MarcellusSC-Regular.ttf` | copy | any | new |
+| `config/herdr-app/sounds/silent.mp3` | `~/.config/herdr-app/sounds/silent.mp3` | copy | any | new |
+| `config/herdr-app/settings.json` | `~/.config/herdr-app/settings.json` | `merge:herdr-settings` | any | new, owned keys only (section 9.1) |
 | `templates/claude/avgvr.json.tpl` | `~/.claude/themes/avgvr.json` | render | any | new (OQ2) |
 
-The old sources `config/hypr/hyprlock.conf`, `config/mako/config`, `config/fuzzel/fuzzel.ini` and `config/ghostty/.gitkeep` are removed. Each new target gets Edit and Write deny rules in `claude/deny.json` (foundation `auspex check permissions`).
+The old sources `config/hypr/hyprlock.conf`, `config/mako/config` and `config/fuzzel/fuzzel.ini` are removed. The old row for `config/ghostty/.gitkeep` and that file are removed, because ghostty is not used. Each new target gets Edit and Write deny rules in `claude/deny.json` (foundation `auspex check permissions`).
 
 ### 8.2 Hyprland
 
@@ -412,24 +459,37 @@ The old sources `config/hypr/hyprlock.conf`, `config/mako/config`, `config/fuzze
 - `hyprpaper.conf` preloads and sets `~/.local/share/auspex/wallpaper/avgvr.png` for every monitor. The build checks that hyprpaper 0.7+ accepts `~` in the path. If it does not, the template uses a `home` value that `auspex_render` takes from a fixed key `home` that apply adds (the only non-palette key).
 - No cursor setting, no `XCURSOR_*` or `GTK_THEME` or `QT_*` variable. Games and KDE inherit nothing new.
 
+The herdr app window (decision Q5, option O1). The herdr app is the only tiled window on workspace I, below the 40 px band. The Hyprland border (1 px `bronze`) is its frame. `SUPER+ALT+A` (agent binds) does not change.
+
+- Bind: `hl.bind("SUPER + Return", hl.dsp.exec_cmd("herdr-app"))`. It replaces the old terminal bind at `hyprland.lua:33`. If the app runs, `herdr-app` raises its window (as `bin/auspex-agent` expects), so the bind starts or raises the app.
+- Autostart: `hl.exec_cmd("herdr-app")` in the `hl.on("hyprland.start", ...)` function, with the other start lines.
+- Window rule: `hl.window_rule({ match = { class = "^<class>$" }, workspace = "1" })`. The class of the window is not verified (report N1, OQ12).
+- Check first: the build does not add the rule before the operator confirms the class in a Hyprland session. Start the app, then run `hyprctl clients -j` and read the `class` of the herdr app window. The build writes that value in the rule and in the checklist. Until then, the bind and the autostart ship without the rule, and the app opens on the active workspace (workspace I at start).
+
 ### 8.3 waybar: the inscription band
 
 - `config.jsonc`: `position: top`, full width (no margins), height `40`, `layer: top`, `exclusive: true`.
 - Modules left to right:
   - `hyprland/workspaces` with `format: "{icon}"` and `format-icons` 1→I … 10→X. Persistent workspaces I to V.
-  - `custom/legio`: the fleet counter slot. It shows the static text `LEGIO [ – · – ]` with `exec` set to a `printf` and no interval. AI-first slice 2 replaces it. No bird.
+  - `custom/legio`: the fleet counter (decision OQ9 revised). No bird.
+    - Module: `exec: "auspex-legio"`, `return-type: "json"`, `interval: 5`.
+    - `bin/auspex-legio` runs `hc ls --json` and counts `.terminals[]` by `status`: N = count of `"working"`, M = count of `"blocked"`.
+    - Output: `{"text":"LEGIO [ N · M ]","class":"blocked"}` when M > 0, else `{"text":"LEGIO [ N · M ]","class":"idle"}`.
+    - If `hc` is missing, fails or gives JSON that `jq` cannot parse, the output is `{"text":"LEGIO [ – · – ]","class":"idle"}` and the exit status is 0, so waybar keeps the slot.
+    - `style.css`: `#custom-legio` uses `font_data`, `text_muted`; `#custom-legio.blocked` uses `accent`. This is the 2nd use of the accent in the bar, and it shows the same state as the blocked agent color.
+    - The script only reads. It never starts a terminal and never makes a space.
   - `clock` in the center: `font_display`, gold, `{:%A %d %B   %H:%M}`.
   - `pulseaudio`, `network`, `tray` at the right, each in `font_data` in `[ ]` brackets, for example `[ VOL 40 ]`, `[ ETH ]`.
 - `style.css`:
   - `window#waybar` background `bg_dark`, 1 px `border` top and bottom, and a dentil rail: a `repeating-linear-gradient` of `bronze_dark` blocks on the bottom 3 px.
-  - Workspace buttons: `font_display`, letter spacing 0.12em, `text_muted`; the active button has background `porphyry` and `text_bright` text; the urgent button has `accent` text. That is the only accent in the bar.
+  - Workspace buttons: `font_display`, letter spacing 0.12em, `text_muted`; the active button has background `porphyry` and `text_bright` text; the urgent button has `accent` text. The accent in the bar is used only for the urgent button and for blocked agents in LEGIO.
   - Radius 0, no shadow, transition 200 ms on color only.
 - The bar is 1 band, not a dock and not a sidebar (DIRECTION.md shell bans).
 
 ### 8.4 mako, fuzzel
 
 - mako: `font=Jost 11`, `background-color=bg_dark`, `text-color=text`, `border-color=border`, `border-size=1`, `border-radius=0`, `padding=12`, `default-timeout=8000` (kept). `[urgency=high]` sets `border-color=accent`. `[urgency=low]` sets `text-color=text_muted`.
-- fuzzel: `font=Jost:size=12`, `[colors]` in `RRGGBBAA` with the `rgba:ff` filter: background `bg_dark`, text `text`, match `gold`, selection `selection`, selection-text `text_bright`, border `bronze`. `[border] width=1 radius=0`. `terminal=ghostty -e` is kept.
+- fuzzel: `font=Jost:size=12`, `[colors]` in `RRGGBBAA` with the `rgba:ff` filter: background `bg_dark`, text `text`, match `gold`, selection `selection`, selection-text `text_bright`, border `bronze`. `[border] width=1 radius=0`. The `terminal=ghostty -e` line is removed, because ghostty is not used. The new `terminal=` line waits for OQ13 (report N7). Until then fuzzel has no `terminal=` line, so it starts terminal apps with its default.
 
 ### 8.5 hyprlock: the closed band
 
@@ -442,14 +502,44 @@ The lock is static (DIRECTION.md "Lock").
 - `input-field`: 1 px high outline that sits on the line, `outer_color` `bronze`, `inner_color` `bg_darker`, `font_color` `text_bright`, `rounding 0`, `fade_on_empty true`, `check_color` `gold`, `fail_color` `accent` (the only accent).
 - Test without a lock-out: run `hyprlock` from a terminal in the session first. The operator types the password to unlock. Then use `SUPER+L`.
 
-## 9. ghostty and Claude Code
+## 9. The herdr app and Claude Code
 
-### 9.1 ghostty
+### 9.1 The herdr app
 
-- `~/.config/ghostty/themes/avgvr` sets `background = bg`, `foreground = text`, `cursor-color = cursor`, `selection-background = selection`, `selection-foreground = text_bright`, and `palette = 0=…` to `palette = 15=…` from `color0` to `color15`.
-- `config.ghostty` sets `theme = avgvr`, `font-family = JetBrains Mono`, `font-size = 12`, `window-padding-x = 12`, `window-padding-y = 8`, `cursor-style = block`. It keeps no other setting, because today the file has only comments.
-- Session: `any`. ghostty reads the same file under KDE, so the terminal is AVGVR in both sessions. This is the recommendation of OQ1. ghostty is not a KDE file and `auspex check kde-untouched` does not flag it.
-- Check: `ghostty +validate-config --config-file=<rendered file>` in `auspex check theme`.
+Scope: level L2 (theme, settings keys, 1 layout) plus 1 personal mod for the horizontal spaces row (decisions Q9 and Q4). Other mods are level L3. They come later, 1 by 1, each with its own ticket. ghostty is removed from this spec and is not used.
+
+The app writes its shipped layouts, shipped mods and `frame/` again at each start. auspex never edits a shipped file. Each auspex file has a new name and starts from `layout.clone` or `mod.clone` output.
+
+Files and manifest rows (all session `any`, section 8.1):
+
+| Repo file | Target | Contents |
+|---|---|---|
+| `templates/herdr-app/avgvr.json.tpl` | `themes/avgvr.json` | `background`, `foreground`, `selection`, `cursor`, `ansi` (16 values), and `colors` (surfaces and agent states) from the palette map of section 4.1 |
+| `config/herdr-app/layouts/avgvr.json` | `layouts/avgvr.json` | a clone of the shipped `main` layout: radius 0, focused pane outline 1 px `bronze` (decision Q3), no sidebar, no band, title bar none, 1 thin row with `avgvr-spaces` above the tabs, terminal padding kept |
+| `config/herdr-app/mods/avgvr-spaces/main.js` | `mods/avgvr-spaces/main.js` | a clone of the shipped `spaces` mod, changed to a horizontal row. It shows each space name in capitals in brackets, for example `[ AUSPEX ]`, with no numeral (decision Q1: numerals only for workspaces). It uses Marcellus SC. It has no `.rounded(` call. |
+| `config/herdr-app/mods/avgvr-spaces/mod.json` | `mods/avgvr-spaces/mod.json` | `{ "place": "none", "title": "AVGVR spaces" }`. The layout places the mod. |
+| `system/files/avgvr/fonts/Jost.ttf`, `MarcellusSC-Regular.ttf` | `fonts/` | the same TTF files as step 050 (B4, B5) |
+| `config/herdr-app/sounds/silent.mp3` | `sounds/silent.mp3` | a short silent MP3 for the `done` sound |
+| `config/herdr-app/settings.json` | `settings.json` | the owned keys only (merge, below) |
+
+All targets are under `~/.config/herdr-app/`.
+
+Settings key merge (report B2). `settings.json` belongs to the operator and the app writes it too. A `copy` row would remove the keys of the operator. So the row uses the existing `merge:<name>` mode with a new merger `lib/merge/herdr-settings`. It follows the merger contract of `lib/common.sh` (`merge`, `restore`, `digest`), as `lib/merge/claude-settings` does:
+
+- Owned keys that auspex sets:
+  - `theme`: `"avgvr"`.
+  - `font`: `"JetBrains Mono"`, `font_weight`: 400, `font_weight_bold`: 700.
+  - `ui_font`: `"Jost"`.
+  - `sounds.done`: `"sounds/silent.mp3"` (the path is relative to `~/.config/herdr-app`). `sounds.enabled` stays `true` and `sounds.blocked` is not set, so the shipped blocked sound plays (decision Q6). The app has no off switch for 1 event, so the silent file turns off the done sound.
+- The merger reads the target with `jq`, sets only the owned keys, and writes the result. It keeps all other keys and their values, for example `zoom`, `appearance`, `minimum_contrast`, `font_ligatures`, and keys that it does not know. In `sounds`, it sets only `done`.
+- `merge` records the old value of each owned key (or "absent") in the owned file, so `restore` (`auspex undo`) puts back the old values and removes keys that were absent. Undo does not change other keys.
+- `digest` covers the owned keys only, so drift is a change of an owned key only. A change of another key by the operator or the app is not drift.
+- If the target is not valid JSON, the merger stops with an error and writes nothing.
+- The app reads `settings.json` live (Guide:84), so no hook is necessary (section 4.3).
+
+Layout selection: no settings key for the active layout is known. The operator selects the layout 1 time with `layout.switch avgvr` (ctrl-shift-l). The checklist (section 12.2) has this step. The app keeps the selection.
+
+Agent states and toasts (decisions Q2, Q7, Q10): the agent state colors come from the theme `colors` (section 4.1). Agent toasts stay in the app. There is no dropdown terminal.
 
 ### 9.2 Claude Code
 
@@ -491,7 +581,7 @@ System files (no step writes them):
 - `/usr/lib/sddm/sddm.conf.d/default.conf` (package file).
 - `/etc/sddm.conf.d/kde_settings.conf` if it exists. Step 060 writes only its own file.
 
-Shared by both sessions on purpose, so listed here for the operator: the SDDM theme, the plymouth splash, the 3 system font families, the `quiet splash` command line, and the ghostty theme (OQ1).
+Shared by both sessions on purpose, so listed here for the operator: the SDDM theme, the plymouth splash, the 3 system font families, the `quiet splash` command line, and the herdr app theme, layout, mod and owned settings keys (decision Q11: AVGVR in both sessions). The herdr app is not KDE config and `auspex check kde-untouched` does not flag it. ghostty is not used.
 
 ### 11.2 Game config that must not change
 
@@ -509,8 +599,10 @@ Shared by both sessions on purpose, so listed here for the operator: the SDDM th
 | Renderer | `bats tests/render.bats` | each filter; unknown key, unknown filter, color filter on text, bad palette line, and leftover `{{` all fail with a line number; same input gives same bytes; no environment value leaks in |
 | Render mode | `bats tests/apply.bats` (new cases) | a `render` row applies, drifts, adopts and undoes like `copy`; a palette edit changes all render targets in 1 generation; `copy` → `render` on the same target with an unchanged file is not drift; `theme-set` hooks run only when a render target changed |
 | Theme hooks | `bats tests/hooks.bats` (new cases) | `theme-set.d` order and `$1`; fake `pidof`, `kill`, `hyprctl` on `PATH` |
-| Theme | `auspex check theme` | every `templates/**/*.tpl` renders with the current palette; `INPUTS.sha256` is current; `SHA256SUMS` matches the files; SVG colors are palette values; SVG font names equal TTF names; DIRECTION.md contrast pairs meet their ratios when computed from the palette; SDDM and plymouth checks of sections 6.4 and 7.6; `Hyprland --verify-config` on `hyprland.lua` with the rendered `theme.lua` (skip if not installed); `jq` on the rendered Claude JSON and on `config.jsonc` after comment removal; `fuzzel --check-config` on the rendered ini; `ghostty +validate-config`; the game-path grep of section 11.2 |
+| Theme | `auspex check theme` | every `templates/**/*.tpl` renders with the current palette; `INPUTS.sha256` is current; `SHA256SUMS` matches the files; SVG colors are palette values; SVG font names equal TTF names; DIRECTION.md contrast pairs meet their ratios when computed from the palette; SDDM and plymouth checks of sections 6.4 and 7.6; `Hyprland --verify-config` on `hyprland.lua` with the rendered `theme.lua` (skip if not installed); `jq` on the rendered Claude JSON and on `config.jsonc` after comment removal; `fuzzel --check-config` on the rendered ini; `jq` parse of the rendered herdr app theme (16 `ansi` values, each `#rrggbb`) and of `config/herdr-app/layouts/avgvr.json`; `herdr-app check config/herdr-app/mods/avgvr-spaces` (static check of the mod folder, skip if not installed) and a grep for `.rounded(` in the mod; the game-path grep of section 11.2 |
 | System steps | `auspex check system-steps` | the new steps have check, apply, undo and headers; the SDDM exception of section 6.3 and its 2 new bad fixtures; `step_install_verified` refuses a file with a wrong hash (fixture in `tests/fixtures/system/blobs/`); a step that reads an undeclared repo file fails |
+| herdr settings merge | `bats tests/merge-herdr-settings.bats` | fixture `settings.json` files: owned keys set; other keys and unknown keys kept; `sounds.enabled` kept; undo restores old values and removes keys that were absent; bad JSON stops with no write; a change of a key that is not owned is not drift |
+| LEGIO | `bats tests/legio.bats` | fake `hc` prints fixture JSON: counts of `working` and `blocked`; `blocked` class when M > 0; fallback text when `hc` fails or prints bad JSON; exit status 0 in all cases |
 | KDE | `auspex check kde-untouched` | unchanged rule; the new rows pass; still exactly 2 KDE rows |
 | Permissions | `auspex check permissions` | new targets have deny rules; `auspex theme build` (level 2) has an allow rule; `auspex check theme` (level 1) has an allow rule |
 
@@ -519,6 +611,7 @@ Test seams in the code:
 - `AUSPEX`, `AUSPEX_STATE` and `HOME` as in foundation section 11.
 - Each step takes its target roots from variables, as step 020 does: `AUSPEX_SDDM_THEME_DIR`, `AUSPEX_SDDM_CONF_DIR`, `AUSPEX_PLYMOUTH_THEME_DIR`, `AUSPEX_FONT_DIR`, `AUSPEX_MKINITCPIO_DIR`, `AUSPEX_KERNEL_CMDLINE`, `AUSPEX_LIMINE_CONFS`, `AUSPEX_SYSTEM_STATE`. bats runs check, apply and undo in a temp root with fake `pacman`, `mkinitcpio`, `fc-cache` and `plymouth-set-default-theme` on `PATH`. A test for step 080 covers each guard of section 7.4 and the restore after a failed `mkinitcpio`.
 - `auspex theme build --dry-run` prints the outputs and changes nothing.
+- WARNING: no test starts a real `herdr-app` or `hc`, and no test makes a space or a terminal. Tests put fakes for `herdr-app` and `hc` on `PATH` with `make_fake` from `tests/test_helper.bash`, as `tests/agent.bats` does. `herdr-app check` is a static check of a folder. It does not start the app, so `auspex check theme` can run it.
 
 ### 12.2 Operator checks (display, sudo)
 
@@ -527,7 +620,15 @@ Test seams in the code:
 - Login: test mode before and after step 060; log out; log in to Hyprland; log out; log in to Plasma; session default unchanged.
 - Boot: Arch USB at hand; `limine.conf` has no command line for the UKI (step 080 guard 4 also checks); preview after 070; checks after 080; 1 reboot.
 - Desktop: wallpaper, borders, gaps, bar, notification (`notify-send test`), launcher, lock and unlock.
-- Terminal and Claude Code: a new ghostty window in both sessions; Claude Code `/theme`.
+- herdr app and Claude Code:
+  - Class check first (OQ12): start the app in Hyprland, run `hyprctl clients -j`, write the `class` here. Then the build adds the window rule.
+  - Select the layout 1 time with `layout.switch avgvr` (ctrl-shift-l).
+  - The herdr app window in both sessions: theme, fonts, spaces row, bronze focus outline.
+  - SUPER+Return starts the app, and raises it when it runs. After login, the app is on workspace I.
+  - The `done` sound is silent and the `blocked` sound plays.
+  - Change a palette color, run `auspex theme build` and `auspex apply`, and see if the open app changes its colors (report N2). Write the result. If it does not change, the skill page tells the operator to restart the app.
+  - LEGIO in the bar shows the counts of `hc ls`.
+  - Claude Code `/theme`.
 - Fallback drill: undo 060 from a text console and see the old greeter, then apply again.
 
 ## 13. Build order
@@ -538,9 +639,15 @@ Each item is 1 ticket and ends with its checks from section 12. The ticket liste
 2. SDDM: theme sources, generated `system/files/avgvr/sddm/`, step 060, the foundation amendment and check change (section 6.3). The operator runs test mode, applies 060, logs out.
 3. plymouth: theme sources, generated `system/files/avgvr/plymouth/`, steps 070 and 080. The operator previews after 070, then applies 080 and reboots.
 4. Hyprland: `theme.lua`, `hyprland.lua` edits, hyprpaper in `packages/hyprland.list`, wallpaper. The operator applies step 010 again and runs `auspex apply`.
-5. waybar band.
+5. waybar band. The `custom/legio` module comes in item 7.5.
 6. mako, fuzzel, hyprlock.
-7. ghostty (after OQ1 is answered).
+7. The herdr app, in this order:
+   1. Theme template, settings merger and its tests, font and sound copy rows (level L1).
+   2. Layout `avgvr` (level L2). The operator selects it 1 time.
+   3. Mod `avgvr-spaces` with its `herdr-app check`.
+   4. Hyprland bind and autostart. The window rule after the class check of OQ12.
+   5. LEGIO: `bin/auspex-legio`, the waybar module and its tests (OQ9).
+   6. Later, level L3 mods 1 by 1, each in its own ticket (not in this spec).
 8. Claude Code (with the OQ2 gate).
 9. Skill page `agent/skills/auspex/reference/theme.md` (how to change a color: edit the palette, `auspex theme build`, `auspex apply`, and `auspex system apply 060 070` when a root asset changed) and the acceptance checklist.
 
@@ -548,14 +655,27 @@ Items 1 and 4 to 9 need no reboot. Item 3 needs 1 reboot. Item 2 needs 1 logout.
 
 ## Open Questions
 
-- **OQ1. Apply the ghostty theme under KDE too?** ghostty reads 1 config file in both sessions. A Hyprland-only theme needs a 2nd launcher path with `--config-file`, and a ghostty started another way would not get it. Recommendation: apply it in both sessions (`any`). ghostty is not KDE config, and the operator asked for AVGVR "all the way". If the operator wants KDE ghostty unchanged, the build instead adds `--config-file=~/.config/ghostty/avgvr.ghostty` to the Hyprland `SUPER+Return` bind and the dropdown, and leaves `config.ghostty` alone.
+Decisions are from `ai_docs/plans/avgvr-theme/decisions.md` (2026-11-26). OQ1 is removed: the operator uses only the herdr app, so the ghostty question does not apply.
+
 - **OQ2. Does Claude Code 2.1.332 load `~/.claude/themes/*.json` as `custom:<name>`?** Omarchy relies on it, but the research report marks it as not verified (U2). Recommendation: the build tests it first (section 9.2 gate). If it is not supported, ship only the JSON file and keep `"theme": "dark"`.
+  - Decision: the build tests it first with the gate of section 9.2 (orchestrator).
 - **OQ3. Does `limine.conf` set a command line for the UKI entry?** The user cannot read `/boot`. `/proc/cmdline` equals `/etc/kernel/cmdline`, so either the UKI command line is in use or Limine passes the same text. Recommendation: step 080 checks this as root (guard 4) and stops if Limine sets one. The operator can check first with `sudo grep -rn -i cmdline /boot --include=limine.conf`.
+  - Decision: step 080 guard 4 checks it as root and stops if Limine sets a command line (orchestrator).
 - **OQ4. Which command line source does the installed mkinitcpio prefer?** Recommendation: the build reads `/usr/lib/initcpio/functions` (or the mkinitcpio script) for the UKI command line order and writes the result in the step 080 header. Step 080 refuses when `/etc/cmdline.d/` exists, and never makes it.
+  - Decision: the build reads the order in the installed mkinitcpio and writes it in the step 080 header (orchestrator).
 - **OQ5. hyprpaper or swaybg?** Recommendation: hyprpaper. It is the Hyprland project tool, it has an IPC reload for the `theme-set` hook, and Omarchy uses the Hyprland stack. swaybg would need a process restart on each change.
+  - Decision: hyprpaper (orchestrator).
 - **OQ6. Keep the SDDM greeter on X11?** `default.conf` sets `DisplayServer=x11`. A Wayland greeter is a separate change with its own risk on NVIDIA. Recommendation: keep X11. The QML theme works on both, so a later change does not affect this spec.
-- **OQ7. Fonts from the woff2 subsets or from packages?** Jost and Marcellus SC are not in the official repos, and steps do not use the AUR. Recommendation: decompress the design woff2 files (Latin subsets) for Jost and Marcellus SC, and use the `ttf-jetbrains-mono` package for the terminal font, because the Latin subset lacks box glyphs. Jost is a variable font; the build checks that waybar, mako and fuzzel select weights 400, 500 and 600 from it. If fcft (fuzzel) cannot, the build makes static instances with `fonttools varLib.instancer` in theme build.
+  - Decision: keep X11 (orchestrator).
+- **OQ7. Fonts from the woff2 subsets or from packages?** Jost and Marcellus SC are not in the official repos, and steps do not use the AUR. Recommendation: decompress the design woff2 files (Latin subsets) for Jost and Marcellus SC, and use the `ttf-jetbrains-mono` package for the data font, because the Latin subset lacks box glyphs. Jost is a variable font; the build checks that waybar, mako and fuzzel select weights 400, 500 and 600 from it. If fcft (fuzzel) cannot, the build makes static instances with `fonttools varLib.instancer` in theme build.
+  - Decision: woff2 subsets for Jost and Marcellus SC, and `ttf-jetbrains-mono` for waybar, mako, fuzzel and hyprlock (orchestrator). Revised by report X7: the herdr app ships JetBrains Mono, and the manifest copies the Jost and Marcellus SC TTF files to `~/.config/herdr-app/fonts/` (section 9.1).
 - **OQ8. What does SDDM 0.21 do when a theme has a QML error?** Not verified. Recommendation: rely on test mode before apply and on the text-console recovery in section 10. Do not set a 2nd theme in config, because SDDM has no chained fallback.
-- **OQ9. The fleet counter slot.** Recommendation: a static `LEGIO [ – · – ]` label now. AI-first slice 2 replaces its `exec` with the real counts. The style for the slot is final now.
+  - Decision: no fallback theme in config; test mode and the text-console recovery (orchestrator).
+- **OQ9. The fleet counter.** Recommendation (revised by report X12/X21): real counts now. `bin/auspex-legio` reads `hc ls --json` and shows the working and blocked counts (section 8.3).
+  - Decision: real counts from `hc ls --json` (orchestrator).
 - **OQ10. Glide in the boot fill.** DIRECTION.md asks for a glide with a stepped form for reduced motion. Recommendation: steps only (section 7.2), because plymouth cannot read a motion preference. The operator can ask for the glide later; it is a script change in 1 function.
+  - Decision: stepped fill (orchestrator).
 - **OQ11. `zz-` name for the SDDM conf.** It makes AVGVR win over a later KDE System Settings change of the login theme. The KDE dialog then shows a theme that is not in use. Recommendation: keep `zz-`. The operator manages the login theme through auspex only. The skill page says so.
+  - Decision: keep `zz-` (orchestrator).
+- **OQ12. What is the Hyprland window class of the herdr app?** Not verified (report N1, H7, H8). If the app runs as a native Wayland window is also not verified. This blocks the window rule of section 8.2. Recommendation: the operator starts the app in a Hyprland session and runs `hyprctl clients -j`. The build writes the `class` value in the rule. Until then the bind and the autostart ship without the rule.
+- **OQ13. Which `terminal=` line does fuzzel use?** Not verified (report N7). The herdr app has no known command form that runs 1 program in a new terminal, as the removed `ghostty -e` line did (ghostty is not used). This blocks the `terminal=` line in `fuzzel.ini` (section 8.4). Recommendation: the build tests a command form of `herdr-app` or `hc` that opens a tab and runs the program, with a fake first and then 1 time by the operator. Until then the line is not set.
