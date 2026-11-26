@@ -60,7 +60,6 @@ local config_dir = (debug.getinfo(1, "S").source:match("^@(.*/)"))
   or ((os.getenv("HOME") or "") .. "/.config/hypr/")
 dofile(config_dir .. "agent-binds.lua")
 
--- theme.lua is rendered by auspex; the unrendered repo copy has none.
 local load_theme = loadfile(config_dir .. "theme.lua")
 local theme = load_theme and load_theme()
 if theme then
