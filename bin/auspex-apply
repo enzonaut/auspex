@@ -51,6 +51,9 @@ adopt_target() {
     if [[ "$mode" == merge:* ]]; then
         auspex_die "~/$rel uses $mode. Adopt does not work for a merge target. Edit $src instead"
     fi
+    if [[ "$mode" == render ]]; then
+        auspex_die "~/$rel is rendered from $src and the palette. Adopt does not work for a render target. Edit the template or the palette, or run auspex apply --force"
+    fi
     [[ -f "$HOME/$rel" ]] || auspex_die "~/$rel does not exist"
     cp -- "$HOME/$rel" "$AUSPEX/$src" || auspex_die "cannot copy ~/$rel to $src"
     auspex_index_load
@@ -103,8 +106,14 @@ for r in "${STALE[@]}"; do
     unset "IDX_HASH[$r]" "IDX_MODE[$r]"
 done
 
+index_dirty=false
+[[ ${#STALE[@]} -eq 0 ]] || index_dirty=true
+if auspex_index_mode_sync; then
+    index_dirty=true
+fi
+
 if [[ ${#CH[@]} -eq 0 ]]; then
-    if [[ ${#STALE[@]} -gt 0 ]]; then
+    if [[ $index_dirty == true ]]; then
         auspex_index_save || auspex_die "cannot write $(auspex_index_file)"
     fi
     auspex_migrations_run || auspex_die "a migration failed"
@@ -127,6 +136,9 @@ fi
 
 export AUSPEX_GEN_DIR="$GEN_DIR"
 auspex_run_hooks post-apply "$GEN_N"
+if auspex_changed_render; then
+    auspex_run_hooks theme-set "$GEN_N"
+fi
 auspex_gen_prune
 
 printf 'generation %d\n' "$GEN_N"
