@@ -115,8 +115,6 @@ copy_repo_hooks() {
     [ "$(fake_calls makoctl)" = reload ]
 }
 
-# theme_setup adds a palette and render rows for waybar style.css and
-# hyprpaper.conf, and a copy row for the wallpaper.
 theme_setup() {
     mkdir -p "$AUSPEX/themes/t1" "$AUSPEX/templates" "$AUSPEX/wall"
     printf 't1\n' >"$AUSPEX/themes/current"

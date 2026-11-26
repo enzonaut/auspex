@@ -382,7 +382,6 @@ teardown() {
     [[ "$output" == *"~/.config/app/app.conf"* ]]
 }
 
-# render_setup adds a palette, 2 templates and 2 render rows, then commits.
 render_setup() {
     mkdir -p "$AUSPEX/themes/t1" "$AUSPEX/templates"
     printf 't1\n' >"$AUSPEX/themes/current"

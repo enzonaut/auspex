@@ -1,7 +1,3 @@
-# AVGVR palette. auspex_render reads this file (lib/render.sh).
-# Allowed line forms: a comment, key = "#RRGGBB", key = "text".
-# A key matches ^[a-z][a-z0-9_]*$ and occurs 1 time.
-# The design record is design/directions/c/colors.toml. Keep the values equal.
 
 accent = "#EB6A43"
 selection = "#3A2E3A"
@@ -48,7 +44,6 @@ helmet_gold = "#D9A93E"
 gold_shadow = "#A87A22"
 laurel_bronze = "#C9A05A"
 
-# ANSI colors 0 to 15 (the herdr app theme "ansi" list). Same values as black to bright_white.
 color0 = "#17140F"
 color1 = "#DE5A4C"
 color2 = "#98AB62"
@@ -66,7 +61,6 @@ color13 = "#D99BCB"
 color14 = "#86C4B3"
 color15 = "#F6F1E7"
 
-# DIRECTION.md tokens
 bg = "#1D1915"
 bg_dark = "#17140F"
 bg_darker = "#110F0D"
@@ -76,7 +70,6 @@ text_muted = "#B8AC98"
 text_faint = "#988D7B"
 text_bright = "#F6F1E7"
 
-# Font and shape tokens
 font_display = "Marcellus SC"
 font_body = "Jost"
 font_data = "JetBrains Mono"

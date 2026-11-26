@@ -118,7 +118,6 @@ tpl() {
         printf '{{ %s }}\n' "$key" >>"$TEST_TMP/t.tpl"
     done
     auspex_render "$AUSPEX_REPO/themes/avgvr/colors.toml" "$TEST_TMP/t.tpl" "$TEST_TMP/o"
-    # Each design key has the design value.
     while IFS= read -r line; do
         key="${line%% = *}"
         printf '{{ %s }}' "$key" >"$TEST_TMP/k.tpl"

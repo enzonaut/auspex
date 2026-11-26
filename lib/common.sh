@@ -120,7 +120,6 @@ auspex_atomic_write() {
     return 1
 }
 
-# auspex_theme_palette prints the palette path of the theme in themes/current.
 auspex_theme_palette() {
     local name
     [[ -f "$AUSPEX/themes/current" ]] || auspex_die "no themes/current"
@@ -131,9 +130,6 @@ auspex_theme_palette() {
     printf '%s\n' "themes/$name/colors.toml"
 }
 
-# auspex_manifest_load fills M_SRC (the repo source), M_FILE (the file with the
-# new content: the rendered file for a render row, else $AUSPEX/<source>),
-# M_REL, M_MODE and M_PATHS (the repo paths that git_check covers).
 auspex_manifest_load() {
     local src tgt mode rel f name n=0 palette=""
     local -A seen=() mergers=()
@@ -307,9 +303,6 @@ auspex_plan_build() {
     done
 }
 
-# auspex_index_mode_sync sets the index mode of each unchanged row whose mode
-# changed in the manifest (for example copy to render). It returns 0 when it
-# changed the index, so the caller saves it.
 auspex_index_mode_sync() {
     local i rel rc=1
     for i in "${!T_REL[@]}"; do
@@ -323,7 +316,6 @@ auspex_index_mode_sync() {
     return "$rc"
 }
 
-# auspex_changed_render returns 0 when a changed row has mode render.
 auspex_changed_render() {
     local i
     for i in "${CH[@]}"; do

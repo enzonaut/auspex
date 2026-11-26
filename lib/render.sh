@@ -1,5 +1,4 @@
 # shellcheck shell=bash
-# The file paths in the error messages are not write targets.
 # shellcheck disable=SC2094
 # Template renderer for manifest rows with mode render. Source it, do not run it.
 #
@@ -23,8 +22,6 @@ _auspex_render_fail() {
     return 1
 }
 
-# _auspex_render_value <value> <filter> sets _AUSPEX_RENDER_OUT.
-# It returns 1 for an unknown filter and 2 for a color filter on a text value.
 _auspex_render_value() {
     local v="$1" f="$2" hex
     _AUSPEX_RENDER_OUT=""
