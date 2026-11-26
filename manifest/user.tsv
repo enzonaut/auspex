@@ -16,3 +16,6 @@ config/mako/config	~/.config/mako/config	copy	hyprland
 config/fuzzel/fuzzel.ini	~/.config/fuzzel/fuzzel.ini	copy	hyprland
 config/browser-flags/chrome-flags.conf	~/.config/chrome-flags.conf	copy	any
 config/browser-flags/brave-flags.conf	~/.config/brave-flags.conf	copy	any
+templates/hypr/theme.lua.tpl	~/.config/hypr/theme.lua	render	hyprland
+templates/hypr/hyprpaper.conf.tpl	~/.config/hypr/hyprpaper.conf	render	hyprland
+themes/avgvr/generated/wallpaper.png	~/.local/share/auspex/wallpaper/avgvr.png	copy	hyprland

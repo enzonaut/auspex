@@ -3,10 +3,8 @@
 Hyprland is a 2nd SDDM session beside Plasma. SDDM keeps Plasma as the
 default. `auspex facts` tells which session runs now.
 
-The Hyprland config is not built yet. `config/hypr/` and the other app
-folders are empty until the Hyprland ticket adds them. Check
-`reference/targets.md` before you edit: if a file has no manifest row, it is
-not installed.
+Check `reference/targets.md` before you edit: if a file has no manifest row,
+it is not installed.
 
 ## Where each setting goes
 
@@ -14,6 +12,8 @@ not installed.
 |---|---|
 | Monitors, binds, gaps, window rules, env vars, autostart | `config/hypr/` |
 | Idle and lock | `config/hypr/` (hypridle and hyprlock files) |
+| Look: border, gaps, rounding, group bar, animation, background | `templates/hypr/theme.lua.tpl` (rendered from the palette) |
+| Wallpaper | `templates/hypr/hyprpaper.conf.tpl`; the PNG is `themes/avgvr/generated/wallpaper.png` |
 | Bar | `config/waybar/` |
 | Notifications | `config/mako/` |
 | Launcher | `config/fuzzel/` |
@@ -28,6 +28,16 @@ The config format follows Hyprland 0.57.
 - NVIDIA env vars live only in the Hyprland config, so KDE does not see them.
 - Idle: lock after 10 minutes, display off after 15 minutes. No suspend,
   because the machine runs fleet workers.
+
+## Look and wallpaper
+
+`hyprland.lua` loads the rendered `~/.config/hypr/theme.lua` and starts
+`hyprpaper` with the other `hl.exec_cmd` lines. Change colors, border width,
+radius and motion in `themes/avgvr/colors.toml`, not in the template. Border
+1 px (bronze active, `border` inactive), rounding 0, no shadow, no blur,
+gaps 6 in and 12 out. `hyprpaper` is the only resident process the theme
+adds. Never edit `theme.lua`, `hyprpaper.conf` or the wallpaper in `~/`: they
+are render or copy targets.
 
 ## Reload
 

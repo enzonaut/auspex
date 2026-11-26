@@ -279,6 +279,24 @@ check_plymouth() {
     return "$rc"
 }
 
+check_hyprland_config() {
+    command -v Hyprland >/dev/null 2>&1 || {
+        printf 'Hyprland is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local home="$work/hypr-home" dir out
+    dir="$home/.config/hypr"
+    mkdir -p "$dir"
+    auspex_render "$PALETTE" "$AUSPEX/templates/hypr/theme.lua.tpl" "$dir/theme.lua" || return 1
+    cp "$AUSPEX/config/hypr/hyprland.lua" "$AUSPEX/config/hypr/agent-binds.lua" "$dir/"
+    if ! out="$(HOME="$home" Hyprland --verify-config -c "$dir/hyprland.lua" 2>&1)"; then
+        printf '%s\n' "$out" | tail -5
+        fail 'Hyprland --verify-config failed on the rendered config'
+        return 1
+    fi
+    printf 'ok   Hyprland --verify-config passes on the rendered theme.lua\n'
+}
+
 CHECKS=(
     check_templates
     check_inputs
@@ -289,6 +307,7 @@ CHECKS=(
     check_game_paths
     check_sddm
     check_plymouth
+    check_hyprland_config
 )
 
 failed=0

@@ -22,6 +22,7 @@ hl.config({
 hl.on("hyprland.start", function()
   hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
   hl.exec_cmd("/usr/lib/pam_kwallet_init")
+  hl.exec_cmd("hyprpaper")
   hl.exec_cmd("waybar")
   hl.exec_cmd("mako")
   hl.exec_cmd("hypridle")
@@ -58,6 +59,15 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl set 5%-"), { loc
 local config_dir = (debug.getinfo(1, "S").source:match("^@(.*/)"))
   or ((os.getenv("HOME") or "") .. "/.config/hypr/")
 dofile(config_dir .. "agent-binds.lua")
+
+-- theme.lua is rendered by auspex; the unrendered repo copy has none.
+local load_theme = loadfile(config_dir .. "theme.lua")
+local theme = load_theme and load_theme()
+if theme then
+  hl.config(theme.config)
+  hl.curve(theme.curve.name, { type = "bezier", points = theme.curve.points })
+  hl.animation({ leaf = "global", enabled = true, speed = theme.animation_speed, bezier = theme.curve.name })
+end
 
 -- Window rules (spec 9.5). The last matching rule wins, so each program
 -- first floats all its windows, then tiles its main window.

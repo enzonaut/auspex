@@ -22,3 +22,6 @@ Change the source in the repo, never the target.
 | `~/.config/fuzzel/fuzzel.ini` | `config/fuzzel/fuzzel.ini` | copy | hyprland |
 | `~/.config/chrome-flags.conf` | `config/browser-flags/chrome-flags.conf` | copy | any |
 | `~/.config/brave-flags.conf` | `config/browser-flags/brave-flags.conf` | copy | any |
+| `~/.config/hypr/theme.lua` | `templates/hypr/theme.lua.tpl` | render | hyprland |
+| `~/.config/hypr/hyprpaper.conf` | `templates/hypr/hyprpaper.conf.tpl` | render | hyprland |
+| `~/.local/share/auspex/wallpaper/avgvr.png` | `themes/avgvr/generated/wallpaper.png` | copy | hyprland |
