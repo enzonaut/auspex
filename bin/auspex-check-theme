@@ -1,0 +1,241 @@
+#!/usr/bin/env bash
+# auspex:summary=Check the theme: templates, generated files, SVG colors and fonts, contrast and game paths
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+#
+# Runs each function in CHECKS. A check function prints its own "ok" or
+# "FAIL" lines and returns 0 (pass), 77 (skip, the last line is the reason)
+# or 1 (fail). This command fails when 1 or more checks fail.
+# Hook point: later tickets add a function (check_sddm, check_plymouth,
+# check_hyprland, check_waybar, check_fuzzel, check_herdr) and its name to
+# CHECKS. The function reads only repo files and uses no sudo and no display.
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+SKIP_EXIT=77
+DESIGN="$AUSPEX/design/directions/c"
+SYS="$AUSPEX/system/files/avgvr"
+THEME="$(tr -d '[:space:]' <"$AUSPEX/themes/current")"
+PALETTE="$AUSPEX/themes/$THEME/colors.toml"
+INPUTS_SUMS="$AUSPEX/themes/$THEME/generated/INPUTS.sha256"
+SVGS=(mark.svg wallpaper.svg)
+
+# Colors that the frozen design SVGs use and the palette does not have.
+# design/directions/c/ is read only, so they stay here. Keep this list short.
+DESIGN_ONLY_COLORS=(
+    "#8A2419" # crest lines, named in DIRECTION.md (mark)
+    "#0C0A09" # arcade fill (wallpaper)
+    "#1A1614" # sky gradient stop (wallpaper)
+    "#221522" # sky gradient stop (wallpaper)
+)
+
+declare -A PAL=()
+re_pal='^([a-z][a-z0-9_]*)[[:space:]]*=[[:space:]]*"([^"]*)"[[:space:]]*$'
+while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ $re_pal ]] && PAL[${BASH_REMATCH[1]}]="${BASH_REMATCH[2]}"
+done <"$PALETTE"
+
+work="$(mktemp -d)"
+trap 'rm -rf -- "$work"' EXIT
+
+fail() { printf 'FAIL %s\n' "$*"; }
+
+is_palette_value() {
+    local want="${1^^}" k
+    for k in "${!PAL[@]}"; do
+        [[ "${PAL[$k]^^}" == "$want" ]] && return 0
+    done
+    return 1
+}
+
+# Every templates/**/*.tpl renders with the current palette.
+check_templates() {
+    local tpl n=0 rc=0
+    while IFS= read -r -d '' tpl; do
+        n=$((n + 1))
+        auspex_render "$PALETTE" "$tpl" "$work/render.out" || {
+            fail "template ${tpl#"$AUSPEX"/} does not render"
+            rc=1
+        }
+    done < <(find "$AUSPEX/templates" -type f -name '*.tpl' -print0 2>/dev/null | sort -z)
+    [[ $rc -eq 0 ]] && printf 'ok   %d templates render\n' "$n"
+    return "$rc"
+}
+
+# INPUTS.sha256 matches the current inputs. It compares inputs, not outputs.
+check_inputs() {
+    [[ -f "$INPUTS_SUMS" ]] || {
+        fail "${INPUTS_SUMS#"$AUSPEX"/} is missing: run auspex theme build"
+        return 1
+    }
+    if (cd "$AUSPEX" && sha256sum -c --quiet -- "$INPUTS_SUMS") >"$work/inputs.out" 2>&1; then
+        printf 'ok   %s is current\n' "${INPUTS_SUMS#"$AUSPEX"/}"
+        return 0
+    fi
+    sed 's/^/     /' "$work/inputs.out"
+    fail "${INPUTS_SUMS#"$AUSPEX"/} is not current: run auspex theme build"
+    return 1
+}
+
+# SHA256SUMS lists every file in system/files/avgvr/ with the correct hash.
+check_sums() {
+    local sums="$SYS/SHA256SUMS" f rc=0
+    [[ -f "$sums" ]] || {
+        fail "system/files/avgvr/SHA256SUMS is missing: run auspex theme build"
+        return 1
+    }
+    if ! (cd "$SYS" && sha256sum -c --quiet SHA256SUMS) >"$work/sums.out" 2>&1; then
+        sed 's/^/     /' "$work/sums.out"
+        fail "system/files/avgvr/SHA256SUMS does not match: run auspex theme build"
+        rc=1
+    fi
+    while IFS= read -r f; do
+        cut -c67- "$sums" | grep -qxF -- "$f" && continue
+        fail "system/files/avgvr/$f is not in SHA256SUMS"
+        rc=1
+    done < <(cd "$SYS" && find . -type f ! -name SHA256SUMS -printf '%P\n' | LC_ALL=C sort)
+    [[ $rc -eq 0 ]] && printf 'ok   system/files/avgvr/SHA256SUMS matches\n'
+    return "$rc"
+}
+
+# Each hex color in the design SVGs is a palette value or a listed design-only color.
+check_svg_colors() {
+    local svg c rc=0
+    for svg in "${SVGS[@]}"; do
+        while IFS= read -r c; do
+            is_palette_value "$c" && continue
+            [[ " ${DESIGN_ONLY_COLORS[*]^^} " == *" ${c^^} "* ]] && continue
+            fail "$svg uses $c, which is not a palette value"
+            rc=1
+        done < <(grep -oiE '#[0-9a-f]{6}\b' "$DESIGN/$svg" | sort -u)
+    done
+    [[ $rc -eq 0 ]] && printf 'ok   SVG colors are palette values\n'
+    return "$rc"
+}
+
+# Each font family in the design SVGs is a palette font and a built TTF family.
+check_svg_fonts() {
+    local svg fam ttf families="" rc=0
+    command -v fc-scan >/dev/null || {
+        echo "fc-scan is not installed"
+        return "$SKIP_EXIT"
+    }
+    for ttf in "$SYS"/fonts/*.ttf; do
+        [[ -f "$ttf" ]] && families+="$(fc-scan --format '%{family}\n' "$ttf")"$'\n'
+    done
+    for svg in "${SVGS[@]}"; do
+        while IFS= read -r fam; do
+            [[ -n "$fam" ]] || continue
+            if ! is_palette_value "$fam"; then
+                fail "$svg uses font $fam, which is not a palette font"
+                rc=1
+            fi
+            if ! tr ',' '\n' <<<"$families" | grep -qxF "$fam"; then
+                fail "$svg uses font $fam, which no TTF in system/files/avgvr/fonts has"
+                rc=1
+            fi
+        done < <(grep -oE "font-family(=\"|:[[:space:]]*[\"'])[^\"']+" "$DESIGN/$svg" |
+            sed -E "s/^font-family(=\"|:[[:space:]]*[\"'])//" | sort -u)
+    done
+    [[ $rc -eq 0 ]] && printf 'ok   SVG fonts are palette fonts with a TTF\n'
+    return "$rc"
+}
+
+# "--color-text-muted" -> palette value of text_muted. "red (#DE5A4C)" -> the
+# hex, which must equal the palette value of red.
+contrast_color() {
+    local cell="$1" key
+    if [[ "$cell" =~ ^--color-([a-z-]+)$ ]]; then
+        key="${BASH_REMATCH[1]//-/_}"
+        [[ -n "${PAL[$key]:-}" ]] || return 1
+        printf '%s' "${PAL[$key]}"
+    elif [[ "$cell" =~ ^([a-z_]+)\ \((#[0-9A-Fa-f]{6})\)$ ]]; then
+        [[ "${PAL[${BASH_REMATCH[1]}]:-}" == "${BASH_REMATCH[2]^^}" ]] || return 1
+        printf '%s' "${BASH_REMATCH[2]}"
+    else
+        return 1
+    fi
+}
+
+# WCAG 2.x contrast ratio of 2 hex colors, with 2 decimals.
+contrast_ratio() {
+    awk -v a="${1#\#}" -v b="${2#\#}" '
+        function ch(h, i,   v) { v = strtonum("0x" substr(h, i, 2)) / 255
+            return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ^ 2.4 }
+        function lum(h) { return 0.2126 * ch(h, 1) + 0.7152 * ch(h, 3) + 0.0722 * ch(h, 5) }
+        BEGIN { x = lum(a); y = lum(b); if (x < y) { t = x; x = y; y = t }
+            printf "%.2f", (x + 0.05) / (y + 0.05) }'
+}
+
+# Each row of the DIRECTION.md contrast table meets its ratio with palette values.
+check_contrast() {
+    local line fg bg listed fgc bgc got n=0 rc=0
+    while IFS= read -r line; do
+        IFS='|' read -r _ fg bg listed _ <<<"$line"
+        fg="$(xargs <<<"$fg")" bg="$(xargs <<<"$bg")" listed="$(xargs <<<"$listed")"
+        listed="${listed%:1}"
+        [[ "$listed" =~ ^[0-9]+\.[0-9]+$ ]] || continue
+        n=$((n + 1))
+        if ! fgc="$(contrast_color "$fg")" || ! bgc="$(contrast_color "$bg")"; then
+            fail "contrast row $fg on $bg: a color is not in the palette"
+            rc=1
+            continue
+        fi
+        got="$(contrast_ratio "$fgc" "$bgc")"
+        if awk -v g="$got" -v l="$listed" 'BEGIN { exit !(g + 0.01 < l) }'; then
+            fail "contrast $fg on $bg is $got:1, DIRECTION.md needs $listed:1"
+            rc=1
+        fi
+    done < <(sed -n '/^| Text | Background | Ratio |/,/^$/p' "$DESIGN/DIRECTION.md")
+    if [[ $n -eq 0 ]]; then
+        fail "DIRECTION.md has no contrast table"
+        return 1
+    fi
+    [[ $rc -eq 0 ]] && printf 'ok   %d contrast pairs meet their ratios\n' "$n"
+    return "$rc"
+}
+
+# Spec 11.2: no manifest row and no step writes game config.
+check_game_paths() {
+    # shellcheck disable=SC2016 # a literal $HOME in the pattern
+    local re='\.steam\b|\.local/share/Steam|\.config/lutris|\.local/share/lutris|\.config/heroic|(~|\$HOME|\$\{HOME\})/Games\b|/usr/share/steam|\.wine\b|WINEPREFIX|compatdata|/pfx\b'
+    local files=("$AUSPEX/manifest/user.tsv") f
+    for f in "$AUSPEX"/system/steps/*.sh; do
+        [[ -f "$f" ]] && files+=("$f")
+    done
+    if grep -nHiE -- "$re" "${files[@]}" >"$work/games.out"; then
+        sed "s|^$AUSPEX/|     |" "$work/games.out"
+        fail "the manifest or a step names a game config path (spec 11.2)"
+        return 1
+    fi
+    printf 'ok   no game config path in the manifest or the steps\n'
+}
+
+CHECKS=(
+    check_templates
+    check_inputs
+    check_sums
+    check_svg_colors
+    check_svg_fonts
+    check_contrast
+    check_game_paths
+)
+
+failed=0
+for check in "${CHECKS[@]}"; do
+    rc=0
+    out="$("$check" 2>&1)" || rc=$?
+    if [[ $rc -eq $SKIP_EXIT ]]; then
+        printf 'skip %s: %s\n' "$check" "${out##*$'\n'}"
+    else
+        printf '%s\n' "$out"
+        [[ $rc -eq 0 ]] || failed=$((failed + 1))
+    fi
+done
+
+if [[ $failed -gt 0 ]]; then
+    auspex_warn "$failed theme checks failed"
+    exit 1
+fi

@@ -107,3 +107,99 @@ teardown() {
     [ "$status" -eq 2 ]
     [[ "$output" == *"usage: auspex theme build"* ]]
 }
+
+# check theme runs on a copy that has the committed theme files.
+theme_repo_copy() {
+    cp -a "$AUSPEX_REPO/themes" "$AUSPEX_REPO/system" "$AUSPEX_REPO/templates" \
+        "$AUSPEX_REPO/manifest" "$AUSPEX/"
+}
+
+@test "check theme passes on the repo" {
+    AUSPEX="$AUSPEX_REPO" run "$AUSPEX_REPO/bin/auspex" check theme
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ok   themes/avgvr/generated/INPUTS.sha256 is current"* ]]
+    [[ "$output" == *"contrast pairs meet their ratios"* ]]
+    [[ "$output" != *FAIL* ]]
+}
+
+@test "check theme passes on a repo copy" {
+    theme_repo_copy
+    run auspex check theme
+    [ "$status" -eq 0 ]
+}
+
+@test "check theme fails when an input changed after the build" {
+    theme_repo_copy
+    printf '\n' >>"$AUSPEX/design/directions/c/wallpaper.svg"
+    run auspex check theme
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"INPUTS.sha256 is not current: run auspex theme build"* ]]
+}
+
+@test "check theme fails on a wrong hash or an unlisted file in system/files/avgvr" {
+    theme_repo_copy
+    printf 'x' >>"$AUSPEX/system/files/avgvr/fonts/OFL-jost.txt"
+    printf 'x\n' >"$AUSPEX/system/files/avgvr/fonts/Extra.ttf"
+    run auspex check theme
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"SHA256SUMS does not match"* ]]
+    [[ "$output" == *"system/files/avgvr/fonts/Extra.ttf is not in SHA256SUMS"* ]]
+}
+
+@test "check theme fails on an SVG color that is not in the palette" {
+    theme_repo_copy
+    sed -i 's/#C9A05A/#123456/' "$AUSPEX/design/directions/c/mark.svg"
+    run auspex check theme
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"mark.svg uses #123456, which is not a palette value"* ]]
+}
+
+@test "check theme fails on an SVG font that is not a palette font or a TTF" {
+    theme_repo_copy
+    sed -i 's/font-family="Marcellus SC"/font-family="Comic Sans"/' "$AUSPEX/design/directions/c/wallpaper.svg"
+    run auspex check theme
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"wallpaper.svg uses font Comic Sans, which is not a palette font"* ]]
+    [[ "$output" == *"wallpaper.svg uses font Comic Sans, which no TTF"* ]]
+}
+
+@test "check theme fails when a palette change breaks a contrast pair" {
+    theme_repo_copy
+    sed -i 's/^text_faint = .*/text_faint = "#3A332C"/' "$AUSPEX/themes/avgvr/colors.toml"
+    run auspex check theme
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"contrast --color-text-faint on --color-bg is"*"needs 5.35:1"* ]]
+}
+
+@test "check theme fails when a contrast hex differs from the palette" {
+    theme_repo_copy
+    sed -i 's/^red = .*/red = "#DE5A4D"/' "$AUSPEX/themes/avgvr/colors.toml"
+    run auspex check theme
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"contrast row red (#DE5A4C) on --color-bg: a color is not in the palette"* ]]
+}
+
+@test "check theme fails on a template that does not render" {
+    theme_repo_copy
+    mkdir -p "$AUSPEX/templates/zz"
+    printf 'color: {{ no_such_key }}\n' >"$AUSPEX/templates/zz/a.css.tpl"
+    run auspex check theme
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"template templates/zz/a.css.tpl does not render"* ]]
+}
+
+@test "check theme fails on a game config path in a step or the manifest" {
+    theme_repo_copy
+    local p
+    for p in '~/.local/share/Steam/x' '$HOME/.config/lutris' '/usr/share/steam/a' '~/Games/x' 'WINEPREFIX=/x'; do
+        printf '# writes %s\n' "$p" >"$AUSPEX/system/steps/990-zz.sh"
+        run auspex check theme
+        [ "$status" -eq 1 ]
+        [[ "$output" == *"names a game config path"* ]]
+    done
+    rm -f "$AUSPEX/system/steps/990-zz.sh"
+    printf '~/.steam/steam.cfg\t~/.x\tcopy\tall\n' >>"$AUSPEX/manifest/user.tsv"
+    run auspex check theme
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"manifest/user.tsv"* ]]
+}

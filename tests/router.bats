@@ -95,3 +95,17 @@ EOF
     [ "$status" -eq 0 ]
     [ "$output" = "other $TEST_TMP/other" ]
 }
+
+@test "theme build and check theme route to their repo commands" {
+    local cmd
+    for cmd in auspex-theme-build auspex-check-theme; do
+        [ -x "$AUSPEX_REPO/bin/$cmd" ]
+        add_command "$cmd"
+    done
+    run auspex theme build --dry-run
+    [ "$status" -eq 0 ]
+    [ "$output" = "auspex-theme-build --dry-run" ]
+    run auspex check theme
+    [ "$status" -eq 0 ]
+    [ "$output" = "auspex-check-theme " ]
+}
