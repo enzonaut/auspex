@@ -6,7 +6,6 @@ FIX="$AUSPEX_REPO/tests/fixtures/render"
 
 setup() {
     auspex_test_setup
-    # shellcheck source=../lib/render.sh
     source "$AUSPEX_REPO/lib/render.sh"
     PAL="$FIX/palette.toml"
 }

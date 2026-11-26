@@ -1,4 +1,6 @@
 # shellcheck shell=bash
+# The file paths in the error messages are not write targets.
+# shellcheck disable=SC2094
 # Template renderer for manifest rows with mode render. Source it, do not run it.
 #
 #   auspex_render <palette> <template> <out>
