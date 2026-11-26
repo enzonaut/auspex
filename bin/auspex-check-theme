@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# auspex:summary=Check the theme: templates, generated files, SVG colors and fonts, contrast and game paths
+# auspex:summary=Check the theme: templates, generated files, SVG colors and fonts, contrast, game paths and the SDDM theme
 # auspex:args=none
 # auspex:level=1
 # auspex:requires-sudo=false
@@ -200,6 +200,52 @@ check_game_paths() {
     printf 'ok   no game config path in the manifest or the steps\n'
 }
 
+# The built SDDM theme in system/files/avgvr/sddm. qmllint runs when it is
+# installed, else the check prints a skip line and does the other checks.
+# qmllint warnings (for example the SDDM context names) are allowed. Only a
+# non-zero exit fails.
+check_sddm() {
+    local dir="$SYS/sddm" qml lint f rc=0
+    if [[ ! -f "$dir/Main.qml" ]]; then
+        fail "system/files/avgvr/sddm/Main.qml is missing (run auspex theme build)"
+        return 1
+    fi
+    lint="$(command -v qmllint6 || command -v qmllint || true)"
+    [[ -n "$lint" || ! -x /usr/lib/qt6/bin/qmllint ]] || lint=/usr/lib/qt6/bin/qmllint
+    if [[ -z "$lint" ]]; then
+        printf 'skip qmllint: qmllint is not installed\n'
+    else
+        for qml in "$dir"/*.qml; do
+            if "$lint" -- "$qml" >"$work/qmllint.out" 2>&1; then
+                printf 'ok   qmllint %s\n' "${qml#"$AUSPEX"/}"
+            else
+                sed 's/^/     /' "$work/qmllint.out"
+                fail "qmllint fails on ${qml#"$AUSPEX"/}"
+                rc=1
+            fi
+        done
+    fi
+    for qml in "$dir"/*.qml; do
+        if grep -nE '#[0-9A-Fa-f]{3,8}\b' -- "$qml" >"$work/hex.out"; then
+            sed 's/^/     /' "$work/hex.out"
+            fail "${qml#"$AUSPEX"/} has a hex color (use config.<key>)"
+            rc=1
+        fi
+    done
+    if ! grep -qx 'QtVersion=6' -- "$dir/metadata.desktop" 2>/dev/null; then
+        fail "system/files/avgvr/sddm/metadata.desktop has no QtVersion=6 line"
+        rc=1
+    fi
+    while IFS= read -r f; do
+        if ! awk -v p="sddm/$f" '$2 == p { found = 1 } END { exit !found }' "$SYS/SHA256SUMS"; then
+            fail "system/files/avgvr/sddm/$f is not in SHA256SUMS"
+            rc=1
+        fi
+    done < <(cd "$dir" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+    [[ $rc -eq 0 ]] && printf 'ok   SDDM theme: no hex color, QtVersion=6, every file in SHA256SUMS\n'
+    return "$rc"
+}
+
 CHECKS=(
     check_templates
     check_inputs
@@ -208,6 +254,7 @@ CHECKS=(
     check_svg_fonts
     check_contrast
     check_game_paths
+    check_sddm
 )
 
 failed=0
