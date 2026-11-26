@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=AVGVR
+Description=AVGVR boot splash: the mark, numerals I to X and a stepped fill of 40 blocks
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/avgvr
+ScriptFile=/usr/share/plymouth/themes/avgvr/avgvr.script

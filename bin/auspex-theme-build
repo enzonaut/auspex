@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# auspex:summary=Make the generated theme assets: fonts, wallpaper PNG, SDDM theme, SHA256SUMS and INPUTS.sha256
+# auspex:summary=Make the generated theme assets: fonts, wallpaper PNG, SDDM theme, plymouth theme, SHA256SUMS and INPUTS.sha256
 # auspex:args=[--dry-run]
 # auspex:level=2
 # auspex:requires-sudo=false
@@ -14,6 +14,11 @@
 #   system/files/avgvr/sddm/*             a copy of themes/avgvr/sddm/*, theme.conf
 #                                         (render of templates/sddm/theme.conf.tpl),
 #                                         backdrop.png (wallpaper.svg) and mark.png
+#   system/files/avgvr/plymouth/*         a copy of themes/avgvr/plymouth/*, avgvr.script
+#                                         (render of templates/plymouth/avgvr.script.tpl),
+#                                         mark.png, and PNG files of SVGs that this
+#                                         script writes (wordmark, numerals, dentils,
+#                                         entry, bullet) in palette colors
 #   system/files/avgvr/SHA256SUMS         every file under system/files/avgvr/
 #   themes/avgvr/generated/INPUTS.sha256  each file in INPUTS and this script
 # auspex check theme compares INPUTS.sha256 with the current inputs.
@@ -28,6 +33,8 @@ SYS=system/files/avgvr
 GEN=themes/avgvr/generated
 SDDM_SRC=themes/avgvr/sddm
 SDDM_TPL=templates/sddm/theme.conf.tpl
+PLY_SRC=themes/avgvr/plymouth
+PLY_TPL=templates/plymouth/avgvr.script.tpl
 PALETTE=themes/avgvr/colors.toml
 MARK_PX=256
 WALL_W=5120
@@ -42,13 +49,19 @@ LICENSES=(OFL-jost.txt OFL-marcellussc.txt)
 INPUTS=(bin/auspex-theme-build "$DESIGN/wallpaper.svg")
 for f in "${FONTS[@]}"; do INPUTS+=("$DESIGN/fonts/${f%%:*}"); done
 for f in "${LICENSES[@]}"; do INPUTS+=("$DESIGN/fonts/$f"); done
-INPUTS+=("$DESIGN/mark.svg" "$SDDM_TPL" "$PALETTE")
-SDDM_FILES=()
-if [[ -d "$AUSPEX/$SDDM_SRC" ]]; then
-    mapfile -t SDDM_FILES < <(cd "$AUSPEX/$SDDM_SRC" && find . -type f -printf '%P\n' | LC_ALL=C sort)
-fi
+INPUTS+=("$DESIGN/mark.svg" "$SDDM_TPL" "$PLY_TPL" "$PALETTE")
+
+# Prints the files under repo folder $1, 1 per line, sorted.
+src_files() {
+    [[ -d "$AUSPEX/$1" ]] || return 0
+    (cd "$AUSPEX/$1" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+}
+mapfile -t SDDM_FILES < <(src_files "$SDDM_SRC")
 [[ ${#SDDM_FILES[@]} -gt 0 ]] || auspex_die "$SDDM_SRC has no files"
 for f in "${SDDM_FILES[@]}"; do INPUTS+=("$SDDM_SRC/$f"); done
+mapfile -t PLY_FILES < <(src_files "$PLY_SRC")
+[[ ${#PLY_FILES[@]} -gt 0 ]] || auspex_die "$PLY_SRC has no files"
+for f in "${PLY_FILES[@]}"; do INPUTS+=("$PLY_SRC/$f"); done
 
 dry_run=false
 for arg in "$@"; do
@@ -70,10 +83,10 @@ done
 
 out="$(mktemp -d)"
 trap 'rm -rf -- "$out"' EXIT
-mkdir -p "$out/$SYS/fonts" "$out/$SYS/sddm" "$out/$GEN" "$out/woff2"
+mkdir -p "$out/$SYS/fonts" "$out/$SYS/sddm" "$out/$SYS/plymouth" "$out/$GEN" "$out/woff2" "$out/svg"
 
 if [[ -d "$AUSPEX/$SYS" ]]; then
-    (cd "$AUSPEX/$SYS" && find . -type f ! -name SHA256SUMS ! -path './fonts/*' ! -path './sddm/*' -print0) |
+    (cd "$AUSPEX/$SYS" && find . -type f ! -name SHA256SUMS ! -path './fonts/*' ! -path './sddm/*' ! -path './plymouth/*' -print0) |
         while IFS= read -r -d '' f; do
             mkdir -p "$(dirname "$out/$SYS/$f")"
             cp -p -- "$AUSPEX/$SYS/$f" "$out/$SYS/$f"
@@ -114,12 +127,54 @@ if ! resvg -w "$MARK_PX" -h "$MARK_PX" "$AUSPEX/$DESIGN/mark.svg" "$out/$SYS/sdd
 fi
 cat -- "$out/resvg.err" >&2
 
+# plymouth theme (spec 7.2). The SVGs use palette hex values, and only the
+# PNG files leave the temp folder.
+declare -A PAL=()
+re_pal='^([a-z][a-z0-9_]*)[[:space:]]*=[[:space:]]*"([^"]*)"[[:space:]]*$'
+while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ $re_pal ]] && PAL[${BASH_REMATCH[1]}]="${BASH_REMATCH[2]}"
+done <"$AUSPEX/$PALETTE"
+for k in bg surface bronze gold border text_faint text_bright font_display; do
+    [[ -n "${PAL[$k]:-}" ]] || auspex_die "$PALETTE has no $k"
+done
+
+# svg_png <name> <width> <height> <body>: writes plymouth/<name>.png.
+svg_png() {
+    printf '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s">%s</svg>\n' \
+        "$2" "$3" "$2" "$3" "$4" >"$out/svg/$1.svg"
+    resvg --skip-system-fonts "${fontargs[@]}" "$out/svg/$1.svg" "$out/$SYS/plymouth/$1.png" ||
+        auspex_die "resvg failed on the $1 SVG"
+}
+
+# svg_text <name> <width> <height> <font size> <letter spacing> <color> <text>
+svg_text() {
+    svg_png "$1" "$2" "$3" "$(printf '<text x="%s" y="%s" text-anchor="middle" font-family="%s" font-size="%s" letter-spacing="%s" fill="%s">%s</text>' \
+        "$(($2 / 2))" "$(($3 * 3 / 4))" "${PAL[font_display]}" "$4" "$5" "$6" "$7")"
+}
+
+for f in "${PLY_FILES[@]}"; do
+    mkdir -p "$(dirname "$out/$SYS/plymouth/$f")"
+    cp -- "$AUSPEX/$PLY_SRC/$f" "$out/$SYS/plymouth/$f"
+done
+auspex_render "$AUSPEX/$PALETTE" "$AUSPEX/$PLY_TPL" "$out/$SYS/plymouth/avgvr.script" ||
+    auspex_die "render failed on $PLY_TPL"
+cp -- "$out/$SYS/sddm/mark.png" "$out/$SYS/plymouth/mark.png"
+svg_text wordmark 1200 200 140 28 "${PAL[text_bright]}" AVSPEX
+for n in I II III IV V VI VII VIII IX X; do
+    svg_text "numeral-$n-off" 200 96 56 4 "${PAL[text_faint]}" "$n"
+    svg_text "numeral-$n-on" 200 96 56 4 "${PAL[gold]}" "$n"
+done
+svg_png dentil-off 32 48 "<rect width=\"32\" height=\"48\" fill=\"${PAL[surface]}\"/>"
+svg_png dentil-on 32 48 "<rect width=\"32\" height=\"48\" fill=\"${PAL[bronze]}\"/>"
+svg_png entry 1200 96 "<rect x=\"1\" y=\"1\" width=\"1198\" height=\"94\" fill=\"${PAL[surface]}\" stroke=\"${PAL[border]}\" stroke-width=\"2\"/>"
+svg_png bullet 24 24 "<circle cx=\"12\" cy=\"12\" r=\"9\" fill=\"${PAL[gold]}\"/>"
+
 (cd "$out/$SYS" && find . -type f ! -name SHA256SUMS -printf '%P\n' | LC_ALL=C sort |
     while IFS= read -r f; do sha256sum -- "$f"; done) >"$out/$SYS/SHA256SUMS"
 (cd "$AUSPEX" && printf '%s\n' "${INPUTS[@]}" | LC_ALL=C sort |
     while IFS= read -r f; do sha256sum -- "$f"; done) >"$out/$GEN/INPUTS.sha256"
 
-for sub in fonts sddm; do
+for sub in fonts sddm plymouth; do
     [[ -d "$AUSPEX/$SYS/$sub" ]] || continue
     (cd "$AUSPEX/$SYS/$sub" && find . -type f -printf '%P\n') | LC_ALL=C sort |
         while IFS= read -r f; do

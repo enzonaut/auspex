@@ -825,3 +825,392 @@ Font=Jost,11'
     [ ! -e "$AUSPEX_SDDM_CONF_DIR" ]
     [ ! -e "$AUSPEX_SYSTEM_STATE" ]
 }
+
+setup_070() {
+    setup_050
+    export AUSPEX_PLYMOUTH_THEME_DIR="$TEST_TMP/plymouth-themes"
+    export AUSPEX_PLYMOUTHD_CONF="$TEST_TMP/etc-plymouth/plymouthd.conf"
+    export AUSPEX_MKINITCPIO_DIR="$TEST_TMP/mkinitcpio.conf.d"
+    mkdir -p "${AUSPEX_PLYMOUTHD_CONF%/*}"
+    printf '[Daemon]\nTheme=bgrt\n' >"$AUSPEX_PLYMOUTHD_CONF"
+    make_fake plymouth-set-default-theme '
+if [[ $# -eq 0 ]]; then
+  sed -n "s/^Theme=//p" "$AUSPEX_PLYMOUTHD_CONF" 2>/dev/null | grep . || echo bgrt
+elif [[ $1 == -* ]]; then
+  exit 2
+else
+  printf "[Daemon]\nTheme=%s\n" "$1" >"$AUSPEX_PLYMOUTHD_CONF"
+fi'
+    cp "$AUSPEX_REPO/system/steps/070-avgvr-plymouth.sh" "$AUSPEX/system/steps/"
+}
+
+step070() {
+    run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; source "$1/system/steps/070-avgvr-plymouth.sh"; "$2"' _ "$AUSPEX" "$1"
+}
+
+plymouth_files() {
+    (cd "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+}
+
+plymouth_listed() {
+    sed -n 's|^[0-9a-f]*  plymouth/||p' "$AUSPEX/system/files/avgvr/SHA256SUMS" | LC_ALL=C sort
+}
+
+@test "070 headers say level 3, requires sudo and read the list and SHA256SUMS" {
+    local f="$AUSPEX_REPO/system/steps/070-avgvr-plymouth.sh"
+    grep -qx '# auspex:level=3' "$f"
+    grep -qx '# auspex:requires-sudo=true' "$f"
+    grep -qx '# auspex:reads=packages/avgvr.list system/files/avgvr/SHA256SUMS' "$f"
+}
+
+@test "070 check fails before apply" {
+    setup_070
+    step070 check
+    [ "$status" -ne 0 ]
+}
+
+@test "070 apply installs plymouth and the hashed theme, selects it, and check passes" {
+    setup_070
+    step070 apply
+    [ "$status" -eq 0 ]
+    [ "$(grep -- '^-S' "$CALLS/pacman")" = "-S --needed --noconfirm plymouth" ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.installed")" = plymouth ]
+    [ "$(plymouth_files)" = "$(plymouth_listed)" ]
+    [ "$(plymouth_files | wc -l)" -eq 28 ]
+    cmp "$AUSPEX/system/files/avgvr/plymouth/avgvr.script" "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr/avgvr.script"
+    [ "$(stat -c %a "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr/avgvr.plymouth")" = 644 ]
+    [ ! -e "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr.new" ]
+    [ "$(fake_calls plymouth-set-default-theme | grep -v '^$')" = avgvr ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.plymouthd.conf.before")" = "$(printf '[Daemon]\nTheme=bgrt')" ]
+    [ -z "$(ls "$TEST_TMP/mkinitcpio.conf.d" 2>/dev/null)" ]
+    step070 check
+    [ "$status" -eq 0 ]
+}
+
+@test "070 apply 2 times gives the same result and keeps the 1st conf copy" {
+    setup_070
+    step070 apply
+    [ "$status" -eq 0 ]
+    printf 'old\n' >"$AUSPEX_PLYMOUTH_THEME_DIR/avgvr/stale.png"
+    step070 check
+    [ "$status" -ne 0 ]
+    step070 apply
+    [ "$status" -eq 0 ]
+    [ "$(plymouth_files)" = "$(plymouth_listed)" ]
+    [ "$(grep -c -- '^-S' "$CALLS/pacman")" -eq 2 ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.installed")" = plymouth ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.plymouthd.conf.before")" = "$(printf '[Daemon]\nTheme=bgrt')" ]
+    step070 check
+    [ "$status" -eq 0 ]
+}
+
+@test "070 check fails on a wrong theme hash or another default theme" {
+    setup_070
+    step070 apply
+    printf 'x' >>"$AUSPEX_PLYMOUTH_THEME_DIR/avgvr/avgvr.script"
+    step070 check
+    [ "$status" -ne 0 ]
+    cp "$AUSPEX/system/files/avgvr/plymouth/avgvr.script" "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr/avgvr.script"
+    step070 check
+    [ "$status" -eq 0 ]
+    printf '[Daemon]\nTheme=spinner\n' >"$AUSPEX_PLYMOUTHD_CONF"
+    step070 check
+    [ "$status" -ne 0 ]
+}
+
+@test "070 apply with a bad hash installs no theme and selects nothing" {
+    setup_070
+    printf 'x' >>"$AUSPEX/system/files/avgvr/plymouth/avgvr.script"
+    step070 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"hash mismatch: system/files/avgvr/plymouth/avgvr.script"* ]]
+    [ ! -e "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr" ]
+    [ ! -e "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr.new" ]
+    [ -z "$(fake_calls plymouth-set-default-theme)" ]
+}
+
+@test "070 apply refuses when packages/avgvr.list does not list plymouth" {
+    setup_070
+    printf 'ttf-jetbrains-mono\n' >"$AUSPEX/packages/avgvr.list"
+    step070 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"does not list plymouth"* ]]
+    [ -z "$(fake_calls pacman)" ]
+}
+
+@test "070 undo restores plymouthd.conf, removes the theme and the recorded package" {
+    setup_070
+    step070 apply
+    [ "$status" -eq 0 ]
+    step070 undo
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_PLYMOUTHD_CONF")" = "$(printf '[Daemon]\nTheme=bgrt')" ]
+    [ ! -e "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr" ]
+    [ "$(grep -- '^-Rns' "$CALLS/pacman")" = "-Rns --noconfirm plymouth" ]
+    [ ! -s "$INSTALLED" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.plymouthd.conf.before" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.installed" ]
+    step070 undo
+    [ "$status" -eq 0 ]
+}
+
+@test "070 undo removes a plymouthd.conf that was absent and keeps a package it did not install" {
+    setup_070
+    rm "$AUSPEX_PLYMOUTHD_CONF"
+    printf 'plymouth\n' >"$INSTALLED"
+    step070 apply
+    [ "$status" -eq 0 ]
+    [ -e "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.plymouthd.conf.absent" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.installed" ]
+    step070 undo
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_PLYMOUTHD_CONF" ]
+    [ "$(cat "$INSTALLED")" = plymouth ]
+    [ -z "$(grep -- '^-Rns' "$CALLS/pacman")" ]
+}
+
+@test "070 undo refuses while the step 080 drop-in exists" {
+    setup_070
+    step070 apply
+    mkdir -p "$AUSPEX_MKINITCPIO_DIR"
+    printf 'HOOKS=()\n' >"$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf"
+    step070 undo
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"undo 080 first"* ]]
+    [ -d "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr" ]
+    [ -z "$(grep -- '^-Rns' "$CALLS/pacman")" ]
+}
+
+@test "070 check uses no sudo and writes nothing" {
+    setup_070
+    step070 check
+    [ -z "$(fake_calls sudo)" ]
+    [ -z "$(grep -v -- '^-Qq' "$CALLS/pacman" 2>/dev/null)" ]
+    [ ! -e "$AUSPEX_PLYMOUTH_THEME_DIR" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE" ]
+    [ "$(cat "$AUSPEX_PLYMOUTHD_CONF")" = "$(printf '[Daemon]\nTheme=bgrt')" ]
+}
+
+CMDLINE_080='root=PARTUUID=0000 zswap.enabled=0 rootflags=subvol=@ rw rootfstype=btrfs'
+HOOKS_080='HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)'
+
+setup_080() {
+    export AUSPEX_SYSTEM_STATE="$TEST_TMP/var-lib-auspex"
+    export AUSPEX_MKINITCPIO_DIR="$TEST_TMP/mkinitcpio.conf.d"
+    export AUSPEX_MKINITCPIO_CONF="$TEST_TMP/mkinitcpio.conf"
+    export AUSPEX_KERNEL_CMDLINE="$TEST_TMP/kernel/cmdline"
+    export AUSPEX_CMDLINE_D="$TEST_TMP/cmdline.d"
+    export AUSPEX_LIMINE_CONFS="$TEST_TMP/boot/limine.conf $TEST_TMP/boot/EFI/BOOT/limine.conf"
+    export MKI_FAIL="$TEST_TMP/mkinitcpio-fail"
+    mkdir -p "$AUSPEX_MKINITCPIO_DIR" "${AUSPEX_KERNEL_CMDLINE%/*}" "$TEST_TMP/boot"
+    printf 'MODULES=(nvidia)\n' >"$AUSPEX_MKINITCPIO_DIR/auspex-nvidia.conf"
+    printf 'MODULES=()\n%s\n' "$HOOKS_080" >"$AUSPEX_MKINITCPIO_CONF"
+    printf '%s\n' "$CMDLINE_080" >"$AUSPEX_KERNEL_CMDLINE"
+    printf 'timeout: 3\n\n/Arch Linux\n    protocol: efi\n    path: boot():/EFI/Linux/arch-linux.efi\n' >"$TEST_TMP/boot/limine.conf"
+    make_fake plymouth-set-default-theme 'echo avgvr'
+    # Log the drop-in and the cmdline at each call. Fail the calls listed in MKI_FAIL.
+    make_fake mkinitcpio '
+n=$(wc -l <"$CALLS/mkinitcpio")
+{ [ -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ] && echo dropin || echo none; cat "$AUSPEX_KERNEL_CMDLINE"; } >>"$CALLS/mkinitcpio.state"
+grep -qx "$n" "$MKI_FAIL" 2>/dev/null && exit 1
+exit 0'
+    cp "$AUSPEX_REPO/system/steps/080-avgvr-boot-splash.sh" "$AUSPEX/system/steps/"
+}
+
+step080() {
+    run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; source "$1/system/steps/080-avgvr-boot-splash.sh"; "$2"' _ "$AUSPEX" "$1"
+}
+
+# The 080 apply changed nothing: no drop-in, the same cmdline, no rebuild, no state.
+assert_080_unchanged() {
+    [ ! -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080" ]
+    [ -z "$(fake_calls mkinitcpio)" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE" ]
+    [ ! -e "$AUSPEX_CMDLINE_D" ]
+}
+
+@test "080 headers say level 3 and requires sudo, and name the cmdline order" {
+    local f="$AUSPEX_REPO/system/steps/080-avgvr-boot-splash.sh"
+    grep -qx '# auspex:level=3' "$f"
+    grep -qx '# auspex:requires-sudo=true' "$f"
+    ! grep -q '^# auspex:reads=' "$f"
+    grep -q '^# The UKI command line of mkinitcpio 42.2' "$f"
+    grep -q '/etc/cmdline.d/\*.conf in sort -V' "$f"
+}
+
+@test "080 check fails before apply" {
+    setup_080
+    step080 check
+    [ "$status" -ne 0 ]
+}
+
+@test "080 apply writes the drop-in, adds quiet splash, rebuilds, and check passes" {
+    setup_080
+    step080 apply
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf")" = "$(printf '%s\n' \
+        '# Written by auspex step 080. Main HOOKS plus plymouth after udev.' \
+        'HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)')" ]
+    [ "$(stat -c %a "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf")" = 644 ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080 quiet splash" ]
+    [ "$(wc -l <"$AUSPEX_KERNEL_CMDLINE")" -eq 1 ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/080-avgvr-boot-splash.cmdline.before")" = "$CMDLINE_080" ]
+    [ "$(fake_calls mkinitcpio)" = "-P" ]
+    [ "$(cat "$CALLS/mkinitcpio.state")" = "$(printf 'dropin\n%s quiet splash' "$CMDLINE_080")" ]
+    [ ! -e "$AUSPEX_CMDLINE_D" ]
+    [ -z "$(ls "$AUSPEX_SYSTEM_STATE" | grep -v cmdline.before)" ]
+    step080 check
+    [ "$status" -eq 0 ]
+}
+
+@test "080 apply 2 times rebuilds once and does not add the words again" {
+    setup_080
+    step080 apply
+    step080 apply
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080 quiet splash" ]
+    [ "$(fake_calls mkinitcpio)" = "-P" ]
+}
+
+@test "080 apply adds only the missing word" {
+    setup_080
+    printf '%s quiet\n' "$CMDLINE_080" >"$AUSPEX_KERNEL_CMDLINE"
+    step080 apply
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080 quiet splash" ]
+    step080 undo
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080 quiet" ]
+}
+
+@test "080 guard 1 refuses without the step 020 drop-in" {
+    setup_080
+    rm "$AUSPEX_MKINITCPIO_DIR/auspex-nvidia.conf"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"auspex-nvidia.conf is missing. Apply step 020 first."* ]]
+    assert_080_unchanged
+}
+
+@test "080 guard 1 refuses when the plymouth theme is not avgvr" {
+    setup_080
+    make_fake plymouth-set-default-theme 'echo bgrt'
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"does not print avgvr. Apply step 070 first."* ]]
+    assert_080_unchanged
+}
+
+@test "080 guard 2 refuses a changed HOOKS line and prints both lines" {
+    setup_080
+    printf 'HOOKS=(base systemd autodetect)\n' >"$AUSPEX_MKINITCPIO_CONF"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"found:    HOOKS=(base systemd autodetect)"* ]]
+    [[ "$output" == *"expected: $HOOKS_080"* ]]
+    assert_080_unchanged
+}
+
+@test "080 guard 3 refuses when the cmdline.d dir exists" {
+    setup_080
+    mkdir "$AUSPEX_CMDLINE_D"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"cmdline.d exists"* ]]
+    [ ! -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080" ]
+    [ -z "$(fake_calls mkinitcpio)" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE" ]
+    [ -z "$(ls "$AUSPEX_CMDLINE_D")" ]
+}
+
+@test "080 guard 4 refuses a Limine entry for arch-linux.efi that sets a cmdline, and prints it" {
+    setup_080
+    mkdir -p "$TEST_TMP/boot/EFI/BOOT"
+    printf '/Other\n    path: boot():/EFI/other.efi\n    cmdline: other\n/Arch Linux\n    path: boot():/EFI/Linux/arch-linux.efi\n    KERNEL_CMDLINE: root=x\n' \
+        >"$TEST_TMP/boot/EFI/BOOT/limine.conf"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"EFI/BOOT/limine.conf:     KERNEL_CMDLINE: root=x"* ]]
+    [[ "$output" != *"cmdline: other"* ]]
+    assert_080_unchanged
+}
+
+@test "080 guard 4 allows a cmdline in an entry for another image" {
+    setup_080
+    printf '/Other\n    path: boot():/EFI/other.efi\n    cmdline: other\n/Arch Linux\n    path: boot():/EFI/Linux/arch-linux.efi\n' \
+        >"$TEST_TMP/boot/limine.conf"
+    step080 apply
+    [ "$status" -eq 0 ]
+}
+
+@test "080 apply refuses a cmdline file with 2 lines" {
+    setup_080
+    printf '%s\nextra\n' "$CMDLINE_080" >"$AUSPEX_KERNEL_CMDLINE"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"exactly 1 line"* ]]
+    [ ! -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ]
+    [ -z "$(fake_calls mkinitcpio)" ]
+}
+
+@test "080 a failed mkinitcpio restores the drop-in state and the cmdline, rebuilds and returns 1" {
+    setup_080
+    echo 1 >"$MKI_FAIL"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"apply failed. Restoring"* ]]
+    [ ! -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080" ]
+    [ "$(fake_calls mkinitcpio)" = "$(printf -- '-P\n-P')" ]
+    [ "$(cat "$CALLS/mkinitcpio.state")" = "$(printf 'dropin\n%s quiet splash\nnone\n%s' "$CMDLINE_080" "$CMDLINE_080")" ]
+    [ -z "$(ls "$AUSPEX_SYSTEM_STATE" | grep -v cmdline.before)" ]
+    [ -z "$(ls -A "$AUSPEX_MKINITCPIO_DIR" | grep -v auspex-nvidia.conf)" ]
+    step080 check
+    [ "$status" -ne 0 ]
+}
+
+@test "080 a failed mkinitcpio keeps an older drop-in and says when the rebuild fails too" {
+    setup_080
+    printf 'HOOKS=(old)\n' >"$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf"
+    printf '1\n2\n' >"$MKI_FAIL"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"the 2nd mkinitcpio -P failed too"* ]]
+    [ "$(cat "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf")" = "HOOKS=(old)" ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080" ]
+}
+
+@test "080 undo removes the drop-in, restores the cmdline and rebuilds" {
+    setup_080
+    step080 apply
+    step080 undo
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ]
+    [ -e "$AUSPEX_MKINITCPIO_DIR/auspex-nvidia.conf" ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/080-avgvr-boot-splash.cmdline.before" ]
+    [ "$(fake_calls mkinitcpio)" = "$(printf -- '-P\n-P')" ]
+    [ "$(sed -n 3p "$CALLS/mkinitcpio.state")" = none ]
+    step080 undo
+    [ "$status" -eq 0 ]
+    [ "$(fake_calls mkinitcpio | wc -l)" -eq 2 ]
+}
+
+@test "080 undo keeps a later cmdline change and removes only the 2 words" {
+    setup_080
+    step080 apply
+    printf '%s quiet splash nowatchdog\n' "$CMDLINE_080" >"$AUSPEX_KERNEL_CMDLINE"
+    step080 undo
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080 nowatchdog" ]
+}
+
+@test "080 check uses no sudo and writes nothing" {
+    setup_080
+    step080 check
+    [ -z "$(fake_calls sudo)" ]
+    [ -z "$(fake_calls mkinitcpio)" ]
+    assert_080_unchanged
+}

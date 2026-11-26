@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# auspex:summary=Check the theme: templates, generated files, SVG colors and fonts, contrast, game paths and the SDDM theme
+# auspex:summary=Check the theme: templates, generated files, SVG colors and fonts, contrast, game paths, the SDDM theme and the plymouth theme
 # auspex:args=none
 # auspex:level=1
 # auspex:requires-sudo=false
@@ -242,6 +242,44 @@ check_sddm() {
     return "$rc"
 }
 
+# Spec 7.6 item 1. The script names each image with a literal Image("x.png").
+check_plymouth() {
+    local dir="$SYS/plymouth" theme_dir=/usr/share/plymouth/themes/avgvr f img rc=0
+    if [[ ! -f "$dir/avgvr.plymouth" || ! -f "$dir/avgvr.script" ]]; then
+        fail "system/files/avgvr/plymouth/avgvr.plymouth or avgvr.script is missing (run auspex theme build)"
+        return 1
+    fi
+    if ! grep -qx "ImageDir=$theme_dir" -- "$dir/avgvr.plymouth" ||
+        ! grep -qx "ScriptFile=$theme_dir/avgvr.script" -- "$dir/avgvr.plymouth"; then
+        fail "avgvr.plymouth needs ImageDir=$theme_dir and ScriptFile=$theme_dir/avgvr.script"
+        rc=1
+    fi
+    if grep -n '{{' -- "$dir/avgvr.script" >"$work/ply.out"; then
+        sed 's/^/     /' "$work/ply.out"
+        fail "system/files/avgvr/plymouth/avgvr.script has an unrendered {{"
+        rc=1
+    fi
+    while IFS= read -r img; do
+        [[ -f "$dir/$img" ]] && continue
+        fail "avgvr.script names $img, which system/files/avgvr/plymouth does not have"
+        rc=1
+    done < <(grep -oE 'Image\("[^"]+"\)' -- "$dir/avgvr.script" | sed -E 's/^Image\("(.*)"\)$/\1/' | sort -u)
+    while IFS= read -r f; do
+        [[ "$f" == *.png ]] && continue
+        if grep -nE '#[0-9A-Fa-f]{3,8}\b' -- "$dir/$f" >"$work/hex.out"; then
+            sed 's/^/     /' "$work/hex.out"
+            fail "system/files/avgvr/plymouth/$f has a hex color (use the palette in the template)"
+            rc=1
+        fi
+        if ! awk -v p="plymouth/$f" '$2 == p { found = 1 } END { exit !found }' "$SYS/SHA256SUMS"; then
+            fail "system/files/avgvr/plymouth/$f is not in SHA256SUMS"
+            rc=1
+        fi
+    done < <(cd "$dir" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+    [[ $rc -eq 0 ]] && printf 'ok   plymouth theme: paths, rendered script, every named image, no hex color\n'
+    return "$rc"
+}
+
 CHECKS=(
     check_templates
     check_inputs
@@ -251,6 +289,7 @@ CHECKS=(
     check_contrast
     check_game_paths
     check_sddm
+    check_plymouth
 )
 
 failed=0
