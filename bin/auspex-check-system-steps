@@ -17,6 +17,11 @@ case "${1:-}" in
 esac
 
 deny_re='(\.config/plasma|\.config/k|~/\.config/k|/etc/sddm\.conf\.d|/usr/share/sddm|/usr/share/plasma)'
+# Step 060 may name only these exact SDDM paths (docs/specs/avgvr-theme.md
+# section 6.3). The filter removes a path only when no path character follows
+# it, so "avgvr/../breeze" or "zz-auspex-avgvr.conf.bak" still fails.
+sddm_allow_step=060-avgvr-sddm
+sddm_allow_sed='s#(/etc/sddm\.conf\.d/zz-auspex-avgvr\.conf|/usr/share/sddm/themes/avgvr(\.new)?)([^A-Za-z0-9_./-]|$)#\3#g'
 repo_path_re='(^|[^A-Za-z0-9_.-])(packages|system/files|config)/[^[:space:]"'"'"';)}]*'
 
 fail=0
@@ -33,7 +38,12 @@ while IFS= read -r step; do
     [[ "$(auspex_header "$file" requires-sudo || true)" == true ]] || errs+=("header requires-sudo is not true")
     [[ -n "$(auspex_header "$file" summary || true)" ]] || errs+=("no summary header")
     bash -n "$file" 2>/dev/null || errs+=("bash -n fails")
-    if hits="$(grep -nE "$deny_re" "$file")"; then
+    if [[ "$step" == "$sddm_allow_step" ]]; then
+        hits="$(sed -E "$sddm_allow_sed" "$file" | grep -nE "$deny_re")" || hits=""
+    else
+        hits="$(grep -nE "$deny_re" "$file")" || hits=""
+    fi
+    if [[ -n "$hits" ]]; then
         errs+=("names a KDE deny-list path: ${hits//$'\n'/; }")
     fi
     text=""

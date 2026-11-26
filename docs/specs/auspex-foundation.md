@@ -266,7 +266,7 @@ Rules:
 - `auspex system apply` refuses to run without a TTY, and refuses if `AUSPEX_ACTOR=agent` is set. This is a 2nd guard behind the permission rules.
 - `auspex system undo <step>` runs the `undo` function in the same way.
 - A step that installs packages calls `pacman -S --needed` with a list from `packages/`. snap-pac makes the root snapshots.
-- A step never edits a file under `~/.config/plasma*`, `~/.config/k*`, or `/etc/sddm.conf.d/` except where this spec says so.
+- A step never edits a file under `~/.config/plasma*`, `~/.config/k*`, or `/etc/sddm.conf.d/` except where this spec says so. Step `060-avgvr-sddm` is the one SDDM exception (section 10 and `docs/specs/avgvr-theme.md` section 6.3).
 
 System steps in this spec:
 
@@ -580,7 +580,7 @@ If item 12 fails, the operator runs `auspex undo` for the user tier and `auspex 
 ## 10. KDE invariants
 
 - The manifest has exactly 2 KDE-scoped items: `config/kde/agent-shortcuts.ini` (merge) and the 2 `.desktop` files. `auspex check kde-untouched` fails if any manifest target is under `~/.config/` and matches `k*`, `plasma*`, `kwin*`, `kde*`, or `*rc` other than these.
-- No system step writes under `/etc/sddm.conf.d/`, `/usr/share/sddm/`, or `/usr/share/plasma/`.
+- No system step writes under `/etc/sddm.conf.d/`, `/usr/share/sddm/`, or `/usr/share/plasma/`, except step `060-avgvr-sddm`, which writes only `/etc/sddm.conf.d/zz-auspex-avgvr.conf` and `/usr/share/sddm/themes/avgvr/` (`docs/specs/avgvr-theme.md` section 6.3).
 - The mkinitcpio drop-in and the browser flags apply to both sessions. They are listed here so that the operator knows.
 
 ## 11. Test seams

@@ -436,11 +436,42 @@ esac'
 }
 
 @test "the static check fails on each bad step" {
-    for bad in no-undo level-1 sddm syntax undeclared-read missing-read bad-read-path; do
+    for bad in no-undo level-1 sddm sddm-breeze sddm-exact-path-wrong-step syntax undeclared-read missing-read bad-read-path; do
         rm -f "$AUSPEX/system/steps/"*.sh
         cp "$FIX/bad/$bad.sh" "$AUSPEX/system/steps/950-$bad.sh"
         run auspex-check-system-steps --static
         [ "$status" -eq 1 ]
+    done
+}
+
+write_sddm_step() {
+    cat >"$AUSPEX/system/steps/$1.sh" <<EOF
+#!/usr/bin/env bash
+# auspex:summary=SDDM exception test step
+# auspex:args=check | apply | undo
+# auspex:level=3
+# auspex:requires-sudo=true
+check() { [[ -e $2 ]]; }
+apply() { : >$2; }
+undo() { rm -f $2; }
+EOF
+}
+
+@test "the SDDM exception allows the exact paths in step 060 only" {
+    rm -f "$AUSPEX/system/steps/"*.sh
+    write_sddm_step 060-avgvr-sddm /etc/sddm.conf.d/zz-auspex-avgvr.conf
+    run auspex-check-system-steps --static
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ok 060-avgvr-sddm"* ]]
+    write_sddm_step 060-avgvr-sddm '"/usr/share/sddm/themes/avgvr.new"'
+    run auspex-check-system-steps --static
+    [ "$status" -eq 0 ]
+    for p in /usr/share/sddm/themes/avgvr/../breeze/x /usr/share/sddm/themes/breeze/x \
+        /etc/sddm.conf.d/zz-auspex-avgvr.conf.bak /etc/sddm.conf.d/other.conf /usr/share/plasma/x; do
+        write_sddm_step 060-avgvr-sddm "$p"
+        run auspex-check-system-steps --static
+        [ "$status" -eq 1 ]
+        [[ "$output" == *"FAIL 060-avgvr-sddm: names a KDE deny-list path"* ]]
     done
 }
 
