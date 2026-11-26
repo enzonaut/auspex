@@ -1,0 +1,7 @@
+[Unit]
+Description=auspex Arch update check (read-only report)
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/auspex update check
+TimeoutStartSec=15m

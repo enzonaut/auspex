@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -z "${AUSPEX:-}" ]]; then
+    AUSPEX="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd -P)"
+fi
+export AUSPEX
+
+if [[ $# -eq 0 || "$1" == help || "$1" == --help || "$1" == -h ]]; then
+    exec "$AUSPEX/bin/auspex-commands"
+fi
+
+max=0
+for word in "$@"; do
+    [[ "$word" =~ ^[a-z0-9][a-z0-9-]*$ ]] || break
+    max=$((max + 1))
+done
+
+words=("$@")
+for ((n = max; n >= 1; n--)); do
+    name="auspex"
+    for ((i = 0; i < n; i++)); do
+        name+="-${words[i]}"
+    done
+    if [[ -f "$AUSPEX/bin/$name" && -x "$AUSPEX/bin/$name" ]]; then
+        exec "$AUSPEX/bin/$name" "${words[@]:n}"
+    fi
+done
+
+printf 'auspex: error: unknown command: %s\n' "$*" >&2
+printf "Run 'auspex help' for the command list.\n" >&2
+exit 2

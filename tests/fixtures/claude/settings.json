@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "awaySummaryEnabled": false,
+  "enabledPlugins": {
+    "example-plugin@example-market": true
+  },
+  "env": {
+    "EXAMPLE_FLAG": "1"
+  },
+  "extraKnownMarketplaces": {
+    "example-market": {
+      "source": {
+        "source": "github",
+        "repo": "example/market"
+      }
+    }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^(startup|resume|clear|compact|fork)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/home/operator/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "model": "opus",
+  "permissions": {
+    "allow": [
+      "Bash(git push:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "Bash(*rm -rf *)",
+      "Bash(*rm -fr *)",
+      "Bash(rm -r /* *)",
+      "Bash(shred *)",
+      "Bash(mkfs*)",
+      "Bash(fdisk*)",
+      "Bash(parted*)",
+      "Bash(wipefs*)",
+      "Bash(dd *of=/dev/*)",
+      "Bash(sudo *)",
+      "Bash(git push --force*)",
+      "Bash(git push *--force*)",
+      "Bash(git push -f *)",
+      "Bash(git push *-f *)",
+      "Bash(git reset --hard*)",
+      "Bash(git checkout -- .)",
+      "Bash(git restore .)",
+      "Bash(git clean -f*)",
+      "Bash(killall *)",
+      "Bash(pkill *claude*)",
+      "Bash(pkill *herdr*)",
+      "Bash(shutdown*)",
+      "Bash(reboot*)",
+      "Bash(poweroff*)",
+      "Bash(halt*)",
+      "Bash(systemctl poweroff*)",
+      "Bash(systemctl reboot*)",
+      "Bash(npm publish*)",
+      "Bash(cargo publish*)",
+      "Bash(twine upload*)",
+      "Bash(docker volume rm*)",
+      "Bash(dropdb *)",
+      "Bash(* DROP DATABASE *)",
+      "Bash(* DROP TABLE *)",
+      "Bash(* drop database *)",
+      "Bash(* drop table *)"
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash /home/operator/.claude/statusline.sh"
+  },
+  "theme": "dark",
+  "tui": {
+    "example": true
+  }
+}

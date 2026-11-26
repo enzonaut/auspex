@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+keys() {
+    [[ -f "$1" ]] || return 0
+    cut -d= -f1 "$1"
+}
+
+owned() {
+    [[ -f "$1" ]] || return 0
+    jq -r '.[]' "$1"
+}
+
+lines() {
+    [[ -f "$1" ]] || return 0
+    awk -F= -v keep="$3" 'FILENAME == ARGV[1] { k[$0] = 1; next }
+        (($1 in k) ? 1 : 0) == keep' "$2" "$1"
+}
+
+tmp="$(mktemp)"
+trap 'rm -f "$tmp"' EXIT
+
+case "$1" in
+    merge)
+        live="$3"
+        [[ -f "$live" ]] || live=/dev/null
+        owned "$4" >"$tmp"
+        awk -F= 'FILENAME == ARGV[1] { old[$0] = 1; next }
+            FILENAME == ARGV[2] { src[$1] = $0; order[++n] = $1; next }
+            ($1 in src) { print src[$1]; done[$1] = 1; next }
+            !($1 in old) { print }
+            END { for (i = 1; i <= n; i++) if (!(order[i] in done)) print src[order[i]] }' \
+            "$tmp" "$2" "$live" >"$5"
+        keys "$2" | LC_ALL=C sort | jq -R . | jq -s . >"$6"
+        ;;
+    restore)
+        owned "$4" >"$tmp"
+        lines "$3" "$tmp" 0 >"$6"
+        owned "$5" >"$tmp"
+        lines "$2" "$tmp" 1 >>"$6"
+        ;;
+    digest)
+        owned "$3" >"$tmp"
+        lines "$2" "$tmp" 1 | LC_ALL=C sort
+        ;;
+    *)
+        printf 'usage: kv merge|restore|digest ...\n' >&2
+        exit 2
+        ;;
+esac

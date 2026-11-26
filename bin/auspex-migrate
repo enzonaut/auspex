@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# auspex:summary=Run the pending migrations once each, or list them with --pending
+# auspex:args=[--pending]
+# auspex:level=2
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+case "${1:-}|$#" in
+    "--pending|1")
+        auspex_migrations_pending
+        exit 0
+        ;;
+    "|0") ;;
+    *)
+        printf 'usage: auspex migrate [--pending]\n' >&2
+        exit 2
+        ;;
+esac
+
+auspex_lock
+auspex_migrations_run || auspex_die "a migration failed"

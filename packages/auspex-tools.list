@@ -1,0 +1,4 @@
+bats
+shellcheck
+jq
+pacman-contrib

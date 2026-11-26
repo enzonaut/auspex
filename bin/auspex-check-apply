@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# auspex:summary=Run the apply, plan, undo and status tests
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+if ! command -v bats >/dev/null 2>&1; then
+    printf 'bats is missing; run step 030-auspex-tools\n'
+    exit 77
+fi
+exec bats "$AUSPEX/tests/apply.bats"

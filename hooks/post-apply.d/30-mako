@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+meta="${AUSPEX_GEN_DIR:-${AUSPEX_STATE:-$HOME/.local/state/auspex}/generations/$(printf %04d "$1")}/meta.json"
+jq -e --arg p .config/mako/ 'any(.targets[]; .path | startswith($p))' "$meta" >/dev/null || exit 0
+pgrep -x mako >/dev/null || exit 0
+makoctl reload

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+meta="${AUSPEX_GEN_DIR:-${AUSPEX_STATE:-$HOME/.local/state/auspex}/generations/$(printf %04d "$1")}/meta.json"
+jq -e --arg p .config/systemd/user/ 'any(.targets[]; .path | startswith($p))' "$meta" >/dev/null || exit 0
+systemctl --user daemon-reload
+if [[ -e "$HOME/.config/systemd/user/auspex-update-check.timer" ]]; then
+    systemctl --user enable --now auspex-update-check.timer
+fi

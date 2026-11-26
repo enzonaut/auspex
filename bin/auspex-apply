@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# auspex:summary=Write the manifest targets as a new generation, then run migrations and post-apply hooks
+# auspex:args=[--dry-run] [--force] [--reason <text>] | --adopt <target>
+# auspex:level=2
+# auspex:requires-sudo=false
+# shellcheck disable=SC2088
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+usage() {
+    printf 'usage: auspex apply [--dry-run] [--force] [--reason <text>]\n' >&2
+    printf '       auspex apply --adopt <target>\n' >&2
+    exit 2
+}
+
+dry_run=false
+force=false
+reason=""
+adopt=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dry-run) dry_run=true ;;
+        --force) force=true ;;
+        --reason)
+            [[ $# -ge 2 ]] || usage
+            reason="$2"
+            shift
+            ;;
+        --adopt)
+            [[ $# -ge 2 ]] || usage
+            adopt="$2"
+            shift
+            ;;
+        *) usage ;;
+    esac
+    shift
+done
+
+adopt_target() {
+    local rel i src="" mode=""
+    rel="$(auspex_rel_path "$1")" || auspex_die "bad target $1"
+    for i in "${!M_REL[@]}"; do
+        if [[ "${M_REL[$i]}" == "$rel" ]]; then
+            src="${M_SRC[$i]}" mode="${M_MODE[$i]}"
+            break
+        fi
+    done
+    [[ -n "$src" ]] || auspex_die "~/$rel is not a managed target"
+    if [[ "$mode" == merge:* ]]; then
+        auspex_die "~/$rel uses $mode. Adopt does not work for a merge target. Edit $src instead"
+    fi
+    [[ -f "$HOME/$rel" ]] || auspex_die "~/$rel does not exist"
+    cp -- "$HOME/$rel" "$AUSPEX/$src" || auspex_die "cannot copy ~/$rel to $src"
+    auspex_index_load
+    IDX_HASH[$rel]="$(auspex_hash_file "$HOME/$rel")" || auspex_die "cannot read ~/$rel"
+    IDX_MODE[$rel]="$mode"
+    auspex_index_save || auspex_die "cannot write $(auspex_index_file)"
+    printf 'copied ~/%s to %s. Commit it, then run auspex apply\n' "$rel" "$src"
+}
+
+if [[ -n "$adopt" ]]; then
+    [[ $dry_run == false && $force == false && -z "$reason" ]] || usage
+    auspex_lock
+    auspex_manifest_load
+    adopt_target "$adopt"
+    exit 0
+fi
+
+if [[ $dry_run == false ]]; then
+    auspex_lock
+fi
+auspex_manifest_load
+if [[ $dry_run == true ]]; then
+    (auspex_git_check) || auspex_log "auspex apply would stop here"
+else
+    auspex_git_check
+fi
+auspex_work_init
+auspex_plan_build
+
+if auspex_plan_has_drift && [[ $force == false ]]; then
+    auspex_plan_print drift
+    auspex_die "drift: a target changed since auspex wrote it. Keep the live file with
+  auspex apply --adopt <target>
+or overwrite it with
+  auspex apply --force"
+fi
+
+if [[ $dry_run == true ]]; then
+    auspex_plan_print changed
+    if [[ ${#CH[@]} -eq 0 ]]; then
+        printf 'nothing to apply\n'
+    else
+        printf 'would write generation %d\n' "$(auspex_gen_next)"
+    fi
+    auspex_migrations_pending | sed 's/^/would run migration /'
+    exit 0
+fi
+
+for r in "${STALE[@]}"; do
+    unset "IDX_HASH[$r]" "IDX_MODE[$r]"
+done
+
+if [[ ${#CH[@]} -eq 0 ]]; then
+    if [[ ${#STALE[@]} -gt 0 ]]; then
+        auspex_index_save || auspex_die "cannot write $(auspex_index_file)"
+    fi
+    auspex_migrations_run || auspex_die "a migration failed"
+    printf 'nothing to apply\n'
+    exit 0
+fi
+
+GEN_REASON="$reason"
+GEN_UNDOES=null
+GEN_TO=null
+auspex_gen_begin apply
+auspex_snapshot
+auspex_gen_commit
+
+if ! auspex_migrations_run; then
+    auspex_meta_status migration-failed || auspex_warn "cannot write $GEN_DIR/meta.json"
+    auspex_gen_prune
+    auspex_die "generation $GEN_N: a migration failed. The targets are written and the post-apply hooks did not run"
+fi
+
+export AUSPEX_GEN_DIR="$GEN_DIR"
+auspex_run_hooks post-apply "$GEN_N"
+auspex_gen_prune
+
+printf 'generation %d\n' "$GEN_N"
+while IFS=$'\t' read -r rel _ action; do
+    printf '%-9s ~/%s\n' "$action" "$rel"
+done <"$AUSPEX_WORK/targets.tsv"

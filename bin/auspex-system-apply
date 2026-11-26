@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# auspex:summary=Apply 1 system step with sudo (operator only, at a TTY)
+# auspex:args=[--dry-run] <step>
+# auspex:level=3
+# auspex:requires-sudo=true
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+# shellcheck source-path=SCRIPTDIR source=../lib/system-steps.sh
+source "$AUSPEX/lib/system-steps.sh"
+
+system_step_run apply "$@"

@@ -1,0 +1,15 @@
+[ActivityManager]
+_k_friendly_name=Activity Manager
+next activity=Meta+A,none,Walk through activities
+
+[kwin]
+Walk Through Windows of Current Application=Alt+`\tMeta+`,Alt+`\tMeta+`,Walk Through Windows of Current Application
+Window to Next Screen=Meta+Shift+Right,Meta+Shift+Right,Move Window to Next Screen
+_k_friendly_name=KWin
+
+[kwin][$InverseAction]
+Walk Through Windows of Current Application (Reverse)=Walk Through Windows of Current Application
+Window to Next Screen=Window to Previous Screen
+
+[services][other.desktop]
+_launch=Meta+Alt+O

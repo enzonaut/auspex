@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# auspex:summary=Count pending updates, ask the headless agent for a read-only report, and notify
+# auspex:args=[--dry-run]
+# auspex:level=3
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+dry=0
+case "${1:-}" in
+    --dry-run) dry=1 ;;
+    '') ;;
+    -h | --help)
+        printf 'usage: auspex update check [--dry-run]\n'
+        exit 0
+        ;;
+    *) auspex_die "usage: auspex update check [--dry-run]" 2 ;;
+esac
+
+# A user timer can start with a short PATH. Add ~/.local/bin at the end.
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) PATH="$PATH:$HOME/.local/bin" ;;
+esac
+export PATH
+
+today="$(date +%Y-%m-%d)"
+report="$AUSPEX_STATE/reports/arch-update/$today.md"
+prompt="Use the arch-update skill. Do only part 1: gather and report. Run read-only commands only. Do not change the system. End your answer with 1 line that starts SUMMARY:"
+title="Arch update check"
+
+if [[ $dry -eq 1 ]]; then
+    printf 'step 1: count updates with checkupdates and yay -Qua\n'
+    printf 'step 2: run auspex agent --headless --prompt %q --report %s\n' "$prompt" "$report"
+    printf 'step 3: run notify-send --app-name=auspex --action=open=Open --wait %q <SUMMARY line or counts>\n' "$title"
+    printf 'step 4: if the answer is open, run auspex agent --window --prompt %q\n' "/arch-update Read $report. Continue from the report."
+    exit 0
+fi
+
+count_lines() {
+    local out rc=0
+    out="$("$@" 2>/dev/null)" || rc=$?
+    # checkupdates exits 2 when there is no update. A missing tool counts as 0.
+    if [[ $rc -ne 0 && $rc -ne 2 ]]; then
+        printf '0\n'
+        return 0
+    fi
+    if [[ -z "$out" ]]; then printf '0\n'; else printf '%s\n' "$out" | wc -l; fi
+}
+
+repo_count="$(count_lines checkupdates)"
+aur_count="$(count_lines yay -Qua)"
+counts="$repo_count repo and $aur_count AUR updates"
+
+summary=""
+if "$AUSPEX_BIN/auspex" agent --headless --prompt "$prompt" --report "$report" >/dev/null 2>&1; then
+    summary="$(grep -E '^SUMMARY:' -- "$report" 2>/dev/null | tail -n 1 || true)"
+    summary="${summary#SUMMARY:}"
+    summary="${summary# }"
+else
+    auspex_warn "the headless agent failed; the notification shows the counts"
+fi
+[[ -n "$summary" ]] || summary="$counts"
+
+answer="$(notify-send --app-name=auspex --action=open=Open --wait "$title" "$summary" || true)"
+if [[ "$answer" == open ]]; then
+    "$AUSPEX_BIN/auspex" agent --window --prompt "/arch-update Read $report. Continue from the report."
+fi

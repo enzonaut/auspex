@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# auspex:summary=Print the command list from the command headers, or check the headers
+# auspex:args=[--markdown | --check]
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+HEADERS=(summary args level requires-sudo)
+RESERVED=(help)
+
+usage() {
+    printf 'usage: auspex commands [--markdown | --check]\n' >&2
+    exit 2
+}
+
+command_files() {
+    local f
+    for f in "$AUSPEX_BIN"/auspex-*; do
+        [[ -e "$f" ]] && printf '%s\n' "$f"
+    done
+}
+
+print_text() {
+    local f words args summary
+    while IFS= read -r f; do
+        words="$(auspex_command_words "$f")"
+        args="$(auspex_header "$f" args || true)"
+        summary="$(auspex_header "$f" summary || true)"
+        printf '  %-42s %s\n' "auspex $words${args:+ $args}" "$summary"
+    done < <(command_files)
+}
+
+md_cell() {
+    local s="$1"
+    printf '%s' "${s//|/\\|}"
+}
+
+print_markdown() {
+    local f words args level sudo summary
+    printf '| Command | Args | Level | Sudo | Summary |\n'
+    printf '|---|---|---|---|---|\n'
+    while IFS= read -r f; do
+        words="$(auspex_command_words "$f")"
+        args="$(auspex_header "$f" args || true)"
+        level="$(auspex_header "$f" level || true)"
+        sudo="$(auspex_header "$f" requires-sudo || true)"
+        summary="$(auspex_header "$f" summary || true)"
+        # shellcheck disable=SC2016 # The backticks are Markdown, not a command.
+        printf '| `auspex %s` | %s | %s | %s | %s |\n' \
+            "$words" \
+            "${args:+\`$(md_cell "$args")\`}" \
+            "$level" "$sudo" "$(md_cell "$summary")"
+    done < <(command_files)
+}
+
+check_commands() {
+    local f name key value words errors=0 reserved
+    declare -A seen=()
+    while IFS= read -r f; do
+        name="${f##*/}"
+        if [[ ! -f "$f" || ! -x "$f" ]]; then
+            printf '%s: not executable\n' "$name"
+            errors=$((errors + 1))
+        fi
+        for key in "${HEADERS[@]}"; do
+            if ! value="$(auspex_header "$f" "$key")" || [[ -z "$value" ]]; then
+                printf '%s: missing header # auspex:%s=\n' "$name" "$key"
+                errors=$((errors + 1))
+                continue
+            fi
+            case "$key=$value" in
+                level=[123] | requires-sudo=true | requires-sudo=false | summary=* | args=*) ;;
+                *)
+                    printf '%s: bad value auspex:%s=%s\n' "$name" "$key" "$value"
+                    errors=$((errors + 1))
+                    ;;
+            esac
+        done
+        if [[ ! "${name#auspex-}" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+            printf '%s: the router cannot reach this name; use only a-z, 0-9 and -\n' "$name"
+            errors=$((errors + 1))
+        fi
+        words="$(auspex_command_words "${name,,}")"
+        words="${words//_/ }"
+        for reserved in "${RESERVED[@]}"; do
+            if [[ "$words" == "$reserved" || "$words" == "$reserved "* ]]; then
+                printf '%s: the router reserves the word "%s"\n' "$name" "$reserved"
+                errors=$((errors + 1))
+            fi
+        done
+        if [[ -n "${seen[$words]:-}" ]]; then
+            printf '%s: name collision with %s on "auspex %s"\n' "$name" "${seen[$words]}" "$words"
+            errors=$((errors + 1))
+        else
+            seen[$words]="$name"
+        fi
+    done < <(command_files)
+
+    if ((errors > 0)); then
+        printf 'auspex commands --check: %d error(s)\n' "$errors"
+        return 1
+    fi
+    printf 'auspex commands --check: %d command(s) ok\n' "${#seen[@]}"
+}
+
+case "${1:-}" in
+    "")
+        printf 'auspex <command> [args]\n\n'
+        print_text
+        ;;
+    --markdown) print_markdown ;;
+    --check) check_commands ;;
+    *) usage ;;
+esac

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# auspex:summary=Verify the Claude Code flags that auspex agent needs and the command line of each mode
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) PATH="$PATH:$HOME/.local/bin" ;;
+esac
+fail=0
+if ! help="$(claude --help 2>&1)"; then
+    printf 'FAIL claude --help did not run; is Claude Code installed?\n'
+    fail=1
+else
+    for flag in --settings -p --disallowedTools; do
+        if grep -qE -- "(^|[ ,])$flag([ ,=<]|$)" <<<"$help"; then
+            printf 'ok   claude --help lists %s\n' "$flag"
+        else
+            printf 'FAIL claude --help does not list %s\n' "$flag"
+            fail=1
+        fi
+    done
+fi
+if ! command -v bats >/dev/null 2>&1; then
+    printf 'bats is missing; run step 030-auspex-tools\n'
+    exit 77
+fi
+bats "$AUSPEX/tests/agent.bats" || fail=1
+exit "$fail"

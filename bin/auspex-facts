@@ -1,0 +1,282 @@
+#!/usr/bin/env bash
+# auspex:summary=Print the machine state: host, session, gpu, display, repo, packages, services, journal, disk
+# auspex:args=[--json] [--logs] [--section <name>]
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+SECTIONS=(host session gpu display auspex packages services journal disk)
+LIMIT="${AUSPEX_FACTS_LIMIT:-3}"
+PROC="${AUSPEX_PROC:-/proc}"
+SYS="${AUSPEX_SYS:-/sys}"
+
+usage() {
+    printf 'usage: auspex facts [--json] [--logs] [--section <name>]\n' >&2
+    exit 2
+}
+
+unavail() {
+    printf 'unavailable\t%s\n' "$1"
+    exit 0
+}
+
+need() {
+    command -v "$1" >/dev/null 2>&1 || unavail "$1 not found"
+}
+
+kv() {
+    printf '%s\t%s\n' "$1" "$2"
+}
+
+has_display() {
+    [[ -n "${WAYLAND_DISPLAY:-}" || -n "${DISPLAY:-}" ]]
+}
+
+collect_host() {
+    local host kernel up cpu
+    host="$(uname -n 2>/dev/null || true)"
+    kernel="$(uname -r 2>/dev/null || true)"
+    up="$(cut -d' ' -f1 "$PROC/uptime" 2>/dev/null || true)"
+    cpu="$(sed -n 's/^model name[[:space:]]*:[[:space:]]*//p' "$PROC/cpuinfo" 2>/dev/null | head -n 1 || true)"
+    kv hostname "${host:-unknown}"
+    kv kernel "${kernel:-unknown}"
+    kv uptime_seconds "${up%%.*}"
+    kv cpu "${cpu:-unknown}"
+}
+
+collect_session() {
+    local desktop="${XDG_CURRENT_DESKTOP:-}" kind=none
+    case "${desktop,,}" in
+        *hyprland*) kind=hyprland ;;
+        *kde*) kind=kde ;;
+    esac
+    kv xdg_current_desktop "$desktop"
+    kv xdg_session_type "${XDG_SESSION_TYPE:-}"
+    kv session "$kind"
+}
+
+collect_gpu() {
+    local line name driver var p val
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        line="$(nvidia-smi --query-gpu=name,driver_version --format=csv,noheader 2>/dev/null | head -n 1)" ||
+            unavail "nvidia-smi failed"
+        [[ -n "$line" ]] || unavail "nvidia-smi printed nothing"
+        name="${line%%,*}"
+        driver="${line#*,}"
+        kv name "${name# }"
+        kv driver_version "${driver# }"
+    else
+        kv name "unavailable: nvidia-smi not found"
+    fi
+    for p in modeset fbdev; do
+        val="$(cat "$SYS/module/nvidia_drm/parameters/$p" 2>/dev/null || true)"
+        kv "nvidia_drm_$p" "${val:-unavailable}"
+    done
+    for var in LIBVA_DRIVER_NAME __GLX_VENDOR_LIBRARY_NAME NVD_BACKEND GSK_RENDERER; do
+        kv "$var" "${!var:-unset}"
+    done
+}
+
+collect_display() {
+    local kind
+    has_display || unavail "no display"
+    kind="$(collect_session | sed -n 's/^session\t//p')"
+    case "$kind" in
+        hyprland)
+            need hyprctl
+            need jq
+            hyprctl -j monitors 2>/dev/null |
+                jq -r '.[] | ["output_" + .name, "\(.width)x\(.height)@\(.refreshRate) scale=\(.scale) vrr=\(.vrr)"] | @tsv' ||
+                unavail "hyprctl failed"
+            ;;
+        kde)
+            need kscreen-doctor
+            kscreen-doctor -o 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' |
+                awk '/^Output:/ {n++; printf "output_%d\t%s\n", n, $0}' ||
+                unavail "kscreen-doctor failed"
+            ;;
+        *) unavail "no known compositor" ;;
+    esac
+}
+
+collect_auspex() {
+    local commit dirty status
+    kv repo "$AUSPEX"
+    if command -v git >/dev/null 2>&1 && git -C "$AUSPEX" rev-parse --git-dir >/dev/null 2>&1; then
+        commit="$(git -C "$AUSPEX" rev-parse --short HEAD 2>/dev/null || true)"
+        dirty="$(git -C "$AUSPEX" status --porcelain 2>/dev/null | wc -l)"
+        kv commit "${commit:-unknown}"
+        kv dirty_files "$dirty"
+    else
+        kv commit "unavailable: not a git repo"
+    fi
+    if [[ -x "$AUSPEX_BIN/auspex-status" ]]; then
+        status="$("$AUSPEX_BIN/auspex-status" 2>&1 | tr '\n' ';' || true)"
+        kv status "${status%;}"
+    else
+        kv status "unavailable: auspex status not installed"
+    fi
+}
+
+collect_packages() {
+    local f missing=() pkg foreign
+    need pacman
+    shopt -s nullglob
+    for f in "$AUSPEX"/packages/*.list; do
+        while IFS= read -r pkg; do
+            pkg="${pkg%%#*}"
+            pkg="${pkg//[[:space:]]/}"
+            [[ -n "$pkg" ]] || continue
+            pacman -Q "$pkg" >/dev/null 2>&1 || missing+=("$pkg")
+        done <"$f"
+    done
+    foreign="$(pacman -Qm 2>/dev/null | wc -l)"
+    kv missing_count "${#missing[@]}"
+    kv missing "${missing[*]:-none}"
+    kv foreign_count "$foreign"
+}
+
+collect_services() {
+    local sys usr timer
+    need systemctl
+    sys="$(systemctl --failed --no-legend --plain 2>/dev/null | awk '{print $1}' | paste -sd' ' || true)"
+    usr="$(systemctl --user --failed --no-legend --plain 2>/dev/null | awk '{print $1}' | paste -sd' ' || true)"
+    timer="$(systemctl --user list-timers --no-legend --plain 'auspex*' 2>/dev/null | head -n 1 || true)"
+    kv failed_system_units "${sys:-none}"
+    kv failed_user_units "${usr:-none}"
+    kv auspex_timer "${timer:-none}"
+}
+
+collect_journal() {
+    need journalctl
+    need jq
+    journalctl -b -p err -o json --no-pager 2>/dev/null |
+        jq -rs '
+            length as $n
+            | (group_by(._SYSTEMD_UNIT // .SYSLOG_IDENTIFIER // "unknown")
+               | map({u: (.[0]._SYSTEMD_UNIT // .[0].SYSLOG_IDENTIFIER // "unknown"), c: length})
+               | sort_by(-.c) | .[:10]) as $top
+            | (["total_errors", "\($n)"] | @tsv),
+              ($top[] | ["unit_" + .u, "\(.c)"] | @tsv)' ||
+        unavail "journalctl failed"
+}
+
+collect_logs() {
+    need journalctl
+    journalctl -b -p err -n 30 --no-pager -o short 2>/dev/null || unavail "journalctl failed"
+}
+
+collect_disk() {
+    local m line
+    need df
+    for m in / /home; do
+        line="$(df -h --output=avail,pcent "$m" 2>/dev/null | tail -n 1 | tr -s ' ')" || line=""
+        line="${line# }"
+        kv "free_${m//\//root}" "${line:-unavailable}"
+    done
+}
+
+collect_main() {
+    local name="$1"
+    if [[ ! " ${SECTIONS[*]} logs " == *" $name "* ]]; then
+        usage
+    fi
+    "collect_$name"
+}
+
+run_section() {
+    local rc=0
+    timeout "$LIMIT" "$AUSPEX_BIN/auspex-facts" --collect "$1" >"$2" 2>/dev/null || rc=$?
+    if [[ $rc -eq 124 ]]; then
+        printf 'unavailable\ttimed out after %ss\n' "$LIMIT" >"$2"
+    elif [[ $rc -ne 0 ]]; then
+        printf 'unavailable\tsection failed (exit %d)\n' "$rc" >"$2"
+    fi
+}
+
+render_md() {
+    local name="$1" file="$2" key value
+    printf '## %s\n\n' "$name"
+    while IFS=$'\t' read -r key value || [[ -n "$key" ]]; do
+        if [[ "$key" == unavailable ]]; then
+            printf 'unavailable: %s\n' "$value"
+        else
+            printf -- '- %s: %s\n' "$key" "$value"
+        fi
+    done <"$file"
+    printf '\n'
+}
+
+section_json() {
+    jq -Rn '
+        [inputs | split("\t") | select(length >= 2) | {key: .[0], value: (.[1:] | join("\t"))}] as $rows
+        | if ($rows | length) == 1 and $rows[0].key == "unavailable"
+          then {unavailable: $rows[0].value}
+          else ($rows | from_entries) end' <"$1"
+}
+
+main() {
+    local json=false logs=false only="" name tmp pids=() out
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --collect)
+                [[ $# -eq 2 ]] || usage
+                collect_main "$2"
+                return 0
+                ;;
+            --json) json=true ;;
+            --logs) logs=true ;;
+            --section)
+                [[ $# -ge 2 ]] || usage
+                only="$2"
+                shift
+                ;;
+            *) usage ;;
+        esac
+        shift
+    done
+    if [[ -n "$only" && ! " ${SECTIONS[*]} " == *" $only "* ]]; then
+        printf 'auspex facts: unknown section: %s\n' "$only" >&2
+        exit 2
+    fi
+
+    tmp="$(mktemp -d)"
+    # shellcheck disable=SC2064
+    trap "rm -rf '$tmp'" EXIT
+    local wanted=("${SECTIONS[@]}")
+    [[ -z "$only" ]] || wanted=("$only")
+    for name in "${wanted[@]}"; do
+        run_section "$name" "$tmp/$name" &
+        pids+=($!)
+    done
+    if $logs && [[ -z "$only" || "$only" == journal ]]; then
+        run_section logs "$tmp/logs" &
+        pids+=($!)
+    fi
+    wait "${pids[@]}"
+
+    if $json; then
+        out="{}"
+        for name in "${wanted[@]}"; do
+            out="$(jq -c --arg k "$name" --argjson v "$(section_json "$tmp/$name")" '. + {($k): $v}' <<<"$out")"
+        done
+        if [[ -f "$tmp/logs" ]]; then
+            out="$(jq -c --rawfile v "$tmp/logs" '. + {logs: ($v | split("\n") | map(select(length > 0)))}' <<<"$out")"
+        fi
+        printf '%s\n' "$out"
+        return 0
+    fi
+
+    for name in "${wanted[@]}"; do
+        render_md "$name" "$tmp/$name"
+    done
+    if [[ -f "$tmp/logs" ]]; then
+        printf '## logs\n\n```\n'
+        cat "$tmp/logs"
+        printf '```\n'
+    fi
+}
+
+main "$@"

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=auspex agent
+Comment=Show the auspex agent in the herdr app
+Exec=sh -c "exec \\"\\$HOME/.local/bin/auspex\\" agent --window"
+Icon=utilities-terminal
+Terminal=false
+NoDisplay=true
+StartupNotify=false

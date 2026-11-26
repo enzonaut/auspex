@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# auspex:summary=Print what auspex apply would change, with a diff for each update and drift
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+if [[ $# -gt 0 ]]; then
+    printf 'usage: auspex plan\n' >&2
+    exit 2
+fi
+
+auspex_manifest_load
+auspex_work_init
+auspex_plan_build
+auspex_plan_print all

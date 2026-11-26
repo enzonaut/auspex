@@ -1,0 +1,11 @@
+{
+    "layer": "top",
+    "position": "top",
+    "modules-left": ["hyprland/workspaces"],
+    "modules-center": ["clock"],
+    "modules-right": ["pulseaudio", "network", "tray"],
+    "clock": { "format": "{:%a %d %b %H:%M}" },
+    "pulseaudio": { "on-click": "pavucontrol" },
+    "network": { "format-ethernet": "eth", "format-wifi": "{essid}", "format-disconnected": "offline" },
+    "tray": { "spacing": 8 }
+}

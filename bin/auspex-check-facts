@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# auspex:summary=Check that auspex facts prints valid JSON, works headless and runs in under 5 s
+# auspex:args=[--no-display]
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+command -v jq >/dev/null 2>&1 || {
+    echo "jq not installed"
+    exit 77
+}
+
+SECTIONS=(host session gpu display auspex packages services journal disk)
+errors=0
+fail() {
+    printf '%s\n' "$1"
+    errors=$((errors + 1))
+}
+
+out="$(mktemp)"
+trap 'rm -f "$out"' EXIT
+
+start=$SECONDS
+rc=0
+env -u WAYLAND_DISPLAY -u DISPLAY "$AUSPEX_BIN/auspex-facts" --json >"$out" 2>/dev/null || rc=$?
+elapsed=$((SECONDS - start))
+
+[[ $rc -eq 0 ]] || fail "auspex facts --json exited $rc"
+jq -e . "$out" >/dev/null 2>&1 || fail "auspex facts --json is not valid JSON"
+for s in "${SECTIONS[@]}"; do
+    jq -e --arg s "$s" 'has($s)' "$out" >/dev/null 2>&1 || fail "missing section key: $s"
+done
+jq -e '.display.unavailable' "$out" >/dev/null 2>&1 || fail "display is not unavailable when headless"
+((elapsed < 5)) || fail "auspex facts took ${elapsed}s, limit is 5s"
+
+if ((errors > 0)); then
+    exit 1
+fi
+echo "facts ok (${elapsed}s)"

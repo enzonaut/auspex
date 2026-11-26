@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# auspex:summary=Verify that config/hypr/hyprland.lua has a window rule for each row of spec 9.5
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+config="$AUSPEX/config/hypr/hyprland.lua"
+[[ -f "$config" ]] || auspex_die "no $config"
+
+rows=(
+    'Steam dialogs' 'class = "^steam$" }' 'float = true, center = true'
+    'Steam main window' 'class = "^steam$", title = "^Steam$" }' 'tile = true'
+    'Steam games' 'class = "^steam_app_.*" }' 'idle_inhibit = "fullscreen"'
+    'Battle.net' 'class = "^battle\\.net\\.exe$" }' 'float = true, center = true, size = { 1400, 900 }'
+    'Battle.net login and updater' 'title = "^(Battle\\.net Login|Blizzard Battle\\.net)$" }' 'float = true, center = true'
+    'Lutris dialogs' 'class = "^net\\.lutris\\.Lutris$" }' 'float = true'
+    'Lutris main window' 'class = "^net\\.lutris\\.Lutris$", title = "^Lutris$" }' 'tile = true'
+    'Heroic dialogs' 'class = "^heroic$" }' 'float = true'
+    'Heroic main window' 'class = "^heroic$", title = "^Heroic Games Launcher$" }' 'tile = true'
+    'ProtonUp-Qt' 'class = "^net\\.davidotek\\.pupgui2$" }' 'float = true'
+    'gamescope' 'class = "^gamescope$" }' 'fullscreen = true, idle_inhibit = "always"'
+    'Any fullscreen window' 'fullscreen = true }' 'idle_inhibit = "fullscreen"'
+    'File pickers' 'title = "^(Open File|Save File).*" }' 'float = true, center = true, size = { "monitor_w * 0.5", "monitor_h * 0.5" }'
+    'Portal file pickers' 'class = "^xdg-desktop-portal-.*" }' 'float = true, center = true, size = { "monitor_w * 0.5", "monitor_h * 0.5" }'
+    'pavucontrol' 'org\\.pulseaudio\\.pavucontrol' 'float = true'
+    'blueman' 'blueman-manager' 'float = true'
+    'nm-connection-editor' 'nm-connection-editor' 'float = true'
+)
+
+fail=0
+rules="$(grep -E '^hl\.window_rule\(' "$config" || true)"
+for ((i = 0; i < ${#rows[@]}; i += 3)); do
+    name="${rows[i]}" match="${rows[i + 1]}" rule="${rows[i + 2]}"
+    if grep -F -- "$match" <<<"$rules" | grep -qF -- "$rule"; then
+        printf 'ok   %s\n' "$name"
+    else
+        printf 'FAIL %s: no rule with %s and %s\n' "$name" "$match" "$rule"
+        fail=1
+    fi
+done
+exit "$fail"
