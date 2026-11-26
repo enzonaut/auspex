@@ -7,7 +7,6 @@ setup() {
     make_repo_copy
     mkdir -p "$AUSPEX/design/directions" "$AUSPEX/themes/avgvr" "$AUSPEX/system/files"
     cp -a "$AUSPEX_REPO/design/directions/c" "$AUSPEX/design/directions/"
-    # The fake resvg writes a PNG stand-in made from its arguments.
     make_fake resvg 'out="${*: -1}"; printf "PNG %s\n" "${*: -2:1}" >"$out"'
 }
 
@@ -108,7 +107,6 @@ teardown() {
     [[ "$output" == *"usage: auspex theme build"* ]]
 }
 
-# check theme runs on a copy that has the committed theme files.
 theme_repo_copy() {
     cp -a "$AUSPEX_REPO/themes" "$AUSPEX_REPO/system" "$AUSPEX_REPO/templates" \
         "$AUSPEX_REPO/manifest" "$AUSPEX/"

@@ -7,9 +7,6 @@
 # Runs each function in CHECKS. A check function prints its own "ok" or
 # "FAIL" lines and returns 0 (pass), 77 (skip, the last line is the reason)
 # or 1 (fail). This command fails when 1 or more checks fail.
-# Hook point: later tickets add a function (check_sddm, check_plymouth,
-# check_hyprland, check_waybar, check_fuzzel, check_herdr) and its name to
-# CHECKS. The function reads only repo files and uses no sudo and no display.
 set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=../lib/common.sh
 source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
@@ -22,13 +19,11 @@ PALETTE="$AUSPEX/themes/$THEME/colors.toml"
 INPUTS_SUMS="$AUSPEX/themes/$THEME/generated/INPUTS.sha256"
 SVGS=(mark.svg wallpaper.svg)
 
-# Colors that the frozen design SVGs use and the palette does not have.
-# design/directions/c/ is read only, so they stay here. Keep this list short.
 DESIGN_ONLY_COLORS=(
-    "#8A2419" # crest lines, named in DIRECTION.md (mark)
-    "#0C0A09" # arcade fill (wallpaper)
-    "#1A1614" # sky gradient stop (wallpaper)
-    "#221522" # sky gradient stop (wallpaper)
+    "#8A2419"
+    "#0C0A09"
+    "#1A1614"
+    "#221522"
 )
 
 declare -A PAL=()
@@ -50,7 +45,6 @@ is_palette_value() {
     return 1
 }
 
-# Every templates/**/*.tpl renders with the current palette.
 check_templates() {
     local tpl n=0 rc=0
     while IFS= read -r -d '' tpl; do
@@ -64,7 +58,6 @@ check_templates() {
     return "$rc"
 }
 
-# INPUTS.sha256 matches the current inputs. It compares inputs, not outputs.
 check_inputs() {
     [[ -f "$INPUTS_SUMS" ]] || {
         fail "${INPUTS_SUMS#"$AUSPEX"/} is missing: run auspex theme build"
@@ -79,7 +72,6 @@ check_inputs() {
     return 1
 }
 
-# SHA256SUMS lists every file in system/files/avgvr/ with the correct hash.
 check_sums() {
     local sums="$SYS/SHA256SUMS" f rc=0
     [[ -f "$sums" ]] || {
@@ -100,7 +92,6 @@ check_sums() {
     return "$rc"
 }
 
-# Each hex color in the design SVGs is a palette value or a listed design-only color.
 check_svg_colors() {
     local svg c rc=0
     for svg in "${SVGS[@]}"; do
@@ -115,7 +106,6 @@ check_svg_colors() {
     return "$rc"
 }
 
-# Each font family in the design SVGs is a palette font and a built TTF family.
 check_svg_fonts() {
     local svg fam ttf families="" rc=0
     command -v fc-scan >/dev/null || {
@@ -143,8 +133,6 @@ check_svg_fonts() {
     return "$rc"
 }
 
-# "--color-text-muted" -> palette value of text_muted. "red (#DE5A4C)" -> the
-# hex, which must equal the palette value of red.
 contrast_color() {
     local cell="$1" key
     if [[ "$cell" =~ ^--color-([a-z-]+)$ ]]; then
@@ -169,7 +157,6 @@ contrast_ratio() {
             printf "%.2f", (x + 0.05) / (y + 0.05) }'
 }
 
-# Each row of the DIRECTION.md contrast table meets its ratio with palette values.
 check_contrast() {
     local line fg bg listed fgc bgc got n=0 rc=0
     while IFS= read -r line; do

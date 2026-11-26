@@ -536,7 +536,6 @@ esac'
     cp "$AUSPEX_REPO/system/steps/050-avgvr-fonts.sh" "$AUSPEX/system/steps/"
 }
 
-# step050 <action>: a direct run of step 050 in the repo copy.
 step050() {
     run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; source "$1/system/steps/050-avgvr-fonts.sh"; "$2"' _ "$AUSPEX" "$1"
 }

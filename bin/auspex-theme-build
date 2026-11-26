@@ -24,15 +24,12 @@ GEN=themes/avgvr/generated
 WALL_W=5120
 WALL_H=2160
 
-# woff2 source -> TTF name in $SYS/fonts. JetBrains Mono comes from the
-# ttf-jetbrains-mono package, so it is not here.
 FONTS=(
     "jost-latin-variable.woff2:Jost.ttf"
     "marcellus-sc-latin-400-normal.woff2:MarcellusSC-Regular.ttf"
 )
 LICENSES=(OFL-jost.txt OFL-marcellussc.txt)
 
-# Each repo file that the build reads. Later tickets add their inputs here.
 INPUTS=(bin/auspex-theme-build "$DESIGN/wallpaper.svg")
 for f in "${FONTS[@]}"; do INPUTS+=("$DESIGN/fonts/${f%%:*}"); done
 for f in "${LICENSES[@]}"; do INPUTS+=("$DESIGN/fonts/$f"); done
@@ -59,7 +56,6 @@ out="$(mktemp -d)"
 trap 'rm -rf -- "$out"' EXIT
 mkdir -p "$out/$SYS/fonts" "$out/$GEN" "$out/woff2"
 
-# Keep files under $SYS that this build does not make, so SHA256SUMS covers them.
 if [[ -d "$AUSPEX/$SYS" ]]; then
     (cd "$AUSPEX/$SYS" && find . -type f ! -name SHA256SUMS ! -path './fonts/*' -print0) |
         while IFS= read -r -d '' f; do
@@ -94,7 +90,6 @@ grep -v '@font-face rule is not supported' -- "$out/resvg.err" >&2 || true
 (cd "$AUSPEX" && printf '%s\n' "${INPUTS[@]}" | LC_ALL=C sort |
     while IFS= read -r f; do sha256sum -- "$f"; done) >"$out/$GEN/INPUTS.sha256"
 
-# Remove fonts that the build no longer makes.
 if [[ -d "$AUSPEX/$SYS/fonts" ]]; then
     (cd "$AUSPEX/$SYS/fonts" && find . -type f -printf '%P\n') | LC_ALL=C sort |
         while IFS= read -r f; do

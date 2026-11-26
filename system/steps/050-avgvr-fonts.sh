@@ -30,12 +30,10 @@ STEP_STATE="${AUSPEX_SYSTEM_STATE:-/var/lib/auspex}"
 STEP_RECORD="$STEP_STATE/$STEP_NAME.installed"
 STEP_FILES="$STEP_STATE/$STEP_NAME.files"
 
-# packages/avgvr.list lists the package on its own line.
 step_listed() {
     sed -e 's/#.*//' -e 's/[[:space:]]//g' -- "$STEP_LIST" | grep -qxF -- "$FONT_PKG"
 }
 
-# Add lines to a record file, keep the old lines and drop repeats.
 step_record_add() {
     local file="$1"
     shift
