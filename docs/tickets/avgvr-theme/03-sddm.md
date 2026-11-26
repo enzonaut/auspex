@@ -5,7 +5,6 @@
 **Kind:** feature
 **Review:** full
 **Check:** `bats tests/system-steps.bats`
-**Blocked by:** 02-theme-build-fonts
 **Own:** `templates/sddm/theme.conf.tpl`, `themes/avgvr/sddm/`, `system/files/avgvr/sddm/`, `system/files/avgvr/SHA256SUMS`, `themes/avgvr/INPUTS.sha256`, `system/steps/060-avgvr-sddm.sh`, `bin/auspex-theme-build`, `bin/auspex-check-theme`, `bin/auspex-check-system-steps`, `docs/specs/auspex-foundation.md`, `tests/system-steps.bats`, `tests/fixtures/system/bad/sddm-breeze.sh`, `tests/fixtures/system/bad/sddm-exact-path-wrong-step.sh`, `agent/skills/auspex/reference/system-steps.md`
 **Do not touch:** `manifest/user.tsv`, `config/`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/usr/share/sddm/themes/breeze/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`
 

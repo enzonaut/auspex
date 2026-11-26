@@ -5,7 +5,6 @@
 **Kind:** docs
 **Review:** light
 **Check:** none
-**Blocked by:** 14-skill-page
 **Own:** `docs/checklists/avgvr.md`
 **Do not touch:** `bin/`, `lib/`, `config/`, `system/`, `claude/`, `templates/`, `themes/`, `tests/`, `manifest/`, `docs/checklists/hyprland-gaming.md`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`
 

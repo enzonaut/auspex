@@ -4,7 +4,6 @@
 **Persona:** primary `sonnet-feature`
 **Kind:** feature
 **Review:** light
-**Blocked by:** 08-herdr-theme-settings
 **Own:** `config/herdr-app/layouts/avgvr.json`, `manifest/user.tsv`, `claude/deny.json`, `bin/auspex-check-theme`, `agent/skills/auspex/reference/targets.md`
 **Do not touch:** `lib/merge/`, `~/.config/herdr-app/`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`
 

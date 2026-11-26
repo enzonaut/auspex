@@ -4,7 +4,6 @@
 **Persona:** primary `sonnet-feature`
 **Kind:** feature
 **Review:** full
-**Blocked by:** 09-herdr-layout
 **Own:** `config/herdr-app/mods/avgvr-spaces/main.js`, `config/herdr-app/mods/avgvr-spaces/mod.json`, `manifest/user.tsv`, `claude/deny.json`, `bin/auspex-check-theme`, `agent/skills/auspex/reference/targets.md`
 **Do not touch:** `config/herdr-app/layouts/`, `~/.config/herdr-app/`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`
 

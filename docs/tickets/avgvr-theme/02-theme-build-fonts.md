@@ -5,7 +5,6 @@
 **Kind:** feature
 **Review:** full
 **Check:** `bats tests/system-steps.bats tests/commands.bats tests/router.bats`
-**Blocked by:** 01-renderer
 **Own:** `bin/auspex`, `bin/auspex-theme-build`, `bin/auspex-check-theme`, `bin/auspex-check`, `bin/auspex-check-system-steps`, `bin/auspex-system-plan`, `lib/system-steps.sh`, `packages/avgvr.list`, `system/steps/050-avgvr-fonts.sh`, `system/files/avgvr/SHA256SUMS`, `system/files/avgvr/fonts/`, `themes/avgvr/generated/`, `themes/avgvr/INPUTS.sha256`, `claude/agent-settings.json`, `tests/system-steps.bats`, `tests/commands.bats`, `tests/router.bats`, `tests/theme-build.bats`, `tests/fixtures/system/blobs/`, `tests/fixtures/system/steps/`, `agent/skills/auspex/reference/commands.md`, `agent/skills/auspex/reference/system-steps.md`, `agent/skills/auspex/reference/permissions.md`
 **Do not touch:** `manifest/user.tsv`, `config/`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`
 

@@ -4,7 +4,6 @@
 **Persona:** primary `sonnet-feature`
 **Kind:** feature
 **Review:** full
-**Blocked by:** 07-mako-fuzzel-hyprlock
 **Check:** `bats tests/merge-herdr-settings.bats tests/apply.bats`
 **Own:** `templates/herdr-app/avgvr.json.tpl`, `lib/merge/herdr-settings`, `config/herdr-app/settings.json`, `config/herdr-app/sounds/silent.mp3`, `manifest/user.tsv`, `claude/deny.json`, `bin/auspex-check-theme`, `tests/merge-herdr-settings.bats`, `tests/fixtures/herdr/`, `agent/skills/auspex/reference/targets.md`
 **Do not touch:** `lib/merge/claude-settings`, `~/.config/herdr-app/`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`

@@ -5,7 +5,6 @@
 **Kind:** feature
 **Review:** full
 **Check:** `bats tests/system-steps.bats`
-**Blocked by:** 03-sddm
 **Own:** `templates/plymouth/avgvr.script.tpl`, `themes/avgvr/plymouth/`, `system/files/avgvr/plymouth/`, `system/files/avgvr/SHA256SUMS`, `themes/avgvr/INPUTS.sha256`, `system/steps/070-avgvr-plymouth.sh`, `system/steps/080-avgvr-boot-splash.sh`, `bin/auspex-theme-build`, `bin/auspex-check-theme`, `tests/system-steps.bats`, `tests/fixtures/system/steps/`, `agent/skills/auspex/reference/system-steps.md`
 **Do not touch:** `manifest/user.tsv`, `config/`, `design/directions/c/`, `system/steps/020-nvidia-early-kms.sh`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`
 

@@ -4,7 +4,6 @@
 **Persona:** primary `sonnet-feature`
 **Kind:** feature
 **Review:** full
-**Blocked by:** 11-herdr-hyprland-bind
 **Check:** `bats tests/legio.bats`
 **Own:** `bin/auspex-legio`, `config/waybar/config.jsonc`, `tests/legio.bats`, `tests/fixtures/legio/`, `agent/skills/auspex/reference/commands.md`
 **Do not touch:** `templates/waybar/style.css.tpl`, `manifest/user.tsv`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`

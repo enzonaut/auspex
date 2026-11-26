@@ -5,7 +5,6 @@
 **Kind:** feature
 **Review:** full
 **Check:** `bats tests/render.bats tests/apply.bats tests/hooks.bats`
-**Blocked by:** none
 **Own:** `themes/README.md`, `themes/current`, `themes/avgvr/colors.toml`, `templates/README.md`, `lib/render.sh`, `lib/common.sh`, `bin/auspex-apply`, `bin/auspex-undo`, `bin/auspex-plan`, `bin/auspex-status`, `hooks/theme-set.d/`, `tests/render.bats`, `tests/apply.bats`, `tests/hooks.bats`, `tests/fixtures/apply/`, `tests/fixtures/render/`, `agent/skills/auspex/reference/apply-undo.md`
 **Do not touch:** `manifest/user.tsv`, `config/`, `system/`, `claude/`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`
 

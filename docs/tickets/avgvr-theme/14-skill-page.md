@@ -4,7 +4,6 @@
 **Persona:** primary `sonnet-sketch`
 **Kind:** docs
 **Review:** light
-**Blocked by:** 13-claude-code-theme
 **Check:** `bats tests/skill.bats`
 **Own:** `agent/skills/auspex/reference/theme.md`, `agent/skills/auspex/SKILL.md`
 **Do not touch:** `bin/`, `lib/`, `manifest/`, `templates/`, `themes/`, `system/`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`

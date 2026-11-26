@@ -4,7 +4,6 @@
 **Persona:** primary `sonnet-feature`
 **Kind:** feature
 **Review:** full
-**Blocked by:** 12-legio
 **Check:** `bats tests/claude-settings.bats tests/apply.bats`
 **Own:** `templates/claude/avgvr.json.tpl`, `lib/merge/claude-settings`, `claude/deny.json`, `manifest/user.tsv`, `bin/auspex-check-theme`, `bin/auspex-check-claude-settings`, `tests/claude-settings.bats`, `tests/fixtures/claude/`, `agent/skills/auspex/reference/targets.md`, `agent/skills/auspex/reference/permissions.md`
 **Do not touch:** `~/.claude/settings.json`, `~/.claude/themes/`, `claude/agent-settings.json`, `claude/headless-settings.json`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`

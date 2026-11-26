@@ -4,7 +4,6 @@
 **Persona:** primary `sonnet-feature`
 **Kind:** feature
 **Review:** light
-**Blocked by:** 04-plymouth-boot
 **Check:** `bats tests/hyprland.bats tests/apply.bats`
 **Own:** `templates/hypr/theme.lua.tpl`, `templates/hypr/hyprpaper.conf.tpl`, `config/hypr/hyprland.lua`, `packages/hyprland.list`, `manifest/user.tsv`, `claude/deny.json`, `bin/auspex-check-theme`, `tests/hyprland.bats`, `agent/skills/auspex/reference/hyprland.md`, `agent/skills/auspex/reference/targets.md`
 **Do not touch:** `config/hypr/agent-binds.lua`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`

@@ -5,7 +5,6 @@
 **Kind:** feature
 **Review:** none
 **Check:** none
-**Blocked by:** 14-skill-page
 **Own:** `docs/apply-log.md`
 **Do not touch:** `bin/`, `lib/`, `config/`, `system/`, `claude/`, `templates/`, `themes/`, `tests/`, `manifest/`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`
 

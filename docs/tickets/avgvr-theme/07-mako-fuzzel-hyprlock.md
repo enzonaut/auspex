@@ -4,7 +4,6 @@
 **Persona:** primary `sonnet-feature`
 **Kind:** feature
 **Review:** light
-**Blocked by:** 06-waybar
 **Own:** `templates/mako/config.tpl`, `templates/fuzzel/fuzzel.ini.tpl`, `templates/hypr/hyprlock.conf.tpl`, `config/mako/config`, `config/fuzzel/fuzzel.ini`, `config/hypr/hyprlock.conf`, `config/ghostty/.gitkeep`, `manifest/user.tsv`, `claude/deny.json`, `bin/auspex-check-theme`, `tests/fuzzel-terminal.bats`, `agent/skills/auspex/reference/targets.md`
 **Do not touch:** `config/hypr/hyprland.lua`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`
 

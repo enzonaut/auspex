@@ -4,7 +4,6 @@
 **Persona:** primary `sonnet-feature`
 **Kind:** feature
 **Review:** light
-**Blocked by:** 10-herdr-spaces-mod
 **Check:** `bats tests/hyprland.bats`
 **Own:** `config/hypr/hyprland.lua`, `bin/auspex-check-hyprland-rules`, `tests/hyprland.bats`, `agent/skills/auspex/reference/hyprland.md`
 **Do not touch:** `config/hypr/agent-binds.lua`, `manifest/user.tsv`, `design/directions/c/`, `config/kde/`, `/usr/share/plasma/`, `/etc/sddm.conf.d/`, `~/.config/kdeglobals`, `~/.local/share/Steam/`, `~/.config/lutris/`, `~/.config/heroic/`
