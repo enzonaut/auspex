@@ -21,6 +21,7 @@ auspex_test_setup() {
     mkdir -p "$HOME" "$AUSPEX_STATE" "$FAKES" "$CALLS"
     export PATH="$FAKES:$AUSPEX/bin:$PATH"
     unset AUSPEX_ACTOR
+    guard_herdr
 }
 
 auspex_test_teardown() {
@@ -40,6 +41,27 @@ printf '%s\n' "\$*" >>"$CALLS/$name"
 $body
 EOF
     chmod +x "$FAKES/$name"
+}
+
+# guard_herdr: no test starts the real herdr app. These fakes stand in for
+# herdr-app (down), hc and setsid until a test replaces them with fake_herdr.
+guard_herdr() {
+    make_fake herdr-app 'exit 1'
+    make_fake hc 'exit 1'
+    make_fake setsid 'exit 0'
+}
+
+# fake_herdr <ls json> <hc ls json>: a herdr app that is up, with these spaces.
+fake_herdr() {
+    printf '%s' "$1" >"$TEST_TMP/ls.json"
+    printf '%s' "$2" >"$TEST_TMP/hc.json"
+    make_fake herdr-app 'case "${1:-}" in
+    status) echo "{}" ;;
+    ls) cat "$TEST_TMP/ls.json" ;;
+    do) echo "{}" ;;
+esac'
+    make_fake hc 'cat "$TEST_TMP/hc.json"'
+    make_fake setsid '"$@"'
 }
 
 # fake_calls <name>: print the logged calls of a fake, or nothing.

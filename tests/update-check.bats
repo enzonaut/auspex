@@ -9,7 +9,7 @@ setup() {
     make_fake yay 'printf "c 1 -> 2\n"'
     make_fake claude 'printf "report body\nSUMMARY: 3 updates, no news\n"'
     make_fake notify-send 'echo ""'
-    make_fake ghostty 'exit 0'
+    fake_herdr '{"spaces":[]}' '{"terminals":[]}'
     mkdir -p "$HOME/repos/auspex"
 }
 
@@ -62,18 +62,19 @@ teardown() {
     [[ "$output" == *"0 repo and 0 AUR updates"* ]]
 }
 
-@test "clicking Open starts the agent window with the report" {
+@test "clicking Open starts the agent in the herdr app with the report" {
     make_fake notify-send 'echo open'
     run auspex update check
     [ "$status" -eq 0 ]
-    run fake_calls ghostty
-    [[ "$output" == *"--prompt /arch-update Read $AUSPEX_STATE/reports/arch-update/"* ]]
+    run fake_calls herdr-app
+    [[ "$output" == *"do space.new --name auspex agent "*"--prompt"*"/arch-update Read $AUSPEX_STATE/reports/arch-update/"* ]]
 }
 
 @test "dismissing the notification starts no window" {
     run auspex update check
     [ "$status" -eq 0 ]
-    [ -z "$(fake_calls ghostty)" ]
+    [ -z "$(fake_calls herdr-app)" ]
+    [ -z "$(fake_calls setsid)" ]
 }
 
 @test "no step runs a system update or sudo" {

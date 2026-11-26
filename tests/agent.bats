@@ -86,19 +86,6 @@ teardown() {
     [ "$(fake_calls claude)" = "-p --settings $HOME/.config/auspex/claude/headless-settings.json --disallowedTools Edit,Write,NotebookEdit p q" ]
 }
 
-# fake_herdr <ls json> <hc ls json>: a herdr app that is up, with these spaces.
-fake_herdr() {
-    printf '%s' "$1" >"$TEST_TMP/ls.json"
-    printf '%s' "$2" >"$TEST_TMP/hc.json"
-    make_fake herdr-app 'case "${1:-}" in
-    status) echo "{}" ;;
-    ls) cat "$TEST_TMP/ls.json" ;;
-    do) echo "{}" ;;
-esac'
-    make_fake hc 'cat "$TEST_TMP/hc.json"'
-    make_fake setsid '"$@"'
-}
-
 SPACE_JSON='{"spaces":[{"id":"sp1","name":"auspex agent","tabs":[{"id":"tb1","terminals":[{"terminal":"t7"}]}]}]}'
 
 @test "--window makes the auspex agent space when there is none" {

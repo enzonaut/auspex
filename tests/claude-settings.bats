@@ -134,7 +134,7 @@ src_with() {
     live="$REAL_HOME/.claude/settings.json"
     [ -f "$live" ] || skip "no live settings file"
     sum="$(sha256sum <"$live")"
-    cp -- "$live" "$W/live.json"
+    jq --slurpfile src "$SRC" 'if .permissions.deny then .permissions.deny -= $src[0].permissions.deny else . end' "$live" >"$W/live.json"
     "$M" merge "$SRC" "$W/live.json" "$W/none" "$W/out" "$W/owned"
     check_merged "$W/live.json" "$W/out" "$W/owned"
     "$M" merge "$SRC" "$W/out" "$W/owned" "$W/out2" "$W/owned2"
@@ -187,7 +187,7 @@ perm_repo() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"Edit(~/.claude/settings.json)"* ]]
     [[ "$output" == *"Write(~/.config/auspex/claude/headless-settings.json)"* ]]
-    [ "$(printf '%s\n' "$output" | wc -l)" -eq 36 ]
+    [ "$(printf '%s\n' "$output" | wc -l)" -eq "$((2 * $(grep -cvE '^(#|$)' "$AUSPEX_REPO/manifest/user.tsv")))" ]
 }
 
 @test "check permissions fails for a level 3 command with no deny rule" {
