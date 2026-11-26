@@ -516,3 +516,138 @@ sed -i "s|^$key=.*|$key=\"$val\"|" "$SNAPPER_CONFIG_DIR/$2"'
     [ -z "$(fake_calls sudo)" ]
     [ -z "$(fake_calls snapper)" ]
 }
+
+setup_050() {
+    export AUSPEX_SYSTEM_STATE="$TEST_TMP/system-state"
+    export AUSPEX_FONT_DIR="$TEST_TMP/fonts/avgvr"
+    export INSTALLED="$TEST_TMP/installed"
+    : >"$INSTALLED"
+    make_fake pacman '
+case "$1" in
+  -Qq) shift; rc=0; for p in "$@"; do grep -qx "$p" "$INSTALLED" || rc=1; done; exit $rc ;;
+  -S) shift; for p in "$@"; do [[ $p == -* ]] || grep -qx "$p" "$INSTALLED" || echo "$p" >>"$INSTALLED"; done ;;
+  -Rns) shift; for p in "$@"; do [[ $p == -* ]] || sed -i "/^$p\$/d" "$INSTALLED"; done ;;
+  *) exit 2 ;;
+esac'
+    make_fake fc-cache
+    mkdir -p "$AUSPEX/packages" "$AUSPEX/system/files"
+    cp "$AUSPEX_REPO/packages/avgvr.list" "$AUSPEX/packages/"
+    cp -r "$AUSPEX_REPO/system/files/avgvr" "$AUSPEX/system/files/"
+    cp "$AUSPEX_REPO/system/steps/050-avgvr-fonts.sh" "$AUSPEX/system/steps/"
+}
+
+# step050 <action>: a direct run of step 050 in the repo copy.
+step050() {
+    run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; source "$1/system/steps/050-avgvr-fonts.sh"; "$2"' _ "$AUSPEX" "$1"
+}
+
+font_files() {
+    (cd "$AUSPEX_FONT_DIR" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+}
+
+@test "050 headers say level 3, requires sudo and read the list and SHA256SUMS" {
+    local f="$AUSPEX_REPO/system/steps/050-avgvr-fonts.sh"
+    grep -qx '# auspex:level=3' "$f"
+    grep -qx '# auspex:requires-sudo=true' "$f"
+    grep -qx '# auspex:reads=packages/avgvr.list system/files/avgvr/SHA256SUMS' "$f"
+    grep -qx 'ttf-jetbrains-mono' "$AUSPEX_REPO/packages/avgvr.list"
+    grep -qx 'plymouth' "$AUSPEX_REPO/packages/avgvr.list"
+}
+
+@test "050 check fails before apply" {
+    setup_050
+    step050 check
+    [ "$status" -ne 0 ]
+}
+
+@test "050 apply installs the package and the hashed fonts, runs fc-cache, and check passes" {
+    setup_050
+    step050 apply
+    [ "$status" -eq 0 ]
+    [ "$(grep -- '^-S' "$CALLS/pacman")" = "-S --needed --noconfirm ttf-jetbrains-mono" ]
+    [ "$(font_files)" = "$(printf '%s\n' Jost.ttf MarcellusSC-Regular.ttf OFL-jost.txt OFL-marcellussc.txt)" ]
+    cmp "$AUSPEX/system/files/avgvr/fonts/Jost.ttf" "$AUSPEX_FONT_DIR/Jost.ttf"
+    [ "$(stat -c %a "$AUSPEX_FONT_DIR/Jost.ttf")" = 644 ]
+    [ "$(fake_calls fc-cache)" = "-f $AUSPEX_FONT_DIR" ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/050-avgvr-fonts.installed")" = ttf-jetbrains-mono ]
+    [ "$(wc -l <"$AUSPEX_SYSTEM_STATE/050-avgvr-fonts.files")" -eq 4 ]
+    step050 check
+    [ "$status" -eq 0 ]
+}
+
+@test "050 check fails on a font with a wrong hash or a missing package" {
+    setup_050
+    step050 apply
+    printf 'x' >>"$AUSPEX_FONT_DIR/Jost.ttf"
+    step050 check
+    [ "$status" -ne 0 ]
+    cp "$AUSPEX/system/files/avgvr/fonts/Jost.ttf" "$AUSPEX_FONT_DIR/Jost.ttf"
+    step050 check
+    [ "$status" -eq 0 ]
+    : >"$INSTALLED"
+    step050 check
+    [ "$status" -ne 0 ]
+}
+
+@test "050 apply with a bad hash installs no font and runs no fc-cache" {
+    setup_050
+    printf 'x' >>"$AUSPEX/system/files/avgvr/fonts/Jost.ttf"
+    step050 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"hash mismatch: system/files/avgvr/fonts/Jost.ttf"* ]]
+    [ ! -e "$AUSPEX_FONT_DIR" ]
+    [ -z "$(fake_calls fc-cache)" ]
+}
+
+@test "050 apply refuses when packages/avgvr.list does not list the package" {
+    setup_050
+    printf 'plymouth\n' >"$AUSPEX/packages/avgvr.list"
+    step050 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"does not list ttf-jetbrains-mono"* ]]
+    [ -z "$(fake_calls pacman)" ]
+}
+
+@test "050 undo removes only what apply installed" {
+    setup_050
+    printf 'ttf-jetbrains-mono\n' >"$INSTALLED"
+    step050 apply
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/050-avgvr-fonts.installed" ]
+    printf 'mine\n' >"$AUSPEX_FONT_DIR/operator.ttf"
+    step050 undo
+    [ "$status" -eq 0 ]
+    [ "$(font_files)" = operator.ttf ]
+    [ "$(cat "$INSTALLED")" = ttf-jetbrains-mono ]
+    [ -z "$(grep -- '^-Rns' "$CALLS/pacman")" ]
+    [ "$(fake_calls fc-cache | tail -n 1)" = "-f" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/050-avgvr-fonts.files" ]
+}
+
+@test "050 undo removes the recorded package and the empty font dir" {
+    setup_050
+    step050 apply
+    step050 undo
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_FONT_DIR" ]
+    [ "$(grep -- '^-Rns' "$CALLS/pacman")" = "-Rns --noconfirm ttf-jetbrains-mono" ]
+    [ ! -s "$INSTALLED" ]
+}
+
+@test "050 check uses no sudo, no pacman -S and no fc-cache" {
+    setup_050
+    step050 check
+    [ -z "$(fake_calls sudo)" ]
+    [ -z "$(fake_calls fc-cache)" ]
+    [ -z "$(grep -v -- '^-Qq' "$CALLS/pacman" 2>/dev/null)" ]
+}
+
+@test "050 through the root shell installs the fonts of the approved SHA256SUMS" {
+    setup_050
+    run_tty $'y\n' auspex-system-apply 050-avgvr-fonts
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"-- reads packages/avgvr.list"* ]]
+    [[ "$output" == *"-- reads system/files/avgvr/SHA256SUMS"* ]]
+    cmp "$AUSPEX/system/files/avgvr/fonts/MarcellusSC-Regular.ttf" "$AUSPEX_FONT_DIR/MarcellusSC-Regular.ttf"
+    [ "$(fake_calls fc-cache)" = "-f $AUSPEX_FONT_DIR" ]
+}
