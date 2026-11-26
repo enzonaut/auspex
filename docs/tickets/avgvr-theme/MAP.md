@@ -19,21 +19,21 @@ Rules for all tickets:
 
 The tickets form 1 chain, because most of them share `manifest/user.tsv`, `claude/deny.json`, `bin/auspex-check-theme` and the generated skill files. Ticket 16 shares no file with 15 and can run beside it.
 
-| Ticket | Persona | Depends |
-|---|---|---|
-| [01 Palette, renderer, render mode, theme-set](01-renderer.md) | opus | none |
-| [02 Theme build, fonts, step 050](02-theme-build-fonts.md) | opus | 01 |
-| [03 SDDM login, step 060](03-sddm.md) | opus | 02 |
-| [04 plymouth boot, steps 070 and 080](04-plymouth-boot.md) | opus | 03 |
-| [05 Hyprland look and hyprpaper](05-hyprland.md) | sonnet-feature | 04 |
-| [06 waybar band](06-waybar.md) | sonnet-feature | 05 |
-| [07 mako, fuzzel, hyprlock; remove ghostty](07-mako-fuzzel-hyprlock.md) | sonnet-feature | 06 |
-| [08 herdr theme, settings merger, fonts, silent sound](08-herdr-theme-settings.md) | sonnet-feature | 07 |
-| [09 herdr layout avgvr](09-herdr-layout.md) | sonnet-feature | 08 |
-| [10 herdr mod avgvr-spaces](10-herdr-spaces-mod.md) | sonnet-feature | 09 |
-| [11 SUPER+Return, autostart, window rule](11-herdr-hyprland-bind.md) | sonnet-feature | 10 |
-| [12 LEGIO counter](12-legio.md) | sonnet-feature | 11 |
-| [13 Claude Code theme](13-claude-code-theme.md) | sonnet-feature | 12 |
-| [14 Skill page theme.md](14-skill-page.md) | sonnet-sketch | 13 |
-| [15 Apply the user tier](15-apply-user-tier.md) | opus | 14 |
-| [16 Acceptance checklist](16-checklist.md) | sonnet-sketch | 14 |
+| Ticket | Depends |
+|---|---|
+| [01-renderer](01-renderer.md) | - |
+| [02-theme-build-fonts](02-theme-build-fonts.md) | 01-renderer |
+| [03-sddm](03-sddm.md) | 02-theme-build-fonts |
+| [04-plymouth-boot](04-plymouth-boot.md) | 03-sddm |
+| [05-hyprland](05-hyprland.md) | 04-plymouth-boot |
+| [06-waybar](06-waybar.md) | 05-hyprland |
+| [07-mako-fuzzel-hyprlock](07-mako-fuzzel-hyprlock.md) | 06-waybar |
+| [08-herdr-theme-settings](08-herdr-theme-settings.md) | 07-mako-fuzzel-hyprlock |
+| [09-herdr-layout](09-herdr-layout.md) | 08-herdr-theme-settings |
+| [10-herdr-spaces-mod](10-herdr-spaces-mod.md) | 09-herdr-layout |
+| [11-herdr-hyprland-bind](11-herdr-hyprland-bind.md) | 10-herdr-spaces-mod |
+| [12-legio](12-legio.md) | 11-herdr-hyprland-bind |
+| [13-claude-code-theme](13-claude-code-theme.md) | 12-legio |
+| [14-skill-page](14-skill-page.md) | 13-claude-code-theme |
+| [15-apply-user-tier](15-apply-user-tier.md) | 14-skill-page |
+| [16-checklist](16-checklist.md) | 14-skill-page |
