@@ -233,6 +233,94 @@ esac'
     [ "$(grep -- '^-S' "$CALLS/pacman")" = "-S --needed --noconfirm bats shellcheck jq pacman-contrib" ]
 }
 
+add_blobs_step() {
+    mkdir -p "$AUSPEX/system/files"
+    cp -r "$FIX/blobs/demo" "$AUSPEX/system/files/demo"
+    : >"$AUSPEX/system/files/demo/fonts/unlisted.ttf"
+    cp "$FIX/blobs/970-blobs.sh" "$AUSPEX/system/steps/"
+    export BLOB_DEST="$TEST_TMP/dest/fonts"
+}
+
+@test "step_install_verified installs the listed files under the repo dir, through the root shell" {
+    add_blobs_step
+    run_tty $'y\n' auspex-system-apply 970-blobs
+    [ "$status" -eq 0 ]
+    cmp "$FIX/blobs/demo/fonts/a.ttf" "$BLOB_DEST/a.ttf"
+    cmp "$FIX/blobs/demo/fonts/sub/b.ttf" "$BLOB_DEST/sub/b.ttf"
+    [ "$(stat -c %a "$BLOB_DEST/a.ttf")" = 644 ]
+    [ ! -e "$BLOB_DEST/unlisted.ttf" ]
+    [ ! -e "$BLOB_DEST/other.bin" ]
+    [ "$(cat "$MARK")" = "$BLOB_DEST/a.ttf"$'\n'"$BLOB_DEST/sub/b.ttf" ]
+}
+
+@test "step_install_verified refuses a file with a wrong hash and installs nothing" {
+    add_blobs_step
+    printf 'evil\0' >"$AUSPEX/system/files/demo/fonts/sub/b.ttf"
+    run_tty $'y\n' auspex-system-apply 970-blobs
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"hash mismatch: system/files/demo/fonts/sub/b.ttf"* ]]
+    [ ! -e "$BLOB_DEST" ]
+}
+
+@test "step_install_verified uses the approved SHA256SUMS, not the file on disk" {
+    add_blobs_step
+    printf 'evil\0' >"$TEST_TMP/evil"
+    make_fake sudo "printf 'evil\0' >\"$AUSPEX/system/files/demo/fonts/a.ttf\"; (cd \"$AUSPEX/system/files/demo\" && sha256sum fonts/a.ttf >SHA256SUMS); exec \"\$@\""
+    run_tty $'y\n' auspex-system-apply 970-blobs
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"hash mismatch: system/files/demo/fonts/a.ttf"* ]]
+    [ ! -e "$BLOB_DEST" ]
+}
+
+@test "step_install_verified refuses a bad line, a path outside, a symlink and an empty match" {
+    add_blobs_step
+    sums="$AUSPEX/system/files/demo/SHA256SUMS"
+    siv() {
+        run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; shift; step_install_verified "$@"' _ "$AUSPEX" "$@"
+    }
+    siv system/files/demo/SHA256SUMS system/files/other "$BLOB_DEST"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"is not under system/files/demo"* ]]
+    siv system/files/demo/SHA256SUMS system/files/demo/none "$BLOB_DEST"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"lists no file under"* ]]
+    cp "$sums" "$TEST_TMP/sums"
+    for line in "$(printf '%064d  fonts/../../x' 0)" "$(printf '%064d  /etc/x' 0)" 'not a line'; do
+        { cat "$TEST_TMP/sums"; printf '%s\n' "$line"; } >"$sums"
+        siv system/files/demo/SHA256SUMS system/files/demo/fonts "$BLOB_DEST"
+        [ "$status" -eq 1 ]
+        [[ "$output" == *"bad "* ]]
+    done
+    [ ! -e "$BLOB_DEST" ]
+    cp "$TEST_TMP/sums" "$sums"
+    ln -sf "$FIX/blobs/demo/fonts/a.ttf" "$AUSPEX/system/files/demo/fonts/a.ttf"
+    siv system/files/demo/SHA256SUMS system/files/demo/fonts "$BLOB_DEST"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"cannot copy system/files/demo/fonts/a.ttf"* ]]
+    [ ! -e "$BLOB_DEST" ]
+}
+
+@test "plan prints each SHA256SUMS line of a step" {
+    add_blobs_step
+    run auspex-system-plan </dev/null
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"-- reads system/files/demo/SHA256SUMS"* ]]
+    while IFS= read -r line; do
+        [[ "$output" == *"$line"* ]]
+    done <"$FIX/blobs/demo/SHA256SUMS"
+}
+
+@test "the static check allows a file listed in a declared SHA256SUMS and names an unlisted one" {
+    add_blobs_step
+    run auspex-check-system-steps --static
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ok 970-blobs"* ]]
+    printf '%s\n' 'undo() { rm -f "$AUSPEX_REPO/system/files/demo/fonts/unlisted.ttf"; }' >>"$AUSPEX/system/steps/970-blobs.sh"
+    run auspex-check-system-steps --static
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL 970-blobs: reads system/files/demo/fonts/unlisted.ttf but does not declare it"* ]]
+}
+
 @test "apply refuses bad step names" {
     for bad in ../900-fixture 900-fixture.sh 900-Fixture 999 '9-x' ''; do
         run_tty $'y\n' auspex-system-apply "$bad"
