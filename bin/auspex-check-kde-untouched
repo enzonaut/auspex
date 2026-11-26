@@ -36,9 +36,9 @@ while IFS=$'\t' read -r src tgt mode _ || [[ -n "${src:-}" ]]; do
     done
 done <"$manifest"
 
-if [[ "$kde" -ne 3 ]]; then
-    printf 'FAIL the manifest has %d KDE rows; want the shortcut merge and the 2 agent .desktop files\n' "$kde"
+if [[ "$kde" -ne 2 ]]; then
+    printf 'FAIL the manifest has %d KDE rows; want the shortcut merge and the agent .desktop file\n' "$kde"
     fail=1
 fi
-[[ "$fail" -ne 0 ]] || printf 'ok   the manifest changes only the agent shortcuts and the 2 agent .desktop files\n'
+[[ "$fail" -ne 0 ]] || printf 'ok   the manifest changes only the agent shortcuts and the agent .desktop file\n'
 exit "$fail"

@@ -77,4 +77,3 @@ hl.window_rule({ match = { title = "^(Open File|Save File).*" }, float = true, c
 hl.window_rule({ match = { class = "^xdg-desktop-portal-.*" }, float = true, center = true, size = { "monitor_w * 0.5", "monitor_h * 0.5" } })
 hl.window_rule({ match = { class = "^(org\\.pulseaudio\\.pavucontrol|pavucontrol|blueman-manager|\\.blueman-manager-wrapped|nm-connection-editor)$" }, float = true })
 
-hl.window_rule({ match = { class = "^auspex\\.dropdown$" }, float = true, size = { "monitor_w", "monitor_h * 0.5" }, move = { 0, 0 }, workspace = "special:agent silent" })

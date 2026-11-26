@@ -17,7 +17,6 @@ not installed.
 | Bar | `config/waybar/` |
 | Notifications | `config/mako/` |
 | Launcher | `config/fuzzel/` |
-| Terminal dropdown | `config/ghostty/` |
 | Browser keyring flags | `config/browser-flags/` |
 
 The config format follows Hyprland 0.57.

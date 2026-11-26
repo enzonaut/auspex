@@ -1,5 +1,0 @@
-quick-terminal-position = top
-quick-terminal-size = 50%
-initial-window = false
-quit-after-last-window-closed = false
-command = auspex agent --here

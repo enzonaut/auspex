@@ -8,7 +8,7 @@ the live targets in `$HOME`.
 | `agent/` | This skill, in `agent/skills/auspex/`. `auspex apply` installs it to `~/.claude/skills/auspex/`. |
 | `bin/` | The commands. `bin/auspex` is the router. Each `bin/auspex-<words>` file is 1 command with header lines (summary, args, level, requires-sudo). |
 | `claude/` | Claude Code permission files. `claude/deny.json` holds level 3 deny rules. `claude/agent-settings.json` holds level 1 and 2 allow rules. |
-| `config/` | Repo copies of user-tier targets, 1 folder per app: `config/hypr/`, `config/waybar/`, `config/mako/`, `config/fuzzel/`, `config/ghostty/`, `config/browser-flags/`, `config/kde/`, `config/applications/`. |
+| `config/` | Repo copies of user-tier targets, 1 folder per app: `config/hypr/`, `config/waybar/`, `config/mako/`, `config/fuzzel/`, `config/browser-flags/`, `config/kde/`, `config/applications/`. |
 | `design/` | Visual design work for the theme spec. Not installed anywhere. |
 | `docs/` | Specs, tickets, research and design notes. Not installed anywhere. |
 | `hooks/` | Scripts that run after an event, in `hooks/post-apply.d/`, `hooks/post-undo.d/` and `hooks/post-system-step.d/`. |

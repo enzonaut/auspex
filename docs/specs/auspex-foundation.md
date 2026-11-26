@@ -33,7 +33,7 @@
 | R5 | Level rules live in Claude Code permission settings. The 1 allow rule and 38 deny rules in `~/.claude/settings.json` stay. | 4 |
 | R6 | `auspex facts` prints the machine state with no sudo. | 5 |
 | R7 | The auspex skill covers both desktops. A check fails when the skill and the repo layout disagree. | 6 |
-| R8 | `auspex agent`, a hotkey, and a dropdown console work on Hyprland and on KDE. | 7 |
+| R8 | `auspex agent` and a hotkey work on Hyprland and on KDE. | 7 |
 | R9 | A weekly systemd user timer runs the arch-update check in read-and-report mode and sends a notification. | 8 |
 | R10 | SDDM offers Hyprland beside Plasma. KDE config does not change, except the 2 agent hotkeys. | 9 |
 | R11 | Each part has an automated check that runs without sudo and, where possible, without a display. | 11 |
@@ -52,7 +52,6 @@ auspex/
 │   ├── auspex-status
 │   ├── auspex-facts
 │   ├── auspex-agent
-│   ├── auspex-agent-dropdown
 │   ├── auspex-commands
 │   ├── auspex-check             # runs every check in section 11
 │   ├── auspex-check-<name>      # 1 script per check
@@ -74,7 +73,6 @@ auspex/
 │   ├── waybar/
 │   ├── mako/
 │   ├── fuzzel/
-│   ├── ghostty/                 # auspex-dropdown.ghostty only (section 7.3)
 │   ├── browser-flags/           # chrome-flags.conf, brave-flags.conf (section 9.4)
 │   ├── kde/                     # shortcut entries only (section 7.4)
 │   └── applications/            # .desktop files for the agent launchers
@@ -404,7 +402,7 @@ The skill `description` names both desktops, so it triggers on requests such as 
 
 `auspex check` runs `auspex check skill`, so a stale skill fails the repo check (section 11) and blocks a merge.
 
-## 7. Agent command, hotkey, and dropdown (T5, T2)
+## 7. Agent command and hotkey (T5, T2)
 
 ### 7.1 `auspex agent`
 
@@ -416,7 +414,7 @@ auspex agent --headless --prompt <text> [--report <file>]
 - Interactive: runs `claude --settings ~/.config/auspex/claude/agent-settings.json [<prompt>]` with `AUSPEX_ACTOR=agent`.
 - Default working folder: `~/repos/auspex`. `--cwd` changes it.
 - `--here` (default when stdout is a TTY): runs in the current terminal.
-- `--window` (default with no TTY, for hotkeys): opens `ghostty --class=auspex.agent -e auspex agent --here ...`.
+- `--window` (default with no TTY, for hotkeys): shows the `auspex agent` space in the herdr app (`herdr-app`), and opens the app when it is closed. With no such space it makes one that runs `auspex agent --here ...`. When the space has a live Claude Code terminal, it focuses that terminal. When Claude Code has ended there, or `--prompt` is given, it opens a new tab in the space that runs the agent. horch and hc work in that space as in any herdr app terminal.
 - `--headless`: runs `claude -p --settings ~/.config/auspex/claude/headless-settings.json --disallowedTools Edit,Write,NotebookEdit` and writes stdout to the report file. Section 8 uses it.
 - The flags `--settings`, `-p`, and `--disallowedTools` must exist in the installed Claude Code. `auspex check agent` verifies them through `claude --help`.
 - No `--dangerously-skip-permissions` in any mode. This is the Omarchy risk that the design rejects.
@@ -426,32 +424,20 @@ auspex agent --headless --prompt <text> [--report <file>]
 | Action | Hyprland | KDE |
 |---|---|---|
 | Agent window | `SUPER+ALT+A` | `Meta+Alt+A` |
-| Dropdown console toggle | `SUPER+ALT+grave` | `Meta+Alt+grave` |
 
 The same keys work on both desktops. OQ5 asks the operator to confirm them. On this machine (checked 2026-11-25 in `~/.config/kglobalshortcutsrc`), KDE already uses `Meta+A` (next activity), `Meta+Shift+A` (previous activity), `Meta+Ctrl+A` (window demanding attention), and `Meta+grave` (walk through windows of the current application). `Meta+Alt+A` and `Meta+Alt+grave` are free. auspex does not rebind a KDE default, because that would change KDE config. `auspex check kde-shortcuts` fails if a key is already bound to another action in `~/.config/kglobalshortcutsrc`.
 
-### 7.3 Dropdown console
+### 7.3 Dropdown console (removed)
 
-Hyprland:
-
-- A special workspace `special:agent`.
-- `auspex agent dropdown` toggles it: if no window with class `auspex.dropdown` exists, it starts `ghostty --class=auspex.dropdown -e auspex agent --here`; then it runs `hyprctl dispatch togglespecialworkspace agent`.
-- Window rule for class `auspex.dropdown`: float, width 100%, height 50%, move to top edge, workspace `special:agent` silent.
-
-KDE:
-
-- Primary: the ghostty quick terminal. `config/ghostty/auspex-dropdown.ghostty` sets `quick-terminal-position = top`, `quick-terminal-size = 50%`, and a keybind for `toggle_quick_terminal`. The KDE shortcut runs `auspex agent dropdown`, which sends the toggle to ghostty.
-- This is not verified on KWin Wayland (design, "Not checked"). The 1st build task is a 30 min spike that tests it. If it fails, the fallback is a KWin window rule for class `auspex.dropdown` (top, 100% × 50%, keep above, skip taskbar), and `auspex agent dropdown` toggles that window through `qdbus6 org.kde.KWin`. OQ4.
-- The quick terminal starts a shell, not the agent. The dropdown profile sets `command = auspex agent --here`.
-- The ghostty dropdown file is a separate config file that only the dropdown uses. The operator's `~/.config/ghostty/config.ghostty` does not change.
+The operator removed the dropdown key on 2026-11-25. The agent lives in the herdr app (7.1), so a 2nd terminal for it is not needed. `auspex agent dropdown`, `auspex check dropdown`, `config/ghostty/auspex-dropdown.ghostty`, `auspex-agent-dropdown.desktop` and the `special:agent` window rule are gone.
 
 ### 7.4 KDE shortcut mechanism
 
-- `config/applications/auspex-agent.desktop` and `auspex-agent-dropdown.desktop` go to `~/.local/share/applications/` (copy mode). They are not KDE config.
-- `config/kde/agent-shortcuts.ini` holds 2 entries for `[services][auspex-agent.desktop] _launch=Meta+Alt+A` and `[services][auspex-agent-dropdown.desktop] _launch=Meta+Alt+\``.
-- `lib/merge/kglobalshortcuts` writes only these 2 groups with `kwriteconfig6 --file kglobalshortcutsrc --group services --group <file> --key _launch <value>`, and records the earlier values. Undo writes the earlier values back, or deletes the groups.
+- `config/applications/auspex-agent.desktop` goes to `~/.local/share/applications/` (copy mode). They are not KDE config.
+- `config/kde/agent-shortcuts.ini` holds 1 entry: `[services][auspex-agent.desktop] _launch=Meta+Alt+A`.
+- `lib/merge/kglobalshortcuts` writes only this group with `kwriteconfig6 --file kglobalshortcutsrc --group services --group <file> --key _launch <value>`, and records the earlier values. Undo writes the earlier values back, or deletes the group.
 - After a write it asks kglobalaccel to reload. The exact reload command is not verified on Plasma 6.8. The build spike tests it. If no reload works, the operator logs out and in once.
-- These 2 groups are the only KDE config change in this spec (R10).
+- This group is the only KDE config change in this spec (R10).
 
 ## 8. Weekly update check (N4 part 1)
 
@@ -586,8 +572,8 @@ The operator runs this list once after the 1st login to Hyprland. The build writ
 8. Discord screen share: share 1 window through the portal. The other side sees it.
 9. Chrome opens with existing logins (KWallet works).
 10. Screenshot region works. Lock works. Volume keys work. Network and Bluetooth tray icons show.
-11. `SUPER+ALT+A` opens the agent. `SUPER+ALT+grave` toggles the dropdown.
-12. Log out. Log in to Plasma. Plasma works as before: panels, shortcuts, wallpaper, KWallet, Steam. `Meta+Alt+A` opens the agent. `Meta+Alt+grave` toggles the dropdown.
+11. `SUPER+ALT+A` shows the agent in the herdr app.
+12. Log out. Log in to Plasma. Plasma works as before: panels, shortcuts, wallpaper, KWallet, Steam. `Meta+Alt+A` shows the agent in the herdr app.
 
 If item 12 fails, the operator runs `auspex undo` for the user tier and `auspex system undo` for the steps, from a TTY if needed.
 
@@ -619,7 +605,6 @@ All checks run without sudo. A check that needs a display says so. `auspex check
 | Window rules | `auspex check hyprland-rules` | each row of section 9.5 has a rule in the config | No |
 | KDE shortcuts | `auspex check kde-shortcuts` | merger on a fixture `kglobalshortcutsrc`: writes only 2 groups; undo restores the fixture byte for byte; no key conflict in the live file | No |
 | KDE invariants | `auspex check kde-untouched` | section 10 | No |
-| Dropdown (Hyprland) | `auspex check dropdown` | in a live Hyprland session: toggle twice, the window shows and hides | Yes |
 | Gaming | `docs/checklists/hyprland-gaming.md` | section 9.6, by the operator | Yes, manual |
 
 Test seams in the code:

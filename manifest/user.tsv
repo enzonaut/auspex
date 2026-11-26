@@ -5,7 +5,6 @@ claude/headless-settings.json	~/.config/auspex/claude/headless-settings.json	cop
 agent/skills/auspex/	~/.claude/skills/auspex/	tree	any
 config/kde/agent-shortcuts.ini	~/.config/kglobalshortcutsrc	merge:kglobalshortcuts	kde
 config/applications/auspex-agent.desktop	~/.local/share/applications/auspex-agent.desktop	copy	kde
-config/applications/auspex-agent-dropdown.desktop	~/.local/share/applications/auspex-agent-dropdown.desktop	copy	kde
 systemd/user/auspex-update-check.service	~/.config/systemd/user/auspex-update-check.service	copy	any
 systemd/user/auspex-update-check.timer	~/.config/systemd/user/auspex-update-check.timer	copy	any
 config/hypr/hyprland.lua	~/.config/hypr/hyprland.lua	copy	hyprland

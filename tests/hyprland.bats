@@ -80,7 +80,6 @@ hypr_repo_copy() {
     [ "$status" -eq 0 ]
     [[ "$output" == *'==> config/hypr/agent-binds.lua <=='* ]]
     [[ "$output" == *'hl.bind("SUPER + ALT + A", hl.dsp.exec_cmd("auspex agent --window"))'* ]]
-    [[ "$output" == *'hl.bind("SUPER + ALT + grave", hl.dsp.exec_cmd("auspex agent dropdown"))'* ]]
 }
 
 @test "the main config holds no agent key and loads agent-binds.lua" {
@@ -129,50 +128,6 @@ hypr_repo_copy() {
     run auspex check hyprland
     [ "$status" -eq 77 ]
     [[ "${lines[-1]}" == skip:* ]]
-}
-
-@test "check dropdown prints skip outside Hyprland" {
-    run auspex check dropdown
-    [ "$status" -eq 77 ]
-    [[ "${lines[-1]}" == skip:* ]]
-}
-
-@test "dropdown --dry-run on Hyprland prints the start and toggle commands" {
-    HYPRLAND_INSTANCE_SIGNATURE=x run auspex agent dropdown --dry-run
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"start (when no window has class auspex.dropdown"*"ghostty --class=auspex.dropdown --gtk-single-instance=false -e auspex agent --here"* ]]
-    [[ "$output" == *'toggle: hyprctl dispatch'*'toggle_special'*'agent'* ]]
-}
-
-@test "dropdown on Hyprland starts ghostty once, then toggles special:agent" {
-    make_fake ghostty 'touch "$TEST_TMP/up"'
-    make_fake hyprctl '
-if [[ "$1" == -j ]]; then
-    if [[ -e "$TEST_TMP/up" ]]; then echo "[{\"class\":\"auspex.dropdown\"}]"; else echo "[]"; fi
-else
-    echo ok
-fi'
-    HYPRLAND_INSTANCE_SIGNATURE=x run auspex agent dropdown
-    [ "$status" -eq 0 ]
-    for _ in $(seq 20); do [ -s "$CALLS/ghostty" ] && break; sleep 0.1; done
-    [ "$(fake_calls ghostty)" = "--class=auspex.dropdown --gtk-single-instance=false -e auspex agent --here" ]
-    [ "$(fake_calls hyprctl | grep -c toggle_special)" -eq 1 ]
-    : >"$CALLS/ghostty"
-    HYPRLAND_INSTANCE_SIGNATURE=x run auspex agent dropdown
-    [ "$status" -eq 0 ]
-    [ -z "$(fake_calls ghostty)" ]
-    [ "$(fake_calls hyprctl | grep -c toggle_special)" -eq 2 ]
-}
-
-@test "dropdown on Hyprland falls back to the legacy dispatcher" {
-    touch "$TEST_TMP/up"
-    make_fake hyprctl '
-if [[ "$1" == -j ]]; then echo "[{\"class\":\"auspex.dropdown\"}]"
-elif [[ "$2" == togglespecialworkspace ]]; then echo ok
-else echo "invalid dispatcher"; fi'
-    HYPRLAND_INSTANCE_SIGNATURE=x run auspex agent dropdown
-    [ "$status" -eq 0 ]
-    [[ "$(fake_calls hyprctl)" == *"dispatch togglespecialworkspace agent"* ]]
 }
 
 @test "the manifest installs the Hyprland and browser flag files, none to KDE config" {

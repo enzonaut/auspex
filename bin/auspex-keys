@@ -51,23 +51,19 @@ load_keys() {
         [[ "$line" =~ ^([A-Z_]+)=([A-Za-z0-9+]+)$ ]] || auspex_die "$KEYS_FILE line $n: expected NAME=KEY"
         name="${BASH_REMATCH[1]}" value="${BASH_REMATCH[2]}"
         case "$name" in
-            AGENT_WINDOW | AGENT_DROPDOWN) ;;
+            AGENT_WINDOW) ;;
             *) auspex_die "$KEYS_FILE line $n: unknown name $name" ;;
         esac
         [[ -z "${KEY[$name]:-}" ]] || auspex_die "$KEYS_FILE line $n: $name is set 2 times"
         kde_key "$value" >/dev/null || auspex_die "$KEYS_FILE line $n: bad key $value"
         KEY[$name]="$value"
     done <"$AUSPEX/$KEYS_FILE"
-    for name in AGENT_WINDOW AGENT_DROPDOWN; do
-        [[ -n "${KEY[$name]:-}" ]] || auspex_die "$KEYS_FILE: $name is missing"
-    done
-    [[ "${KEY[AGENT_WINDOW]}" != "${KEY[AGENT_DROPDOWN]}" ]] || auspex_die "$KEYS_FILE: the 2 keys are the same"
+    [[ -n "${KEY[AGENT_WINDOW]:-}" ]] || auspex_die "$KEYS_FILE: AGENT_WINDOW is missing"
 }
 
 print_kde() {
     printf '# Made by auspex keys render from %s. Do not edit.\n' "$KEYS_FILE"
     printf '[services][auspex-agent.desktop]\n_launch=%s\n' "$(kde_key "${KEY[AGENT_WINDOW]}")"
-    printf '\n[services][auspex-agent-dropdown.desktop]\n_launch=%s\n' "$(kde_key "${KEY[AGENT_DROPDOWN]}")"
 }
 
 hypr_key() {
@@ -77,7 +73,6 @@ hypr_key() {
 print_hypr() {
     printf -- '-- Made by auspex keys render from %s. Do not edit.\n' "$KEYS_FILE"
     printf 'hl.bind("%s", hl.dsp.exec_cmd("auspex agent --window"))\n' "$(hypr_key "${KEY[AGENT_WINDOW]}")"
-    printf 'hl.bind("%s", hl.dsp.exec_cmd("auspex agent dropdown"))\n' "$(hypr_key "${KEY[AGENT_DROPDOWN]}")"
 }
 
 made() {

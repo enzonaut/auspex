@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=auspex agent
-Comment=Open the auspex agent in a new terminal window
+Comment=Show the auspex agent in the herdr app
 Exec=sh -c "exec \\"\\$HOME/.local/bin/auspex\\" agent --window"
 Icon=utilities-terminal
 Terminal=false

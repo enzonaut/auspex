@@ -33,15 +33,14 @@ fake_gdbus() {
     make_fake gdbus "if [[ \"\$*\" == *NameHasOwner* ]]; then echo '($1,)'; fi"
 }
 
-@test "merge adds only the 2 agent groups and keeps the fixture lines" {
+@test "merge adds only the agent group and keeps the fixture lines" {
     run "$M" merge "$SRC" "$W/target" "$W/none.json" "$W/out" "$W/owned.json"
     [ "$status" -eq 0 ]
     [ "$(diff "$FIX" "$W/out" | grep -c '^<')" -eq 0 ]
-    [ "$(diff "$FIX" "$W/out" | grep -c '^>')" -eq 6 ]
-    [ "$(diff "$FIX" "$W/out" | grep -c '^> \[services\]\[auspex-agent')" -eq 2 ]
+    [ "$(diff "$FIX" "$W/out" | grep -c '^>')" -eq 3 ]
+    [ "$(diff "$FIX" "$W/out" | grep -c '^> \[services\]\[auspex-agent')" -eq 1 ]
     grep -qxF '_launch=Meta+Alt+A' "$W/out"
-    grep -qxF '_launch=Meta+Alt+`' "$W/out"
-    [ "$(jq -c . "$W/owned.json")" = '{"auspex-agent-dropdown.desktop":{"earlier":null},"auspex-agent.desktop":{"earlier":null}}' ]
+    [ "$(jq -c . "$W/owned.json")" = '{"auspex-agent.desktop":{"earlier":null}}' ]
     cmp "$FIX" "$W/target"
     [ -z "$(fake_calls kwriteconfig6 | grep -v -- "--file $TEST_TMP/")" ]
 }
@@ -75,10 +74,10 @@ fake_gdbus() {
     cmp "$W/before" "$W/back"
 }
 
-@test "merge with no target writes only the agent groups and restore empties it" {
+@test "merge with no target writes only the agent group and restore empties it" {
     "$M" merge "$SRC" "$W/absent" "$W/none.json" "$W/out" "$W/owned.json"
-    [ "$(grep -c '^\[services\]' "$W/out")" -eq 2 ]
-    [ "$(grep -c '^\[' "$W/out")" -eq 2 ]
+    [ "$(grep -c '^\[services\]' "$W/out")" -eq 1 ]
+    [ "$(grep -c '^\[' "$W/out")" -eq 1 ]
     "$M" restore "$W/absent" "$W/out" "$W/owned.json" "$W/none.json" "$W/back"
     [ -e "$W/back" ] && [ ! -s "$W/back" ]
 }
@@ -86,9 +85,9 @@ fake_gdbus() {
 @test "digest lists each owned group with its value" {
     "$M" merge "$SRC" "$W/target" "$W/none.json" "$W/out" "$W/owned.json"
     run "$M" digest "$W/out" "$W/owned.json"
-    [ "$output" = "$(printf 'auspex-agent-dropdown.desktop=Meta+Alt+`\nauspex-agent.desktop=Meta+Alt+A')" ]
+    [ "$output" = auspex-agent.desktop=Meta+Alt+A ]
     run "$M" digest "$W/target" "$W/owned.json"
-    [ "$output" = "$(printf 'auspex-agent-dropdown.desktop=<absent>\nauspex-agent.desktop=<absent>')" ]
+    [ "$output" = 'auspex-agent.desktop=<absent>' ]
 }
 
 @test "merge refuses a bad source or owned file and writes nothing" {
@@ -116,7 +115,6 @@ fake_gdbus() {
     calls="$(fake_calls gdbus)"
     [[ "$calls" == *"doRegister ['auspex-agent.desktop','_launch','auspex agent','Launch auspex agent']"* ]]
     [[ "$calls" == *"setForeignShortcutKeys ['auspex-agent.desktop','_launch','auspex agent','Launch auspex agent'] [([402653249],)]"* ]]
-    [[ "$calls" == *"setForeignShortcutKeys ['auspex-agent-dropdown.desktop','_launch','auspex agent dropdown','Launch auspex agent dropdown'] [([402653280],)]"* ]]
 }
 
 @test "reload after a restore clears the keys and unregisters" {
@@ -176,7 +174,7 @@ hook_meta() {
     mapfile -t ours < <(sed -n 's/^_launch=//p' "$SRC")
     conflicts="$(awk -v keys="$(printf '%s\n' "${ours[@]}")" '
         BEGIN { n = split(keys, k, "\n"); for (i = 1; i <= n; i++) want[k[i]] = 1 }
-        /^\[/ { group = $0; skip = (group ~ /^\[services\]\[auspex-agent(-dropdown)?\.desktop\]$/ || group ~ /\$InverseAction/); next }
+        /^\[/ { group = $0; skip = (group ~ /^\[services\]\[auspex-agent\.desktop\]$/ || group ~ /\$InverseAction/); next }
         skip || !/=/ { next }
         {
             name = substr($0, 1, index($0, "=") - 1)

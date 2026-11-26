@@ -8,7 +8,6 @@ setup() {
     W="$TEST_TMP/work"
     mkdir -p "$W"
     make_fake claude 'printf "actor=%s pwd=%s\n" "${AUSPEX_ACTOR:-}" "$PWD"'
-    make_fake ghostty 'touch "$TEST_TMP/up"'
 }
 
 teardown() {
@@ -30,10 +29,11 @@ teardown() {
     [[ "$output" == *"agent-settings.json check\\ the\\ disk"* ]]
 }
 
-@test "--window --dry-run opens ghostty that runs auspex agent --here" {
+@test "--window --dry-run shows the herdr app space and the agent command" {
     run auspex agent --window --cwd /srv --prompt hi --dry-run
     [ "$status" -eq 0 ]
-    [[ "$output" == *"run: ghostty --class=auspex.agent -e $AUSPEX/bin/auspex agent --here --cwd /srv --prompt hi"* ]]
+    [[ "$output" == *"herdr app space: auspex agent"* ]]
+    [[ "$output" == *"run: $AUSPEX/bin/auspex agent --here --cwd /srv --prompt hi"* ]]
 }
 
 @test "--headless --dry-run prints the read-only command and the report file" {
@@ -86,55 +86,54 @@ teardown() {
     [ "$(fake_calls claude)" = "-p --settings $HOME/.config/auspex/claude/headless-settings.json --disallowedTools Edit,Write,NotebookEdit p q" ]
 }
 
-@test "--window starts ghostty" {
+# fake_herdr <ls json> <hc ls json>: a herdr app that is up, with these spaces.
+fake_herdr() {
+    printf '%s' "$1" >"$TEST_TMP/ls.json"
+    printf '%s' "$2" >"$TEST_TMP/hc.json"
+    make_fake herdr-app 'case "${1:-}" in
+    status) echo "{}" ;;
+    ls) cat "$TEST_TMP/ls.json" ;;
+    do) echo "{}" ;;
+esac'
+    make_fake hc 'cat "$TEST_TMP/hc.json"'
+    make_fake setsid '"$@"'
+}
+
+SPACE_JSON='{"spaces":[{"id":"sp1","name":"auspex agent","tabs":[{"id":"tb1","terminals":[{"terminal":"t7"}]}]}]}'
+
+@test "--window makes the auspex agent space when there is none" {
+    fake_herdr '{"spaces":[{"id":"sp0","name":"~","tabs":[]}]}' '{"terminals":[]}'
     run auspex agent --window --cwd "$W"
     [ "$status" -eq 0 ]
-    [ "$(fake_calls ghostty)" = "--class=auspex.agent -e $AUSPEX/bin/auspex agent --here --cwd $W" ]
+    calls="$(fake_calls herdr-app)"
+    [[ "$calls" == *"do space.new --name auspex agent --folder $W --argv [\"$AUSPEX/bin/auspex\",\"agent\",\"--here\",\"--cwd\",\"$W\"]"* ]]
+    [[ "$calls" != *tab.new* ]]
 }
 
-fake_gdbus() {
-    make_fake gdbus 'if [[ "$*" == *NameHasOwner* ]]; then
-    if [[ -e "$TEST_TMP/up" ]]; then echo "(true,)"; else echo "(false,)"; fi
-fi'
-}
-
-@test "dropdown prints skip outside KDE and Hyprland" {
-    fake_gdbus
-    XDG_CURRENT_DESKTOP=GNOME run auspex agent dropdown
+@test "--window shows the agent when Claude Code runs in the space" {
+    fake_herdr "$SPACE_JSON" '{"terminals":[{"address":"t7","agent":"claude-code"},{"address":"t9","agent":"claude-code"}]}'
+    run auspex agent --window --cwd "$W"
     [ "$status" -eq 0 ]
-    [[ "$output" == skip:* ]]
-    [ -z "$(fake_calls gdbus)" ]
-    [ -z "$(fake_calls ghostty)" ]
+    calls="$(fake_calls herdr-app)"
+    [[ "$calls" == *"do space.select --id sp1"* ]]
+    [[ "$calls" == *"do agent.focus --terminal t7"* ]]
+    [[ "$calls" != *space.new* && "$calls" != *tab.new* ]]
 }
 
-@test "dropdown starts the ghostty instance once, then toggles it" {
-    fake_gdbus
-    XDG_CURRENT_DESKTOP=KDE run auspex agent dropdown
+@test "--window starts the agent again in the space when Claude Code ended" {
+    fake_herdr "$SPACE_JSON" '{"terminals":[{"address":"t7","agent":"bash"}]}'
+    run auspex agent --window --cwd "$W"
     [ "$status" -eq 0 ]
-    [ "$(fake_calls ghostty)" = "--config-default-files=false --config-file=$AUSPEX/config/ghostty/auspex-dropdown.ghostty --class=auspex.dropdown --gtk-single-instance=true" ]
-    [[ "$(fake_calls gdbus)" == *"--dest auspex.dropdown --object-path /auspex/dropdown --method org.gtk.Actions.Activate toggle-quick-terminal [] {}"* ]]
-    : >"$CALLS/ghostty"
-    : >"$CALLS/gdbus"
-    XDG_CURRENT_DESKTOP=KDE run auspex agent dropdown
+    calls="$(fake_calls herdr-app)"
+    [[ "$calls" == *"do tab.new --space sp1 --name agent --folder $W --argv"* ]]
+    [[ "$calls" != *agent.focus* ]]
+}
+
+@test "--window with a prompt opens a new tab even when the agent runs" {
+    fake_herdr "$SPACE_JSON" '{"terminals":[{"address":"t7","agent":"claude-code"}]}'
+    run auspex agent --window --cwd "$W" --prompt hi
     [ "$status" -eq 0 ]
-    [ -z "$(fake_calls ghostty)" ]
-    [ "$(fake_calls gdbus | grep -c toggle-quick-terminal)" -eq 1 ]
-}
-
-@test "dropdown fails when ghostty does not take the bus name" {
-    fake_gdbus
-    make_fake ghostty 'exit 0'
-    XDG_CURRENT_DESKTOP=KDE run auspex agent dropdown
-    [ "$status" -ne 0 ]
-    [[ "$output" == *"did not take the bus name"* ]]
-    [[ "$(fake_calls gdbus)" != *toggle-quick-terminal* ]]
-}
-
-@test "the dropdown ghostty config has no keybind and runs the agent" {
-    f="$AUSPEX_REPO/config/ghostty/auspex-dropdown.ghostty"
-    ! grep -q '^keybind' "$f"
-    grep -qxF 'command = auspex agent --here' "$f"
-    grep -qxF 'quick-terminal-position = top' "$f"
+    [[ "$(fake_calls herdr-app)" == *"do tab.new --space sp1"*'"--prompt","hi"]'* ]]
 }
 
 @test "the .desktop files run auspex by an explicit path" {
@@ -168,7 +167,7 @@ kde_repo() {
 
 @test "check kde-untouched fails when an agent row is missing" {
     kde_repo
-    grep -v 'auspex-agent-dropdown.desktop' "$AUSPEX_REPO/manifest/user.tsv" >"$AUSPEX/manifest/user.tsv"
+    grep -v 'auspex-agent.desktop' "$AUSPEX_REPO/manifest/user.tsv" >"$AUSPEX/manifest/user.tsv"
     run auspex check kde-untouched
     [ "$status" -ne 0 ]
 }

@@ -52,8 +52,6 @@
       "Write(~/.config/kglobalshortcutsrc)",
       "Edit(~/.local/share/applications/auspex-agent.desktop)",
       "Write(~/.local/share/applications/auspex-agent.desktop)",
-      "Edit(~/.local/share/applications/auspex-agent-dropdown.desktop)",
-      "Write(~/.local/share/applications/auspex-agent-dropdown.desktop)",
       "Edit(~/.config/systemd/user/auspex-update-check.service)",
       "Write(~/.config/systemd/user/auspex-update-check.service)",
       "Edit(~/.config/systemd/user/auspex-update-check.timer)",

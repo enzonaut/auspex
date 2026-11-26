@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# auspex:summary=Verify that config/hypr/hyprland.lua has a window rule for each row of spec 9.5 and the dropdown
+# auspex:summary=Verify that config/hypr/hyprland.lua has a window rule for each row of spec 9.5
 # auspex:args=none
 # auspex:level=1
 # auspex:requires-sudo=false
@@ -28,7 +28,6 @@ rows=(
     'pavucontrol' 'org\\.pulseaudio\\.pavucontrol' 'float = true'
     'blueman' 'blueman-manager' 'float = true'
     'nm-connection-editor' 'nm-connection-editor' 'float = true'
-    'Agent dropdown' 'class = "^auspex\\.dropdown$" }' 'float = true, size = { "monitor_w", "monitor_h * 0.5" }, move = { 0, 0 }, workspace = "special:agent silent"'
 )
 
 fail=0
