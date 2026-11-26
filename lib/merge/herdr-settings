@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Key merger for ~/.config/herdr-app/settings.json (the merger contract of lib/common.sh).
-# The source file holds the owned keys. The owned file holds 1 record
-# {p: path, has: bool, old: value} for each owned key: the value before auspex.
 set -euo pipefail
 
 die() {
