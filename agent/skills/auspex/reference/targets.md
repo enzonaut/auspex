@@ -16,10 +16,10 @@ Change the source in the repo, never the target.
 | `~/.config/hypr/hyprland.lua` | `config/hypr/hyprland.lua` | copy | hyprland |
 | `~/.config/hypr/agent-binds.lua` | `config/hypr/agent-binds.lua` | copy | hyprland |
 | `~/.config/hypr/hypridle.conf` | `config/hypr/hypridle.conf` | copy | hyprland |
-| `~/.config/hypr/hyprlock.conf` | `config/hypr/hyprlock.conf` | copy | hyprland |
+| `~/.config/hypr/hyprlock.conf` | `templates/hypr/hyprlock.conf.tpl` | render | hyprland |
 | `~/.config/waybar/config.jsonc` | `config/waybar/config.jsonc` | copy | hyprland |
-| `~/.config/mako/config` | `config/mako/config` | copy | hyprland |
-| `~/.config/fuzzel/fuzzel.ini` | `config/fuzzel/fuzzel.ini` | copy | hyprland |
+| `~/.config/mako/config` | `templates/mako/config.tpl` | render | hyprland |
+| `~/.config/fuzzel/fuzzel.ini` | `templates/fuzzel/fuzzel.ini.tpl` | render | hyprland |
 | `~/.config/chrome-flags.conf` | `config/browser-flags/chrome-flags.conf` | copy | any |
 | `~/.config/brave-flags.conf` | `config/browser-flags/brave-flags.conf` | copy | any |
 | `~/.config/hypr/theme.lua` | `templates/hypr/theme.lua.tpl` | render | hyprland |

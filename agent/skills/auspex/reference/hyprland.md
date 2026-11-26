@@ -15,8 +15,8 @@ it is not installed.
 | Look: border, gaps, rounding, group bar, animation, background | `templates/hypr/theme.lua.tpl` (rendered from the palette) |
 | Wallpaper | `templates/hypr/hyprpaper.conf.tpl`; the PNG is `themes/avgvr/generated/wallpaper.png` |
 | Bar | `config/waybar/` |
-| Notifications | `config/mako/` |
-| Launcher | `config/fuzzel/` |
+| Notifications | `templates/mako/` |
+| Launcher | `templates/fuzzel/` |
 | Browser keyring flags | `config/browser-flags/` |
 
 The config format follows Hyprland 0.57.

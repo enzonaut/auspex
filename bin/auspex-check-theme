@@ -328,6 +328,24 @@ check_hyprland_config() {
     printf 'ok   Hyprland --verify-config passes on the rendered theme.lua\n'
 }
 
+check_fuzzel() {
+    command -v fuzzel >/dev/null 2>&1 || {
+        printf 'fuzzel is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local ini="$work/fuzzel.ini" out
+    auspex_render "$PALETTE" "$AUSPEX/templates/fuzzel/fuzzel.ini.tpl" "$ini" || {
+        fail "templates/fuzzel/fuzzel.ini.tpl does not render"
+        return 1
+    }
+    if ! out="$(fuzzel --check-config --config "$ini" 2>&1)"; then
+        printf '%s\n' "$out" | tail -5
+        fail 'fuzzel --check-config failed on the rendered fuzzel.ini'
+        return 1
+    fi
+    printf 'ok   fuzzel --check-config passes on the rendered fuzzel.ini\n'
+}
+
 CHECKS=(
     check_templates
     check_inputs
@@ -340,6 +358,7 @@ CHECKS=(
     check_plymouth
     check_hyprland_config
     check_waybar
+    check_fuzzel
 )
 
 failed=0
