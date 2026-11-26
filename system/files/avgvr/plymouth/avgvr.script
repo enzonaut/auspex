@@ -1,7 +1,3 @@
-// AVGVR boot splash (spec section 7.2). auspex theme build renders this
-// file from templates/plymouth/avgvr.script.tpl. Edit the template.
-// Light boot: static images and a stepped fill of 40 blocks, no frames.
-// The images are drawn for a 2160 px height and scale by Window.GetHeight().
 
 fun rgb(r, g, b) {
     c.r = r / 255;
@@ -52,7 +48,6 @@ num_on[7] = scaled(Image("numeral-VIII-on.png"));
 num_on[8] = scaled(Image("numeral-IX-on.png"));
 num_on[9] = scaled(Image("numeral-X-on.png"));
 
-// The bar is 40 % of the screen width. Each block takes 70 % of its pitch.
 bar_w = Math.Int(W * 0.4);
 pitch = bar_w / BLOCKS;
 block_h = Math.Int(Image("dentil-off.png").GetHeight() * S + 0.5);
@@ -89,7 +84,6 @@ message_y = bar_bottom + GAP;
 message_sprite = Sprite();
 message_sprite.SetPosition(0, message_y, 2);
 
-// p is from 0 to 1. Whole blocks only: no glide (spec 7.2, OQ10).
 fun progress(p) {
     if (p < 0) p = 0;
     if (p > 1) p = 1;
@@ -123,7 +117,6 @@ Plymouth.SetBootProgressFunction(boot_progress);
 Plymouth.SetSystemUpdateFunction(system_update);
 Plymouth.SetMessageFunction(show_message);
 
-// Password band: the entry, 1 bullet per character, the prompt above it.
 entry = scaled(Image("entry.png"));
 bullet = scaled(Image("bullet.png"));
 entry_x = Math.Int((W - entry.GetWidth()) / 2);

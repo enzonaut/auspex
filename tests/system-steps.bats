@@ -1008,7 +1008,6 @@ setup_080() {
     printf '%s\n' "$CMDLINE_080" >"$AUSPEX_KERNEL_CMDLINE"
     printf 'timeout: 3\n\n/Arch Linux\n    protocol: efi\n    path: boot():/EFI/Linux/arch-linux.efi\n' >"$TEST_TMP/boot/limine.conf"
     make_fake plymouth-set-default-theme 'echo avgvr'
-    # Log the drop-in and the cmdline at each call. Fail the calls listed in MKI_FAIL.
     make_fake mkinitcpio '
 n=$(wc -l <"$CALLS/mkinitcpio")
 { [ -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ] && echo dropin || echo none; cat "$AUSPEX_KERNEL_CMDLINE"; } >>"$CALLS/mkinitcpio.state"
@@ -1021,7 +1020,6 @@ step080() {
     run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; source "$1/system/steps/080-avgvr-boot-splash.sh"; "$2"' _ "$AUSPEX" "$1"
 }
 
-# The 080 apply changed nothing: no drop-in, the same cmdline, no rebuild, no state.
 assert_080_unchanged() {
     [ ! -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ]
     [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080" ]

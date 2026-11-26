@@ -4,29 +4,6 @@
 # auspex:level=3
 # auspex:requires-sudo=true
 #
-# check runs as the user. apply and undo run as root.
-# apply writes the mkinitcpio drop-in /etc/mkinitcpio.conf.d/auspex-plymouth.conf
-# (the main HOOKS plus plymouth after udev), adds quiet and splash to the 1
-# line of /etc/kernel/cmdline and runs mkinitcpio -P. It saves the cmdline
-# once to $AUSPEX_SYSTEM_STATE/080-avgvr-boot-splash.cmdline.before (default
-# /var/lib/auspex). If mkinitcpio -P fails, apply restores the drop-in and the
-# cmdline of before the run, runs mkinitcpio -P again and returns 1.
-# undo removes the drop-in, restores the cmdline (or removes only the 2 words
-# that apply added) and runs mkinitcpio -P.
-#
-# apply guards, in order. Each guard prints a message and changes nothing:
-#   1. step 020 is applied (auspex-nvidia.conf is in the mkinitcpio dir) and
-#      step 070 is applied (plymouth-set-default-theme prints avgvr).
-#   2. the HOOKS line of /etc/mkinitcpio.conf equals STEP_MAIN_HOOKS. The
-#      drop-in replaces HOOKS, so it would hide a change to the main file.
-#   3. /etc/cmdline.d does not exist. The step never makes it.
-#   4. no Limine conf has a cmdline: or kernel_cmdline: line in an entry for
-#      arch-linux.efi. The confs are the ones that exist of /boot/limine.conf,
-#      /boot/limine/limine.conf, /boot/EFI/limine/limine.conf and
-#      /boot/EFI/BOOT/limine.conf, or the list in AUSPEX_LIMINE_CONFS.
-# After the guards, apply also refuses a cmdline file that is missing or that
-# does not have exactly 1 line.
-#
 # The UKI command line of mkinitcpio 42.2 (build_uki), in order:
 #   1. --cmdline, from <preset>_cmdline or ALL_cmdline in the preset. A file is
 #      used alone. A dir uses only its *.conf files. linux.preset has none.
@@ -36,10 +13,6 @@
 #   3. else /proc/cmdline.
 # Lines that start with # are dropped, and newlines become spaces.
 # --no-cmdline embeds no command line.
-#
-# Env seams for tests: AUSPEX_MKINITCPIO_DIR, AUSPEX_MKINITCPIO_CONF,
-# AUSPEX_KERNEL_CMDLINE, AUSPEX_CMDLINE_D, AUSPEX_LIMINE_CONFS and
-# AUSPEX_SYSTEM_STATE.
 
 STEP_NAME=080-avgvr-boot-splash
 STEP_MAIN_HOOKS='HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)'
@@ -64,8 +37,6 @@ step_has_word() {
     [[ " $1 " == *" $2 "* ]]
 }
 
-# Print each cmdline: or kernel_cmdline: line of an entry whose lines name
-# arch-linux.efi. A line that starts with / starts an entry.
 step_limine_cmdlines() {
     awk '
         function flush() { if (efi) printf "%s", lines; efi = 0; lines = "" }
@@ -115,7 +86,6 @@ step_guards() {
     fi
 }
 
-# Write $1 as the 1 line of the cmdline file, with its mode kept.
 step_write_cmdline() {
     cp -p -- "$STEP_CMDLINE" "$STEP_CMDLINE.auspex-tmp" || return 1
     if printf '%s\n' "$1" >"$STEP_CMDLINE.auspex-tmp" && mv -T -- "$STEP_CMDLINE.auspex-tmp" "$STEP_CMDLINE"; then

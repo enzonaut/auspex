@@ -4,20 +4,6 @@
 # auspex:level=3
 # auspex:requires-sudo=true
 # auspex:reads=packages/avgvr.list system/files/avgvr/SHA256SUMS
-#
-# check runs as the user. apply and undo run as root.
-# apply installs plymouth, then the plymouth/* files of SHA256SUMS into a new
-# dir with step_install_verified, then replaces the theme dir
-# /usr/share/plymouth/themes/avgvr with it. It saves plymouthd.conf once to
-# $AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.plymouthd.conf.before (default
-# /var/lib/auspex), or records that the conf was absent, then runs
-# plymouth-set-default-theme avgvr without -R. This step does not change the
-# initramfs or the kernel command line. Step 080 does that.
-# undo restores plymouthd.conf, removes the theme dir and runs pacman -Rns on
-# the packages that apply installed. undo refuses while the step 080 drop-in
-# exists, because the plymouth hook of that drop-in needs the package.
-# apply uses step_install_verified from lib/system-steps.sh. The root shell
-# defines it. A direct run of apply must source that file first.
 
 STEP_NAME=070-avgvr-plymouth
 STEP_PKG=plymouth
@@ -54,8 +40,6 @@ step_record_add() {
     } | awk 'NF && !seen[$0]++' >"$file.tmp" && mv -- "$file.tmp" "$file"
 }
 
-# Save plymouthd.conf once, so that undo restores the conf of before the
-# 1st apply and not the conf of a later apply.
 step_save_conf() {
     [[ -e "$STEP_BEFORE" || -e "$STEP_ABSENT" ]] && return 0
     mkdir -p -- "$STEP_STATE" || return 1

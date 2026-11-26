@@ -242,7 +242,6 @@ check_sddm() {
     return "$rc"
 }
 
-# Spec 7.6 item 1. The script names each image with a literal Image("x.png").
 check_plymouth() {
     local dir="$SYS/plymouth" theme_dir=/usr/share/plymouth/themes/avgvr f img rc=0
     if [[ ! -f "$dir/avgvr.plymouth" || ! -f "$dir/avgvr.script" ]]; then
