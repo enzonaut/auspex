@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# auspex:summary=Make the generated theme assets: fonts, wallpaper PNG, SHA256SUMS and INPUTS.sha256
+# auspex:summary=Make the generated theme assets: fonts, wallpaper PNG, SDDM theme, SHA256SUMS and INPUTS.sha256
 # auspex:args=[--dry-run]
 # auspex:level=2
 # auspex:requires-sudo=false
@@ -11,16 +11,25 @@
 # Outputs:
 #   system/files/avgvr/fonts/*            woff2_decompress, and the OFL texts
 #   themes/avgvr/generated/wallpaper.png  resvg --use-font-file <the TTF files>
+#   system/files/avgvr/sddm/*             a copy of themes/avgvr/sddm/*, theme.conf
+#                                         (render of templates/sddm/theme.conf.tpl),
+#                                         backdrop.png (wallpaper.svg) and mark.png
 #   system/files/avgvr/SHA256SUMS         every file under system/files/avgvr/
 #   themes/avgvr/generated/INPUTS.sha256  each file in INPUTS and this script
 # auspex check theme compares INPUTS.sha256 with the current inputs.
 set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=../lib/common.sh
 source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+# shellcheck source-path=SCRIPTDIR source=../lib/render.sh
+source "$AUSPEX/lib/render.sh"
 
 DESIGN=design/directions/c
 SYS=system/files/avgvr
 GEN=themes/avgvr/generated
+SDDM_SRC=themes/avgvr/sddm
+SDDM_TPL=templates/sddm/theme.conf.tpl
+PALETTE=themes/avgvr/colors.toml
+MARK_PX=256
 WALL_W=5120
 WALL_H=2160
 
@@ -33,6 +42,13 @@ LICENSES=(OFL-jost.txt OFL-marcellussc.txt)
 INPUTS=(bin/auspex-theme-build "$DESIGN/wallpaper.svg")
 for f in "${FONTS[@]}"; do INPUTS+=("$DESIGN/fonts/${f%%:*}"); done
 for f in "${LICENSES[@]}"; do INPUTS+=("$DESIGN/fonts/$f"); done
+INPUTS+=("$DESIGN/mark.svg" "$SDDM_TPL" "$PALETTE")
+SDDM_FILES=()
+if [[ -d "$AUSPEX/$SDDM_SRC" ]]; then
+    mapfile -t SDDM_FILES < <(cd "$AUSPEX/$SDDM_SRC" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+fi
+[[ ${#SDDM_FILES[@]} -gt 0 ]] || auspex_die "$SDDM_SRC has no files"
+for f in "${SDDM_FILES[@]}"; do INPUTS+=("$SDDM_SRC/$f"); done
 
 dry_run=false
 for arg in "$@"; do
@@ -54,10 +70,10 @@ done
 
 out="$(mktemp -d)"
 trap 'rm -rf -- "$out"' EXIT
-mkdir -p "$out/$SYS/fonts" "$out/$GEN" "$out/woff2"
+mkdir -p "$out/$SYS/fonts" "$out/$SYS/sddm" "$out/$GEN" "$out/woff2"
 
 if [[ -d "$AUSPEX/$SYS" ]]; then
-    (cd "$AUSPEX/$SYS" && find . -type f ! -name SHA256SUMS ! -path './fonts/*' -print0) |
+    (cd "$AUSPEX/$SYS" && find . -type f ! -name SHA256SUMS ! -path './fonts/*' ! -path './sddm/*' -print0) |
         while IFS= read -r -d '' f; do
             mkdir -p "$(dirname "$out/$SYS/$f")"
             cp -p -- "$AUSPEX/$SYS/$f" "$out/$SYS/$f"
@@ -85,19 +101,34 @@ if ! resvg --skip-system-fonts "${fontargs[@]}" -w "$WALL_W" -h "$WALL_H" \
 fi
 grep -v '@font-face rule is not supported' -- "$out/resvg.err" >&2 || true
 
+# The SDDM theme: the sources, theme.conf, the backdrop and the mark.
+for f in "${SDDM_FILES[@]}"; do
+    mkdir -p "$(dirname "$out/$SYS/sddm/$f")"
+    cp -- "$AUSPEX/$SDDM_SRC/$f" "$out/$SYS/sddm/$f"
+done
+auspex_render "$AUSPEX/$PALETTE" "$AUSPEX/$SDDM_TPL" "$out/$SYS/sddm/theme.conf" ||
+    auspex_die "render failed on $SDDM_TPL"
+cp -- "$out/$GEN/wallpaper.png" "$out/$SYS/sddm/backdrop.png"
+if ! resvg -w "$MARK_PX" -h "$MARK_PX" "$AUSPEX/$DESIGN/mark.svg" "$out/$SYS/sddm/mark.png" 2>"$out/resvg.err"; then
+    cat -- "$out/resvg.err" >&2
+    auspex_die "resvg failed on $DESIGN/mark.svg"
+fi
+cat -- "$out/resvg.err" >&2
+
 (cd "$out/$SYS" && find . -type f ! -name SHA256SUMS -printf '%P\n' | LC_ALL=C sort |
     while IFS= read -r f; do sha256sum -- "$f"; done) >"$out/$SYS/SHA256SUMS"
 (cd "$AUSPEX" && printf '%s\n' "${INPUTS[@]}" | LC_ALL=C sort |
     while IFS= read -r f; do sha256sum -- "$f"; done) >"$out/$GEN/INPUTS.sha256"
 
-if [[ -d "$AUSPEX/$SYS/fonts" ]]; then
-    (cd "$AUSPEX/$SYS/fonts" && find . -type f -printf '%P\n') | LC_ALL=C sort |
+for sub in fonts sddm; do
+    [[ -d "$AUSPEX/$SYS/$sub" ]] || continue
+    (cd "$AUSPEX/$SYS/$sub" && find . -type f -printf '%P\n') | LC_ALL=C sort |
         while IFS= read -r f; do
-            [[ -e "$out/$SYS/fonts/$f" ]] && continue
-            printf 'remove %s\n' "$SYS/fonts/$f"
-            $dry_run || rm -f -- "$AUSPEX/$SYS/fonts/$f"
+            [[ -e "$out/$SYS/$sub/$f" ]] && continue
+            printf 'remove %s\n' "$SYS/$sub/$f"
+            $dry_run || rm -f -- "$AUSPEX/$SYS/$sub/$f"
         done
-fi
+done
 
 (cd "$out" && find "$SYS" "$GEN" -type f | LC_ALL=C sort) | while IFS= read -r f; do
     if [[ ! -e "$AUSPEX/$f" ]]; then
