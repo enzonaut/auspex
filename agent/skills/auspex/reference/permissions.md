@@ -5,8 +5,8 @@ Each command has a level in its `auspex:level` header line.
 
 | Level | Who | Examples |
 |---|---|---|
-| 1 | The agent, with no prompt | Read files, edit the repo, commit, `auspex facts`, `auspex plan`, `auspex status`, `auspex check`, `auspex system plan`, `auspex system prepare` |
-| 2 | The agent, with an undo point | `auspex apply`, `auspex undo` |
+| 1 | The agent, with no prompt | Read files, edit the repo, commit, `auspex facts`, `auspex plan`, `auspex status`, `auspex check`, `auspex check theme`, `auspex system plan`, `auspex system prepare` |
+| 2 | The agent, with an undo point | `auspex apply`, `auspex undo`, `auspex theme build` |
 | 3 | The operator only | `auspex system apply`, `auspex system undo`, sudo, package installs, edits under `/etc`, `/usr` and `/boot` |
 
 ## Where the rules live
@@ -21,7 +21,8 @@ Each command has a level in its `auspex:level` header line.
 
 - Level 1: do it.
 - Level 2: do it, then tell the operator the generation number and how to
-  undo it.
+  undo it. `auspex theme build` makes no generation. It writes only repo
+  files, so the undo point is git: commit its outputs or reset them.
 - Level 3: never do it. Prepare it. For a system step, run
   `auspex system prepare <step>`. For anything else, print the exact command
   and ask the operator to run it.

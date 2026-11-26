@@ -18,6 +18,29 @@ an example. The file has these header lines after the shebang:
 A step that installs a repo file adds 1 line per file:
 `# auspex:installs=system/files/<path> /<absolute target>`.
 
+A step that reads repo files adds 1 line that names each of them:
+`# auspex:reads=packages/avgvr.list system/files/avgvr/SHA256SUMS`.
+The step reads a declared file at `${AUSPEX_READS_DIR:-$AUSPEX_REPO}/<path>`.
+`auspex check system steps` fails when a step names a `packages/`,
+`system/files/` or `config/` path that is not in its reads line or under a
+declared `SHA256SUMS` dir.
+
+## Binary files
+
+To install binary files, such as fonts, list them in a `SHA256SUMS` file,
+declare that file in the reads line, and call `step_install_verified` in
+`apply`:
+
+```
+step_install_verified system/files/avgvr/SHA256SUMS system/files/avgvr/fonts "$dest"
+```
+
+It copies each file of `<repo dir>` that `SHA256SUMS` lists to a temp dir and
+checks its sha256. Only when all files match does it install them with mode
+644, and print each target path, 1 per line. Record those paths, so `undo`
+removes only them. On any bad hash or missing file it installs nothing and
+returns 1. Look at `system/steps/050-avgvr-fonts.sh` as an example.
+
 It defines 3 functions:
 
 | Function | Runs as | Must |

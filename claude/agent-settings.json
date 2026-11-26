@@ -8,6 +8,7 @@
       "Bash(auspex status*)",
       "Bash(auspex commands*)",
       "Bash(auspex check*)",
+      "Bash(auspex check theme*)",
       "Bash(auspex system plan*)",
       "Bash(auspex system prepare*)",
       "Bash(auspex migrate --pending*)",
@@ -26,7 +27,8 @@
       "Bash(pacman -Q*)",
       "Bash(nvidia-smi*)",
       "Bash(auspex apply*)",
-      "Bash(auspex undo*)"
+      "Bash(auspex undo*)",
+      "Bash(auspex theme build*)"
     ]
   }
 }
