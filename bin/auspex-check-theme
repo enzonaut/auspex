@@ -384,6 +384,37 @@ check_herdr_layout() {
     printf 'ok   the herdr layout avgvr parses, has radius 0 and names avgvr-spaces\n'
 }
 
+check_herdr_mod() {
+    command -v jq >/dev/null 2>&1 || {
+        printf 'jq is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local d="$AUSPEX/config/herdr-app/mods/avgvr-spaces"
+    if ! jq -e . "$d/mod.json" >/dev/null 2>&1; then
+        fail 'config/herdr-app/mods/avgvr-spaces/mod.json is not valid JSON'
+        return 1
+    fi
+    if grep -q '\.rounded(' "$d/main.js"; then
+        fail 'the herdr mod avgvr-spaces calls .rounded('
+        return 1
+    fi
+    if grep -Eq '#[0-9A-Fa-f]{3,8}\b' "$d/main.js"; then
+        fail 'the herdr mod avgvr-spaces has a hex color'
+        return 1
+    fi
+    printf 'ok   the herdr mod avgvr-spaces has valid mod.json, no .rounded( and no hex color\n'
+    # herdr-app check loads the mod once offline: no window, no space.
+    if command -v herdr-app >/dev/null 2>&1; then
+        if ! herdr-app check "$d" >/dev/null 2>&1; then
+            fail 'herdr-app check reports a problem in the mod avgvr-spaces'
+            return 1
+        fi
+        printf 'ok   herdr-app check passes on the mod avgvr-spaces\n'
+    else
+        printf 'skip herdr-app is not installed\n'
+    fi
+}
+
 CHECKS=(
     check_templates
     check_inputs
@@ -399,6 +430,7 @@ CHECKS=(
     check_fuzzel
     check_herdr_theme
     check_herdr_layout
+    check_herdr_mod
 )
 
 failed=0
