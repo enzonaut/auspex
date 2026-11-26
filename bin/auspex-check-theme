@@ -403,7 +403,6 @@ check_herdr_mod() {
         return 1
     fi
     printf 'ok   the herdr mod avgvr-spaces has valid mod.json, no .rounded( and no hex color\n'
-    # herdr-app check loads the mod once offline: no window, no space.
     if command -v herdr-app >/dev/null 2>&1; then
         if ! herdr-app check "$d" >/dev/null 2>&1; then
             fail 'herdr-app check reports a problem in the mod avgvr-spaces'

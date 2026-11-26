@@ -1,13 +1,7 @@
-// AVGVR spaces: a horizontal row of "[ NAME ]" space tabs, cloned from the
-// shipped spaces mod. Names are in capitals with no numeral. Colors come from
-// the active herdr theme only. Click selects a space, the plus makes a new one.
-// The mod starts no process and polls nothing.
-
 import { View, div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, run, theme } from "herdr";
 
-// The theme color for the state of a space; only blocked uses the accent.
 export function tone(t, status) {
   if (status === "blocked") return t.blocked;
   if (status === "working") return t.working;
