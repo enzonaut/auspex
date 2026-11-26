@@ -19,3 +19,4 @@ config/browser-flags/brave-flags.conf	~/.config/brave-flags.conf	copy	any
 templates/hypr/theme.lua.tpl	~/.config/hypr/theme.lua	render	hyprland
 templates/hypr/hyprpaper.conf.tpl	~/.config/hypr/hyprpaper.conf	render	hyprland
 themes/avgvr/generated/wallpaper.png	~/.local/share/auspex/wallpaper/avgvr.png	copy	hyprland
+templates/waybar/style.css.tpl	~/.config/waybar/style.css	render	hyprland

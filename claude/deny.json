@@ -72,6 +72,8 @@
       "Write(~/.config/hypr/hyprlock.conf)",
       "Edit(~/.config/waybar/config.jsonc)",
       "Write(~/.config/waybar/config.jsonc)",
+      "Edit(~/.config/waybar/style.css)",
+      "Write(~/.config/waybar/style.css)",
       "Edit(~/.config/mako/config)",
       "Write(~/.config/mako/config)",
       "Edit(~/.config/fuzzel/fuzzel.ini)",

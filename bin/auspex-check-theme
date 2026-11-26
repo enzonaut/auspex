@@ -279,6 +279,37 @@ check_plymouth() {
     return "$rc"
 }
 
+check_waybar() {
+    local cfg="$AUSPEX/config/waybar/config.jsonc" css="$work/style.css" accent bad rc=0
+    command -v jq >/dev/null || {
+        echo "jq is not installed"
+        return "$SKIP_EXIT"
+    }
+    if ! sed -E 's|^[[:space:]]*//.*$||' "$cfg" | jq -e . >/dev/null 2>"$work/waybar.out"; then
+        sed 's/^/     /' "$work/waybar.out"
+        fail "config/waybar/config.jsonc is not valid JSON after comments are removed"
+        rc=1
+    fi
+    auspex_render "$PALETTE" "$AUSPEX/templates/waybar/style.css.tpl" "$css" || {
+        fail "templates/waybar/style.css.tpl does not render"
+        return 1
+    }
+    accent="${PAL[accent]:-}"
+    bad="$(awk -v a="${accent^^}" '
+        { sel = sel $0 }
+        /\{/ { s = sel; sub(/\{.*/, "", s); cur = s; sel = "" }
+        /\}/ { cur = ""; sel = "" }
+        index(toupper($0), a) && cur !~ /urgent|\.blocked/ { print NR ": " $0 }
+    ' "$css")"
+    if [[ -n "$bad" ]]; then
+        printf '%s\n' "$bad" | sed 's/^/     /'
+        fail "style.css uses the accent outside the urgent and .blocked rules"
+        rc=1
+    fi
+    [[ $rc -eq 0 ]] && printf 'ok   waybar: config.jsonc parses, the accent is only in the urgent and .blocked rules\n'
+    return "$rc"
+}
+
 check_hyprland_config() {
     command -v Hyprland >/dev/null 2>&1 || {
         printf 'Hyprland is not installed\n'
@@ -308,6 +339,7 @@ CHECKS=(
     check_sddm
     check_plymouth
     check_hyprland_config
+    check_waybar
 )
 
 failed=0
