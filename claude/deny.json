@@ -91,7 +91,9 @@
       "Edit(~/.config/herdr-app/fonts/MarcellusSC-Regular.ttf)",
       "Write(~/.config/herdr-app/fonts/MarcellusSC-Regular.ttf)",
       "Edit(~/.config/herdr-app/sounds/silent.mp3)",
-      "Write(~/.config/herdr-app/sounds/silent.mp3)"
+      "Write(~/.config/herdr-app/sounds/silent.mp3)",
+      "Edit(~/.config/herdr-app/layouts/avgvr.json)",
+      "Write(~/.config/herdr-app/layouts/avgvr.json)"
     ]
   }
 }

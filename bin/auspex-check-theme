@@ -363,6 +363,27 @@ check_herdr_theme() {
     printf 'ok   the rendered herdr theme parses and has 16 ansi values\n'
 }
 
+check_herdr_layout() {
+    command -v jq >/dev/null 2>&1 || {
+        printf 'jq is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local f="$AUSPEX/config/herdr-app/layouts/avgvr.json"
+    if ! jq -e . "$f" >/dev/null 2>&1; then
+        fail 'config/herdr-app/layouts/avgvr.json is not valid JSON'
+        return 1
+    fi
+    if ! jq -e '[.. | objects | .radius? | select(type == "number" and . > 0)] | length == 0' "$f" >/dev/null 2>&1; then
+        fail 'the herdr layout avgvr has a radius above 0'
+        return 1
+    fi
+    if ! jq -e '[.. | objects | .mod? | select(. == "avgvr-spaces")] | length > 0' "$f" >/dev/null 2>&1; then
+        fail 'the herdr layout avgvr does not name the mod avgvr-spaces'
+        return 1
+    fi
+    printf 'ok   the herdr layout avgvr parses, has radius 0 and names avgvr-spaces\n'
+}
+
 CHECKS=(
     check_templates
     check_inputs
@@ -377,6 +398,7 @@ CHECKS=(
     check_waybar
     check_fuzzel
     check_herdr_theme
+    check_herdr_layout
 )
 
 failed=0
