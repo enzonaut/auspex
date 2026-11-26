@@ -56,7 +56,13 @@ It defines 3 functions:
   Record the packages the step installed, so `undo` removes only those.
 - Put copies of `/etc` files in `system/files/`.
 - Never write under `/etc/sddm.conf.d/`, `/usr/share/sddm/` or
-  `/usr/share/plasma/`. `auspex check system steps` fails on it.
+  `/usr/share/plasma/`. `auspex check system steps` fails on it. The one
+  exception is step `060-avgvr-sddm`. It writes only
+  `/etc/sddm.conf.d/zz-auspex-avgvr.conf` and the theme dir
+  `/usr/share/sddm/themes/avgvr` (through `avgvr.new`). It never writes into
+  the breeze theme, and it does not restart SDDM. To preview the theme, give
+  the operator `sddm-greeter-qt6 --test-mode --theme <dir>`. Never run it
+  yourself.
 - Never run sudo yourself.
 
 ## Flow
