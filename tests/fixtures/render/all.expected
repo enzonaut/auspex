@@ -1,0 +1,7 @@
+color #C9A05A
+bare C9A05A
+rgba C9A05Aff
+dec 201, 160, 90
+font Jost
+tight C9A05A and #EB6A43
+plain text with $HOME and `x` and }} stays
