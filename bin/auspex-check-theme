@@ -404,10 +404,15 @@ check_herdr_mod() {
     fi
     printf 'ok   the herdr mod avgvr-spaces has valid mod.json, no .rounded( and no hex color\n'
     if command -v herdr-app >/dev/null 2>&1; then
-        if ! herdr-app check "$d" >/dev/null 2>&1; then
+        local tmp
+        tmp=$(mktemp -d)
+        cp "$d/main.js" "$d/mod.json" "$tmp/"
+        if ! herdr-app check "$tmp" >/dev/null 2>&1; then
+            rm -rf "$tmp"
             fail 'herdr-app check reports a problem in the mod avgvr-spaces'
             return 1
         fi
+        rm -rf "$tmp"
         printf 'ok   herdr-app check passes on the mod avgvr-spaces\n'
     else
         printf 'skip herdr-app is not installed\n'
