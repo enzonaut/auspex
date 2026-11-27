@@ -83,3 +83,4 @@ the operator applies.
 | `reference/hyprland.md` | Where Hyprland settings go, reload, window rules |
 | `reference/kde.md` | What may change on KDE, and why so little |
 | `reference/system-steps.md` | How to write and prepare a system step |
+| `reference/theme.md` | The AVGVR theme: change a color, steps 050-080, the herdr app, recovery |
