@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# auspex:summary=Print the waybar LEGIO fleet counter as 1 JSON line from hc ls --json
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+# Read only. Runs 1 hc call and 1 jq call. Always exits 0, so waybar keeps the slot.
+set -uo pipefail
+
+FALLBACK='{"text": "LEGIO [ – · – ]", "class": "idle"}'
+
+if ! raw="$(timeout 2 hc ls --json 2>/dev/null)"; then
+    printf '%s\n' "$FALLBACK"
+    exit 0
+fi
+
+# shellcheck disable=SC2016
+if ! out="$(printf '%s' "$raw" | jq -c -e '
+    [.terminals[].status] as $s
+    | ($s | map(select(. == "working")) | length) as $n
+    | ($s | map(select(. == "blocked")) | length) as $m
+    | {text: "LEGIO [ \($n) working · \($m) blocked ]",
+       class: (if $m > 0 then "blocked" else "idle" end)}' 2>/dev/null)"; then
+    printf '%s\n' "$FALLBACK"
+    exit 0
+fi
+printf '%s\n' "$out"
+exit 0

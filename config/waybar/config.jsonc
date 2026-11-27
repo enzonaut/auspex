@@ -3,7 +3,7 @@
     "position": "top",
     "height": 40,
     "exclusive": true,
-    "modules-left": ["hyprland/workspaces"],
+    "modules-left": ["hyprland/workspaces", "custom/legio"],
     "modules-center": ["clock"],
     "modules-right": ["pulseaudio", "network", "tray"],
     "hyprland/workspaces": {
@@ -14,6 +14,7 @@
         },
         "persistent-workspaces": { "*": 5 }
     },
+    "custom/legio": { "exec": "auspex-legio", "return-type": "json", "interval": 5 },
     "clock": { "format": "{:%A %d %B   %H:%M}" },
     "pulseaudio": {
         "format": "[ VOL {volume} ]",
