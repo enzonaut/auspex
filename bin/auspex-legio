@@ -3,7 +3,6 @@
 # auspex:args=none
 # auspex:level=1
 # auspex:requires-sudo=false
-# Read only. Runs 1 hc call and 1 jq call. Always exits 0, so waybar keeps the slot.
 set -uo pipefail
 
 FALLBACK='{"text": "LEGIO [ – · – ]", "class": "idle"}'

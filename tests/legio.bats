@@ -7,7 +7,6 @@ setup() {
     FIX="$AUSPEX_REPO/tests/fixtures/legio"
     REAL_JQ="$(command -v jq)"
     export REAL_JQ
-    # The jq filter has many lines, so count calls in a file, not in $CALLS.
     make_fake jq 'echo x >>"$CALLS/jq.count"; exec "$REAL_JQ" "$@"'
 }
 
