@@ -24,27 +24,43 @@ function tab(id) {
     .text_size(13);
 }
 
+function hoverSurface(t) {
+  return (s) => s.bg(t.surface);
+}
+
+function hoverNew(t) {
+  return (s) => s.bg(t.surface).text_color(t.foreground);
+}
+
 function activeCell(el, t) {
   return el.text_color(t.foreground).bg(t.selected).font_bold();
 }
 
 function idleCell(el, t, w) {
-  return el.text_color(tone(t, w.status)).hover((s) => s.bg(t.surface));
+  return el.text_color(tone(t, w.status)).hover(hoverSurface(t));
 }
 
 function newCell(t) {
   return tab("avgvr-space-new")
     .text_color(t.muted)
-    .hover((s) => s.bg(t.surface).text_color(t.foreground))
-    .on_click(() => run("space.new"))
+    .hover(hoverNew(t))
+    .on_click(newSpace)
     .child("[ + ]");
 }
 
+function newSpace() {
+  return run("space.new");
+}
+
+function selectSpace(w) {
+  return () => run("space.select", { id: w.id });
+}
+
 export default class AvgvrSpaces extends View {
-  cell(w, t) {
+  cell(t, w) {
     const el = tab(`avgvr-space-${w.id}`);
     const styled = w.active ? activeCell(el, t) : idleCell(el, t, w);
-    return styled.on_click(() => run("space.select", { id: w.id })).child(label(w.name));
+    return styled.on_click(selectSpace(w)).child(label(w.name));
   }
 
   render() {
@@ -57,7 +73,7 @@ export default class AvgvrSpaces extends View {
       .border_b_1()
       .border_color(t.border)
       .overflow_x_scroll()
-      .children(spaces().map((w) => this.cell(w, t)))
+      .children(spaces().map(this.cell.bind(this, t)))
       .child(newCell(t));
   }
 }
