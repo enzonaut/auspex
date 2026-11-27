@@ -11,6 +11,7 @@ config="$AUSPEX/config/hypr/hyprland.lua"
 [[ -f "$config" ]] || auspex_die "no $config"
 
 rows=(
+    'herdr app' 'class = "^herdr-app$" }' 'tile = true, workspace = "1"'
     'Steam dialogs' 'class = "^steam$" }' 'float = true, center = true'
     'Steam main window' 'class = "^steam$", title = "^Steam$" }' 'tile = true'
     'Steam games' 'class = "^steam_app_.*" }' 'idle_inhibit = "fullscreen"'

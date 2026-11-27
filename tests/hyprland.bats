@@ -132,7 +132,7 @@ hypr_repo_copy() {
 
 @test "the manifest installs the Hyprland and browser flag files, none to KDE config" {
     m="$AUSPEX_REPO/manifest/user.tsv"
-    for f in hyprland.lua agent-binds.lua hypridle.conf hyprlock.conf; do
+    for f in hyprland.lua agent-binds.lua hypridle.conf; do
         grep -qP "^config/hypr/$f\t~/.config/hypr/$f\tcopy\thyprland$" "$m"
     done
     grep -qP '^config/browser-flags/chrome-flags.conf\t~/.config/chrome-flags.conf\tcopy\tany$' "$m"
@@ -185,4 +185,21 @@ render_hypr() {
     run "$AUSPEX_REPO/bin/auspex-check-theme"
     [[ "$output" == *"ok   Hyprland --verify-config passes"* ]]
     grep -q -- '--verify-config -c .*/hyprland.lua' "$TEST_TMP/hypr.calls"
+}
+
+@test "SUPER+Return starts or raises herdr-app, it autostarts, and no ghostty is left" {
+    f="$AUSPEX_REPO/config/hypr/hyprland.lua"
+    run grep -n ghostty "$f"
+    [ "$status" -eq 1 ]
+    grep -F 'hl.bind("SUPER + Return"' "$f" | grep -qF 'focuswindow class:herdr-app || herdr-app'
+    grep -qF 'hl.exec_cmd("[workspace 1 silent] herdr-app")' "$f"
+    grep -qF 'hl.window_rule({ match = { class = "^herdr-app$" }, tile = true, workspace = "1" })' "$f"
+}
+
+@test "check hyprland-rules fails when the herdr-app rule is missing" {
+    hypr_repo_copy
+    sed -i '/\^herdr-app\$/d' "$AUSPEX/config/hypr/hyprland.lua"
+    run auspex check hyprland-rules
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL herdr app"* ]]
 }

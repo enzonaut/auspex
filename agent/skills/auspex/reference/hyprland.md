@@ -58,6 +58,16 @@ These commands are level 1:
 Find the class with `hyprctl -j clients` before you write a rule. Games keep
 the defaults, except `idleinhibit fullscreen`. Launchers and dialogs float.
 
+## The herdr app
+
+The herdr app is the only terminal. `SUPER + Return` focuses it when a
+`herdr-app` client runs, and starts it if not. Hyprland starts it at login on
+workspace 1 with the exec rule `[workspace 1 silent] herdr-app`. The window
+rule `class = "^herdr-app$"` tiles it on workspace 1.
+
+Confirm the class with `hyprctl clients -j`. If the class is not `herdr-app`,
+change the class in the bind, the window rule and `bin/auspex-check-hyprland-rules`.
+
 ## Refresh rate questions
 
 "Why is my game at 60 Hz" is often the monitor mode or the game's own
