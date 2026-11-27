@@ -47,7 +47,7 @@ Run the steps in this order. For each step: run `auspex system plan`, then `ausp
 
 | # | Item | Result | Notes |
 |---|---|---|---|
-| 4.1 | `/boot/limine.conf` (or the file that `auspex system plan` names for Limine) has no `cmdline:` or `kernel_cmdline:` line for `arch-linux.efi`. Command: `sudo grep -n cmdline /boot/limine.conf /boot/limine/limine.conf /boot/EFI/limine/limine.conf /boot/EFI/BOOT/limine.conf`. | | |
+| 4.1 | Not verified before: the Limine conf format (`/boot` needs root). `/boot/limine.conf` (or the file that `auspex system plan` names for Limine) has no `cmdline:` or `kernel_cmdline:` line for `arch-linux.efi`. Command: `sudo grep -n cmdline /boot/limine.conf /boot/limine/limine.conf /boot/EFI/limine/limine.conf /boot/EFI/BOOT/limine.conf`. | | |
 | 4.2 | After step 070, plymouth preview from the text console (Ctrl+Alt+F3, logged in): see the commands below. The splash shows the fill and the numerals, then the password band. | | |
 | 4.3 | After step 080 and before the reboot: `sudo lsinitcpio /boot/EFI/Linux/arch-linux.efi \| grep plymouth` prints the plymouth files. | | |
 | 4.4 | After step 080 and before the reboot: `sudo objcopy -O binary --only-section=.cmdline /boot/EFI/Linux/arch-linux.efi /dev/stdout` prints `quiet splash`. | | |
@@ -71,13 +71,13 @@ Do these in the Hyprland session.
 
 | # | Item | Result | Notes |
 |---|---|---|---|
-| 5.1 | The wallpaper shows (hyprpaper). | | |
+| 5.1 | The wallpaper shows (hyprpaper). Not verified before: the `~` paths in `hyprpaper.conf`. If the wallpaper does not show, write it in the Notes column. The fix is to use the `home` key. | | |
 | 5.2 | The borders are 1 px bronze. | | |
 | 5.3 | The gaps are as in the spec. | | |
-| 5.4 | The waybar band shows. The text uses the AVGVR fonts. | | |
+| 5.4 | The waybar band shows. The text uses the AVGVR fonts. Not verified before: the repeating-linear-gradient in the live bar. | | |
 | 5.5 | `notify-send test` shows a mako notification in the AVGVR style. | | |
 | 5.6 | The launcher (fuzzel) opens. It is in the AVGVR style. | | |
-| 5.7 | Lock with the lock key. The hyprlock band shows. | | |
+| 5.7 | Step 060 must be applied first, because hyprlock reads `/usr/share/sddm/themes/avgvr/mark.png`. Lock with the lock key. The hyprlock band shows with the mark. | | |
 | 5.8 | Unlock with the password. The session returns. | | |
 
 ## Part 6: herdr app and Claude Code
@@ -92,7 +92,7 @@ Do these in the Hyprland session.
 | 6.6 | SUPER+Return raises the app when it runs. | | |
 | 6.7 | After login, the app is on workspace I. | | |
 | 6.8 | The `done` sound is silent. The `blocked` sound plays. | | |
-| 6.9 | If ticket 07 shipped a fuzzel terminal line: it starts the herdr app. Write `skip` if there is no such line. | | |
+| 6.9 | No fuzzel `terminal=` line ships, because `tab.new --argv` needs a JSON array. Write `skip`. | skip | |
 | 6.10 | Change 1 palette color. Run `auspex theme build`, then `auspex apply`. Write in the Notes column if the open app changes its colors (report N2). If it does not change, restart the app. | | |
 | 6.11 | LEGIO in the bar shows the same counts as `hc ls --json`. | | |
 | 6.12 | In Claude Code, `/theme` lists `custom:avgvr`. | | |
@@ -121,6 +121,8 @@ Measure RAM and CPU in Hyprland first, then in Plasma. Put the output in the Not
 | 8.4 | Log in to Plasma. Plasma works. It is the fallback session. | | |
 | 8.5 | From the text console, run `auspex system undo 060-avgvr-sddm`, then `sudo systemctl restart sddm`. The old greeter shows. | | |
 | 8.6 | Run step 060 again: `auspex system prepare 060-avgvr-sddm`. Log out. The AVGVR greeter shows. | | |
+
+Undo order: undo 080 before 070. Step 070 undo refuses while the 080 drop-in exists.
 
 Recovery notes:
 
