@@ -92,7 +92,7 @@ Do these in the Hyprland session.
 | 6.6 | SUPER+Return raises the app when it runs. | | |
 | 6.7 | After login, the app is on workspace I. | | |
 | 6.8 | The `done` sound is silent. The `blocked` sound plays. | | |
-| 6.9 | No fuzzel `terminal=` line ships, because `tab.new --argv` needs a JSON array. Write `skip`. | skip | |
+| 6.9 | No fuzzel `terminal=` line ships, because `tab.new --argv` needs a JSON array. Write `skip`. | | |
 | 6.10 | Change 1 palette color. Run `auspex theme build`, then `auspex apply`. Write in the Notes column if the open app changes its colors (report N2). If it does not change, restart the app. | | |
 | 6.11 | LEGIO in the bar shows the same counts as `hc ls --json`. | | |
 | 6.12 | In Claude Code, `/theme` lists `custom:avgvr`. | | |
@@ -130,3 +130,17 @@ Recovery notes:
 2. To use breeze instead, write this in `/etc/sddm.conf.d/zz-auspex-avgvr.conf`: `Current=breeze`.
 3. If the splash does not show, press Esc during boot to see the log. Boot continues. Run `auspex system undo 080-avgvr-boot-splash`.
 4. If the new UKI does not boot, boot the Arch USB, chroot, and run `auspex system undo 080-avgvr-boot-splash`. Or remove `/etc/mkinitcpio.conf.d/auspex-plymouth.conf` and the words `quiet splash` from `/etc/kernel/cmdline`, then run `mkinitcpio -P`.
+
+## Not verified live
+
+No one tested these on a live display before. Check each one with care:
+
+- hyprpaper `~` paths (item 5.1). Fix: use the `home` key.
+- waybar gradient and bar (item 5.4).
+- mako (notification item in part 5).
+- fuzzel (launcher item in part 5).
+- hyprlock (item 5.7). Apply step 060 first.
+- Window class `herdr-app` (part 6). A mismatch is a 1-line fix ticket.
+- LEGIO with a live herdr (part 6).
+- Claude Code theme `custom:avgvr` (part 6).
+- The Limine conf guard (item 4.1 and step 080). The guard refuses a missing cmdline file or one without exactly 1 line. It does not guard a preset `*_cmdline`.
