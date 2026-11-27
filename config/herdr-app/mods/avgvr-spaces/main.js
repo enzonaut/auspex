@@ -24,12 +24,12 @@ function tab(id) {
     .text_size(13);
 }
 
-function hoverSurface(t) {
-  return (s) => s.bg(t.surface);
+function hoverSurface(t, s) {
+  return s.bg(t.surface);
 }
 
-function hoverNew(t) {
-  return (s) => s.bg(t.surface).text_color(t.foreground);
+function hoverNew(t, s) {
+  return s.bg(t.surface).text_color(t.foreground);
 }
 
 function activeCell(el, t) {
@@ -37,13 +37,13 @@ function activeCell(el, t) {
 }
 
 function idleCell(el, t, w) {
-  return el.text_color(tone(t, w.status)).hover(hoverSurface(t));
+  return el.text_color(tone(t, w.status)).hover(hoverSurface.bind(null, t));
 }
 
 function newCell(t) {
   return tab("avgvr-space-new")
     .text_color(t.muted)
-    .hover(hoverNew(t))
+    .hover(hoverNew.bind(null, t))
     .on_click(newSpace)
     .child("[ + ]");
 }
@@ -53,14 +53,14 @@ function newSpace() {
 }
 
 function selectSpace(w) {
-  return () => run("space.select", { id: w.id });
+  return run("space.select", { id: w.id });
 }
 
 export default class AvgvrSpaces extends View {
   cell(t, w) {
     const el = tab(`avgvr-space-${w.id}`);
     const styled = w.active ? activeCell(el, t) : idleCell(el, t, w);
-    return styled.on_click(selectSpace(w)).child(label(w.name));
+    return styled.on_click(selectSpace.bind(null, w)).child(label(w.name));
   }
 
   render() {
