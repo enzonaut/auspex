@@ -14,7 +14,8 @@ Each command has a level in its `auspex:level` header line.
 - `claude/agent-settings.json` holds the level 1 and 2 allow rules. Only the
   desktop agent session loads it.
 - `claude/deny.json` holds the level 3 deny rules. auspex merges them into
-  `~/.claude/settings.json`, so every Claude Code session gets them.
+  `~/.claude/settings.json`, so every Claude Code session gets them. It also
+  owns the `theme` key (`custom:avgvr`). auspex undo puts back the old theme.
 - `claude/headless-settings.json` holds read-only rules for headless runs.
 
 ## What to do at each level

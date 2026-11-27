@@ -42,6 +42,8 @@
       "Write(//boot/**)",
       "Edit(~/.claude/settings.json)",
       "Write(~/.claude/settings.json)",
+      "Edit(~/.claude/themes/avgvr.json)",
+      "Write(~/.claude/themes/avgvr.json)",
       "Edit(~/.config/auspex/claude/agent-settings.json)",
       "Write(~/.config/auspex/claude/agent-settings.json)",
       "Edit(~/.config/auspex/claude/headless-settings.json)",
@@ -99,5 +101,6 @@
       "Edit(~/.config/herdr-app/mods/avgvr-spaces/mod.json)",
       "Write(~/.config/herdr-app/mods/avgvr-spaces/mod.json)"
     ]
-  }
+  },
+  "theme": "custom:avgvr"
 }

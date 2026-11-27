@@ -26,6 +26,7 @@ Change the source in the repo, never the target.
 | `~/.config/hypr/hyprpaper.conf` | `templates/hypr/hyprpaper.conf.tpl` | render | hyprland |
 | `~/.local/share/auspex/wallpaper/avgvr.png` | `themes/avgvr/generated/wallpaper.png` | copy | hyprland |
 | `~/.config/waybar/style.css` | `templates/waybar/style.css.tpl` | render | hyprland |
+| `~/.claude/themes/avgvr.json` | `templates/claude/avgvr.json.tpl` | render | any |
 | `~/.config/herdr-app/themes/avgvr.json` | `templates/herdr-app/avgvr.json.tpl` | render | any |
 | `~/.config/herdr-app/settings.json` | `config/herdr-app/settings.json` | merge:herdr-settings | any |
 | `~/.config/herdr-app/fonts/Jost.ttf` | `system/files/avgvr/fonts/Jost.ttf` | copy | any |

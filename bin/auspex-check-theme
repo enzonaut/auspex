@@ -363,6 +363,25 @@ check_herdr_theme() {
     printf 'ok   the rendered herdr theme parses and has 16 ansi values\n'
 }
 
+check_claude_theme() {
+    command -v jq >/dev/null 2>&1 || {
+        printf 'jq is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local tpl="$AUSPEX/templates/claude/avgvr.json.tpl" out="$work/claude-avgvr.json" key
+    auspex_render "$PALETTE" "$tpl" "$out" || {
+        fail 'templates/claude/avgvr.json.tpl does not render'
+        return 1
+    }
+    for key in claude permission success error inactive subtle text; do
+        if ! jq -e --arg k "$key" '.overrides[$k] | type == "string" and test("^#[0-9a-fA-F]{6}$")' "$out" >/dev/null 2>&1; then
+            fail "the rendered Claude Code theme is not valid JSON with a #rrggbb value for $key"
+            return 1
+        fi
+    done
+    printf 'ok   the rendered Claude Code theme parses and has every mapped key\n'
+}
+
 check_herdr_layout() {
     command -v jq >/dev/null 2>&1 || {
         printf 'jq is not installed\n'
@@ -433,6 +452,7 @@ CHECKS=(
     check_waybar
     check_fuzzel
     check_herdr_theme
+    check_claude_theme
     check_herdr_layout
     check_herdr_mod
 )

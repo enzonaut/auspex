@@ -20,6 +20,7 @@ templates/hypr/theme.lua.tpl	~/.config/hypr/theme.lua	render	hyprland
 templates/hypr/hyprpaper.conf.tpl	~/.config/hypr/hyprpaper.conf	render	hyprland
 themes/avgvr/generated/wallpaper.png	~/.local/share/auspex/wallpaper/avgvr.png	copy	hyprland
 templates/waybar/style.css.tpl	~/.config/waybar/style.css	render	hyprland
+templates/claude/avgvr.json.tpl	~/.claude/themes/avgvr.json	render	any
 templates/herdr-app/avgvr.json.tpl	~/.config/herdr-app/themes/avgvr.json	render	any
 config/herdr-app/settings.json	~/.config/herdr-app/settings.json	merge:herdr-settings	any
 system/files/avgvr/fonts/Jost.ttf	~/.config/herdr-app/fonts/Jost.ttf	copy	any
