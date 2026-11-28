@@ -233,6 +233,94 @@ esac'
     [ "$(grep -- '^-S' "$CALLS/pacman")" = "-S --needed --noconfirm bats shellcheck jq pacman-contrib" ]
 }
 
+add_blobs_step() {
+    mkdir -p "$AUSPEX/system/files"
+    cp -r "$FIX/blobs/demo" "$AUSPEX/system/files/demo"
+    : >"$AUSPEX/system/files/demo/fonts/unlisted.ttf"
+    cp "$FIX/blobs/970-blobs.sh" "$AUSPEX/system/steps/"
+    export BLOB_DEST="$TEST_TMP/dest/fonts"
+}
+
+@test "step_install_verified installs the listed files under the repo dir, through the root shell" {
+    add_blobs_step
+    run_tty $'y\n' auspex-system-apply 970-blobs
+    [ "$status" -eq 0 ]
+    cmp "$FIX/blobs/demo/fonts/a.ttf" "$BLOB_DEST/a.ttf"
+    cmp "$FIX/blobs/demo/fonts/sub/b.ttf" "$BLOB_DEST/sub/b.ttf"
+    [ "$(stat -c %a "$BLOB_DEST/a.ttf")" = 644 ]
+    [ ! -e "$BLOB_DEST/unlisted.ttf" ]
+    [ ! -e "$BLOB_DEST/other.bin" ]
+    [ "$(cat "$MARK")" = "$BLOB_DEST/a.ttf"$'\n'"$BLOB_DEST/sub/b.ttf" ]
+}
+
+@test "step_install_verified refuses a file with a wrong hash and installs nothing" {
+    add_blobs_step
+    printf 'evil\0' >"$AUSPEX/system/files/demo/fonts/sub/b.ttf"
+    run_tty $'y\n' auspex-system-apply 970-blobs
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"hash mismatch: system/files/demo/fonts/sub/b.ttf"* ]]
+    [ ! -e "$BLOB_DEST" ]
+}
+
+@test "step_install_verified uses the approved SHA256SUMS, not the file on disk" {
+    add_blobs_step
+    printf 'evil\0' >"$TEST_TMP/evil"
+    make_fake sudo "printf 'evil\0' >\"$AUSPEX/system/files/demo/fonts/a.ttf\"; (cd \"$AUSPEX/system/files/demo\" && sha256sum fonts/a.ttf >SHA256SUMS); exec \"\$@\""
+    run_tty $'y\n' auspex-system-apply 970-blobs
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"hash mismatch: system/files/demo/fonts/a.ttf"* ]]
+    [ ! -e "$BLOB_DEST" ]
+}
+
+@test "step_install_verified refuses a bad line, a path outside, a symlink and an empty match" {
+    add_blobs_step
+    sums="$AUSPEX/system/files/demo/SHA256SUMS"
+    siv() {
+        run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; shift; step_install_verified "$@"' _ "$AUSPEX" "$@"
+    }
+    siv system/files/demo/SHA256SUMS system/files/other "$BLOB_DEST"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"is not under system/files/demo"* ]]
+    siv system/files/demo/SHA256SUMS system/files/demo/none "$BLOB_DEST"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"lists no file under"* ]]
+    cp "$sums" "$TEST_TMP/sums"
+    for line in "$(printf '%064d  fonts/../../x' 0)" "$(printf '%064d  /etc/x' 0)" 'not a line'; do
+        { cat "$TEST_TMP/sums"; printf '%s\n' "$line"; } >"$sums"
+        siv system/files/demo/SHA256SUMS system/files/demo/fonts "$BLOB_DEST"
+        [ "$status" -eq 1 ]
+        [[ "$output" == *"bad "* ]]
+    done
+    [ ! -e "$BLOB_DEST" ]
+    cp "$TEST_TMP/sums" "$sums"
+    ln -sf "$FIX/blobs/demo/fonts/a.ttf" "$AUSPEX/system/files/demo/fonts/a.ttf"
+    siv system/files/demo/SHA256SUMS system/files/demo/fonts "$BLOB_DEST"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"cannot copy system/files/demo/fonts/a.ttf"* ]]
+    [ ! -e "$BLOB_DEST" ]
+}
+
+@test "plan prints each SHA256SUMS line of a step" {
+    add_blobs_step
+    run auspex-system-plan </dev/null
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"-- reads system/files/demo/SHA256SUMS"* ]]
+    while IFS= read -r line; do
+        [[ "$output" == *"$line"* ]]
+    done <"$FIX/blobs/demo/SHA256SUMS"
+}
+
+@test "the static check allows a file listed in a declared SHA256SUMS and names an unlisted one" {
+    add_blobs_step
+    run auspex-check-system-steps --static
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ok 970-blobs"* ]]
+    printf '%s\n' 'undo() { rm -f "$AUSPEX_REPO/system/files/demo/fonts/unlisted.ttf"; }' >>"$AUSPEX/system/steps/970-blobs.sh"
+    run auspex-check-system-steps --static
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL 970-blobs: reads system/files/demo/fonts/unlisted.ttf but does not declare it"* ]]
+}
+
 @test "apply refuses bad step names" {
     for bad in ../900-fixture 900-fixture.sh 900-Fixture 999 '9-x' ''; do
         run_tty $'y\n' auspex-system-apply "$bad"
@@ -348,11 +436,42 @@ esac'
 }
 
 @test "the static check fails on each bad step" {
-    for bad in no-undo level-1 sddm syntax undeclared-read missing-read bad-read-path; do
+    for bad in no-undo level-1 sddm sddm-breeze sddm-exact-path-wrong-step syntax undeclared-read missing-read bad-read-path; do
         rm -f "$AUSPEX/system/steps/"*.sh
         cp "$FIX/bad/$bad.sh" "$AUSPEX/system/steps/950-$bad.sh"
         run auspex-check-system-steps --static
         [ "$status" -eq 1 ]
+    done
+}
+
+write_sddm_step() {
+    cat >"$AUSPEX/system/steps/$1.sh" <<EOF
+#!/usr/bin/env bash
+# auspex:summary=SDDM exception test step
+# auspex:args=check | apply | undo
+# auspex:level=3
+# auspex:requires-sudo=true
+check() { [[ -e $2 ]]; }
+apply() { : >$2; }
+undo() { rm -f $2; }
+EOF
+}
+
+@test "the SDDM exception allows the exact paths in step 060 only" {
+    rm -f "$AUSPEX/system/steps/"*.sh
+    write_sddm_step 060-avgvr-sddm /etc/sddm.conf.d/zz-auspex-avgvr.conf
+    run auspex-check-system-steps --static
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ok 060-avgvr-sddm"* ]]
+    write_sddm_step 060-avgvr-sddm '"/usr/share/sddm/themes/avgvr.new"'
+    run auspex-check-system-steps --static
+    [ "$status" -eq 0 ]
+    for p in /usr/share/sddm/themes/avgvr/../breeze/x /usr/share/sddm/themes/breeze/x \
+        /etc/sddm.conf.d/zz-auspex-avgvr.conf.bak /etc/sddm.conf.d/other.conf /usr/share/plasma/x; do
+        write_sddm_step 060-avgvr-sddm "$p"
+        run auspex-check-system-steps --static
+        [ "$status" -eq 1 ]
+        [[ "$output" == *"FAIL 060-avgvr-sddm: names a KDE deny-list path"* ]]
     done
 }
 
@@ -427,4 +546,669 @@ sed -i "s|^$key=.*|$key=\"$val\"|" "$SNAPPER_CONFIG_DIR/$2"'
     step040 check
     [ -z "$(fake_calls sudo)" ]
     [ -z "$(fake_calls snapper)" ]
+}
+
+setup_050() {
+    export AUSPEX_SYSTEM_STATE="$TEST_TMP/system-state"
+    export AUSPEX_FONT_DIR="$TEST_TMP/fonts/avgvr"
+    export INSTALLED="$TEST_TMP/installed"
+    : >"$INSTALLED"
+    make_fake pacman '
+case "$1" in
+  -Qq) shift; rc=0; for p in "$@"; do grep -qx "$p" "$INSTALLED" || rc=1; done; exit $rc ;;
+  -S) shift; for p in "$@"; do [[ $p == -* ]] || grep -qx "$p" "$INSTALLED" || echo "$p" >>"$INSTALLED"; done ;;
+  -Rns) shift; for p in "$@"; do [[ $p == -* ]] || sed -i "/^$p\$/d" "$INSTALLED"; done ;;
+  *) exit 2 ;;
+esac'
+    make_fake fc-cache
+    mkdir -p "$AUSPEX/packages" "$AUSPEX/system/files"
+    cp "$AUSPEX_REPO/packages/avgvr.list" "$AUSPEX/packages/"
+    cp -r "$AUSPEX_REPO/system/files/avgvr" "$AUSPEX/system/files/"
+    cp "$AUSPEX_REPO/system/steps/050-avgvr-fonts.sh" "$AUSPEX/system/steps/"
+}
+
+step050() {
+    run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; source "$1/system/steps/050-avgvr-fonts.sh"; "$2"' _ "$AUSPEX" "$1"
+}
+
+font_files() {
+    (cd "$AUSPEX_FONT_DIR" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+}
+
+@test "050 headers say level 3, requires sudo and read the list and SHA256SUMS" {
+    local f="$AUSPEX_REPO/system/steps/050-avgvr-fonts.sh"
+    grep -qx '# auspex:level=3' "$f"
+    grep -qx '# auspex:requires-sudo=true' "$f"
+    grep -qx '# auspex:reads=packages/avgvr.list system/files/avgvr/SHA256SUMS' "$f"
+    grep -qx 'ttf-jetbrains-mono' "$AUSPEX_REPO/packages/avgvr.list"
+    grep -qx 'plymouth' "$AUSPEX_REPO/packages/avgvr.list"
+}
+
+@test "050 check fails before apply" {
+    setup_050
+    step050 check
+    [ "$status" -ne 0 ]
+}
+
+@test "050 apply installs the package and the hashed fonts, runs fc-cache, and check passes" {
+    setup_050
+    step050 apply
+    [ "$status" -eq 0 ]
+    [ "$(grep -- '^-S' "$CALLS/pacman")" = "-S --needed --noconfirm ttf-jetbrains-mono" ]
+    [ "$(font_files)" = "$(printf '%s\n' Jost.ttf MarcellusSC-Regular.ttf OFL-jost.txt OFL-marcellussc.txt)" ]
+    cmp "$AUSPEX/system/files/avgvr/fonts/Jost.ttf" "$AUSPEX_FONT_DIR/Jost.ttf"
+    [ "$(stat -c %a "$AUSPEX_FONT_DIR/Jost.ttf")" = 644 ]
+    [ "$(fake_calls fc-cache)" = "-f $AUSPEX_FONT_DIR" ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/050-avgvr-fonts.installed")" = ttf-jetbrains-mono ]
+    [ "$(wc -l <"$AUSPEX_SYSTEM_STATE/050-avgvr-fonts.files")" -eq 4 ]
+    step050 check
+    [ "$status" -eq 0 ]
+}
+
+@test "050 check fails on a font with a wrong hash or a missing package" {
+    setup_050
+    step050 apply
+    printf 'x' >>"$AUSPEX_FONT_DIR/Jost.ttf"
+    step050 check
+    [ "$status" -ne 0 ]
+    cp "$AUSPEX/system/files/avgvr/fonts/Jost.ttf" "$AUSPEX_FONT_DIR/Jost.ttf"
+    step050 check
+    [ "$status" -eq 0 ]
+    : >"$INSTALLED"
+    step050 check
+    [ "$status" -ne 0 ]
+}
+
+@test "050 apply with a bad hash installs no font and runs no fc-cache" {
+    setup_050
+    printf 'x' >>"$AUSPEX/system/files/avgvr/fonts/Jost.ttf"
+    step050 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"hash mismatch: system/files/avgvr/fonts/Jost.ttf"* ]]
+    [ ! -e "$AUSPEX_FONT_DIR" ]
+    [ -z "$(fake_calls fc-cache)" ]
+}
+
+@test "050 apply refuses when packages/avgvr.list does not list the package" {
+    setup_050
+    printf 'plymouth\n' >"$AUSPEX/packages/avgvr.list"
+    step050 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"does not list ttf-jetbrains-mono"* ]]
+    [ -z "$(fake_calls pacman)" ]
+}
+
+@test "050 undo removes only what apply installed" {
+    setup_050
+    printf 'ttf-jetbrains-mono\n' >"$INSTALLED"
+    step050 apply
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/050-avgvr-fonts.installed" ]
+    printf 'mine\n' >"$AUSPEX_FONT_DIR/operator.ttf"
+    step050 undo
+    [ "$status" -eq 0 ]
+    [ "$(font_files)" = operator.ttf ]
+    [ "$(cat "$INSTALLED")" = ttf-jetbrains-mono ]
+    [ -z "$(grep -- '^-Rns' "$CALLS/pacman")" ]
+    [ "$(fake_calls fc-cache | tail -n 1)" = "-f" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/050-avgvr-fonts.files" ]
+}
+
+@test "050 undo removes the recorded package and the empty font dir" {
+    setup_050
+    step050 apply
+    step050 undo
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_FONT_DIR" ]
+    [ "$(grep -- '^-Rns' "$CALLS/pacman")" = "-Rns --noconfirm ttf-jetbrains-mono" ]
+    [ ! -s "$INSTALLED" ]
+}
+
+@test "050 check uses no sudo, no pacman -S and no fc-cache" {
+    setup_050
+    step050 check
+    [ -z "$(fake_calls sudo)" ]
+    [ -z "$(fake_calls fc-cache)" ]
+    [ -z "$(grep -v -- '^-Qq' "$CALLS/pacman" 2>/dev/null)" ]
+}
+
+@test "050 through the root shell installs the fonts of the approved SHA256SUMS" {
+    setup_050
+    run_tty $'y\n' auspex-system-apply 050-avgvr-fonts
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"-- reads packages/avgvr.list"* ]]
+    [[ "$output" == *"-- reads system/files/avgvr/SHA256SUMS"* ]]
+    cmp "$AUSPEX/system/files/avgvr/fonts/MarcellusSC-Regular.ttf" "$AUSPEX_FONT_DIR/MarcellusSC-Regular.ttf"
+    [ "$(fake_calls fc-cache)" = "-f $AUSPEX_FONT_DIR" ]
+}
+
+setup_060() {
+    export AUSPEX_SYSTEM_STATE="$TEST_TMP/system-state"
+    export AUSPEX_SDDM_THEME_DIR="$TEST_TMP/sddm-themes"
+    export AUSPEX_SDDM_CONF_DIR="$TEST_TMP/sddm.conf.d"
+    mkdir -p "$AUSPEX_SDDM_THEME_DIR/breeze" "$AUSPEX/system/files"
+    printf 'breeze\n' >"$AUSPEX_SDDM_THEME_DIR/breeze/Main.qml"
+    cp -r "$AUSPEX_REPO/system/files/avgvr" "$AUSPEX/system/files/"
+    cp "$AUSPEX_REPO/system/steps/060-avgvr-sddm.sh" "$AUSPEX/system/steps/"
+}
+
+step060() {
+    run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; source "$1/system/steps/060-avgvr-sddm.sh"; "$2"' _ "$AUSPEX" "$1"
+}
+
+sddm_files() {
+    (cd "$AUSPEX_SDDM_THEME_DIR/avgvr" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+}
+
+SDDM_CONF_WANT='# /etc/sddm.conf.d/zz-auspex-avgvr.conf  (written by auspex step 060)
+[Theme]
+Current=avgvr
+Font=Jost,11'
+
+@test "060 headers say level 3, requires sudo and read SHA256SUMS" {
+    local f="$AUSPEX_REPO/system/steps/060-avgvr-sddm.sh"
+    grep -qx '# auspex:level=3' "$f"
+    grep -qx '# auspex:requires-sudo=true' "$f"
+    grep -qx '# auspex:reads=system/files/avgvr/SHA256SUMS' "$f"
+}
+
+@test "060 check fails before apply" {
+    setup_060
+    step060 check
+    [ "$status" -ne 0 ]
+}
+
+@test "060 apply installs the hashed theme and the conf, and check passes" {
+    setup_060
+    step060 apply
+    [ "$status" -eq 0 ]
+    [ "$(sddm_files)" = "$(printf '%s\n' Main.qml backdrop.png mark.png metadata.desktop theme.conf)" ]
+    cmp "$AUSPEX/system/files/avgvr/sddm/Main.qml" "$AUSPEX_SDDM_THEME_DIR/avgvr/Main.qml"
+    [ "$(stat -c %a "$AUSPEX_SDDM_THEME_DIR/avgvr/theme.conf")" = 644 ]
+    [ "$(cat "$AUSPEX_SDDM_CONF_DIR/zz-auspex-avgvr.conf")" = "$SDDM_CONF_WANT" ]
+    [ "$(stat -c %a "$AUSPEX_SDDM_CONF_DIR/zz-auspex-avgvr.conf")" = 644 ]
+    [ -e "$AUSPEX_SYSTEM_STATE/060-avgvr-sddm.made-dir" ]
+    [ ! -e "$AUSPEX_SDDM_THEME_DIR/avgvr.new" ]
+    [ "$(cat "$AUSPEX_SDDM_THEME_DIR/breeze/Main.qml")" = breeze ]
+    step060 check
+    [ "$status" -eq 0 ]
+}
+
+@test "060 apply 2 times gives the same result and removes a stale theme file" {
+    setup_060
+    step060 apply
+    [ "$status" -eq 0 ]
+    printf 'old\n' >"$AUSPEX_SDDM_THEME_DIR/avgvr/stale.qml"
+    step060 check
+    [ "$status" -ne 0 ]
+    step060 apply
+    [ "$status" -eq 0 ]
+    [ "$(sddm_files)" = "$(printf '%s\n' Main.qml backdrop.png mark.png metadata.desktop theme.conf)" ]
+    [ "$(ls -A "$AUSPEX_SDDM_CONF_DIR")" = zz-auspex-avgvr.conf ]
+    step060 check
+    [ "$status" -eq 0 ]
+}
+
+@test "060 check fails on a wrong theme hash or a changed conf" {
+    setup_060
+    step060 apply
+    printf 'x' >>"$AUSPEX_SDDM_THEME_DIR/avgvr/Main.qml"
+    step060 check
+    [ "$status" -ne 0 ]
+    cp "$AUSPEX/system/files/avgvr/sddm/Main.qml" "$AUSPEX_SDDM_THEME_DIR/avgvr/Main.qml"
+    step060 check
+    [ "$status" -eq 0 ]
+    printf 'Current=breeze\n' >>"$AUSPEX_SDDM_CONF_DIR/zz-auspex-avgvr.conf"
+    step060 check
+    [ "$status" -ne 0 ]
+}
+
+@test "060 apply with a bad hash installs nothing and keeps the old theme" {
+    setup_060
+    step060 apply
+    printf 'x' >>"$AUSPEX/system/files/avgvr/sddm/Main.qml"
+    rm "$AUSPEX_SDDM_CONF_DIR/zz-auspex-avgvr.conf"
+    step060 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"hash mismatch: system/files/avgvr/sddm/Main.qml"* ]]
+    [ ! -e "$AUSPEX_SDDM_THEME_DIR/avgvr.new" ]
+    [ ! -e "$AUSPEX_SDDM_CONF_DIR/zz-auspex-avgvr.conf" ]
+    [ "$(sddm_files)" = "$(printf '%s\n' Main.qml backdrop.png mark.png metadata.desktop theme.conf)" ]
+}
+
+@test "060 undo removes the theme, the conf and the conf dir that apply made" {
+    setup_060
+    step060 apply
+    step060 undo
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_SDDM_THEME_DIR/avgvr" ]
+    [ ! -e "$AUSPEX_SDDM_CONF_DIR" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/060-avgvr-sddm.made-dir" ]
+    [ "$(cat "$AUSPEX_SDDM_THEME_DIR/breeze/Main.qml")" = breeze ]
+    step060 check
+    [ "$status" -ne 0 ]
+    step060 undo
+    [ "$status" -eq 0 ]
+}
+
+@test "060 undo keeps a conf dir that existed before apply" {
+    setup_060
+    mkdir -p "$AUSPEX_SDDM_CONF_DIR"
+    printf '[General]\n' >"$AUSPEX_SDDM_CONF_DIR/10-operator.conf"
+    step060 apply
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/060-avgvr-sddm.made-dir" ]
+    step060 undo
+    [ "$status" -eq 0 ]
+    [ "$(ls -A "$AUSPEX_SDDM_CONF_DIR")" = 10-operator.conf ]
+    rm "$AUSPEX_SDDM_CONF_DIR/10-operator.conf"
+    step060 apply
+    step060 undo
+    [ -d "$AUSPEX_SDDM_CONF_DIR" ]
+}
+
+@test "060 apply refuses without the breeze theme" {
+    setup_060
+    rm -r "$AUSPEX_SDDM_THEME_DIR/breeze"
+    step060 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"breeze SDDM theme is missing"* ]]
+    [ ! -e "$AUSPEX_SDDM_THEME_DIR/avgvr" ]
+    [ ! -e "$AUSPEX_SDDM_CONF_DIR" ]
+}
+
+@test "060 check uses no sudo and writes nothing" {
+    setup_060
+    step060 check
+    [ -z "$(fake_calls sudo)" ]
+    [ ! -e "$AUSPEX_SDDM_THEME_DIR/avgvr" ]
+    [ ! -e "$AUSPEX_SDDM_CONF_DIR" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE" ]
+}
+
+setup_070() {
+    setup_050
+    export AUSPEX_PLYMOUTH_THEME_DIR="$TEST_TMP/plymouth-themes"
+    export AUSPEX_PLYMOUTHD_CONF="$TEST_TMP/etc-plymouth/plymouthd.conf"
+    export AUSPEX_MKINITCPIO_DIR="$TEST_TMP/mkinitcpio.conf.d"
+    mkdir -p "${AUSPEX_PLYMOUTHD_CONF%/*}"
+    printf '[Daemon]\nTheme=bgrt\n' >"$AUSPEX_PLYMOUTHD_CONF"
+    make_fake plymouth-set-default-theme '
+if [[ $# -eq 0 ]]; then
+  sed -n "s/^Theme=//p" "$AUSPEX_PLYMOUTHD_CONF" 2>/dev/null | grep . || echo bgrt
+elif [[ $1 == -* ]]; then
+  exit 2
+else
+  printf "[Daemon]\nTheme=%s\n" "$1" >"$AUSPEX_PLYMOUTHD_CONF"
+fi'
+    cp "$AUSPEX_REPO/system/steps/070-avgvr-plymouth.sh" "$AUSPEX/system/steps/"
+}
+
+step070() {
+    run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; source "$1/system/steps/070-avgvr-plymouth.sh"; "$2"' _ "$AUSPEX" "$1"
+}
+
+plymouth_files() {
+    (cd "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+}
+
+plymouth_listed() {
+    sed -n 's|^[0-9a-f]*  plymouth/||p' "$AUSPEX/system/files/avgvr/SHA256SUMS" | LC_ALL=C sort
+}
+
+@test "070 headers say level 3, requires sudo and read the list and SHA256SUMS" {
+    local f="$AUSPEX_REPO/system/steps/070-avgvr-plymouth.sh"
+    grep -qx '# auspex:level=3' "$f"
+    grep -qx '# auspex:requires-sudo=true' "$f"
+    grep -qx '# auspex:reads=packages/avgvr.list system/files/avgvr/SHA256SUMS' "$f"
+}
+
+@test "070 check fails before apply" {
+    setup_070
+    step070 check
+    [ "$status" -ne 0 ]
+}
+
+@test "070 apply installs plymouth and the hashed theme, selects it, and check passes" {
+    setup_070
+    step070 apply
+    [ "$status" -eq 0 ]
+    [ "$(grep -- '^-S' "$CALLS/pacman")" = "-S --needed --noconfirm plymouth" ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.installed")" = plymouth ]
+    [ "$(plymouth_files)" = "$(plymouth_listed)" ]
+    [ "$(plymouth_files | wc -l)" -eq 28 ]
+    cmp "$AUSPEX/system/files/avgvr/plymouth/avgvr.script" "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr/avgvr.script"
+    [ "$(stat -c %a "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr/avgvr.plymouth")" = 644 ]
+    [ ! -e "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr.new" ]
+    [ "$(fake_calls plymouth-set-default-theme | grep -v '^$')" = avgvr ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.plymouthd.conf.before")" = "$(printf '[Daemon]\nTheme=bgrt')" ]
+    [ -z "$(ls "$TEST_TMP/mkinitcpio.conf.d" 2>/dev/null)" ]
+    step070 check
+    [ "$status" -eq 0 ]
+}
+
+@test "070 apply 2 times gives the same result and keeps the 1st conf copy" {
+    setup_070
+    step070 apply
+    [ "$status" -eq 0 ]
+    printf 'old\n' >"$AUSPEX_PLYMOUTH_THEME_DIR/avgvr/stale.png"
+    step070 check
+    [ "$status" -ne 0 ]
+    step070 apply
+    [ "$status" -eq 0 ]
+    [ "$(plymouth_files)" = "$(plymouth_listed)" ]
+    [ "$(grep -c -- '^-S' "$CALLS/pacman")" -eq 2 ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.installed")" = plymouth ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.plymouthd.conf.before")" = "$(printf '[Daemon]\nTheme=bgrt')" ]
+    step070 check
+    [ "$status" -eq 0 ]
+}
+
+@test "070 check fails on a wrong theme hash or another default theme" {
+    setup_070
+    step070 apply
+    printf 'x' >>"$AUSPEX_PLYMOUTH_THEME_DIR/avgvr/avgvr.script"
+    step070 check
+    [ "$status" -ne 0 ]
+    cp "$AUSPEX/system/files/avgvr/plymouth/avgvr.script" "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr/avgvr.script"
+    step070 check
+    [ "$status" -eq 0 ]
+    printf '[Daemon]\nTheme=spinner\n' >"$AUSPEX_PLYMOUTHD_CONF"
+    step070 check
+    [ "$status" -ne 0 ]
+}
+
+@test "070 apply with a bad hash installs no theme and selects nothing" {
+    setup_070
+    printf 'x' >>"$AUSPEX/system/files/avgvr/plymouth/avgvr.script"
+    step070 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"hash mismatch: system/files/avgvr/plymouth/avgvr.script"* ]]
+    [ ! -e "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr" ]
+    [ ! -e "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr.new" ]
+    [ -z "$(fake_calls plymouth-set-default-theme)" ]
+}
+
+@test "070 apply refuses when packages/avgvr.list does not list plymouth" {
+    setup_070
+    printf 'ttf-jetbrains-mono\n' >"$AUSPEX/packages/avgvr.list"
+    step070 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"does not list plymouth"* ]]
+    [ -z "$(fake_calls pacman)" ]
+}
+
+@test "070 undo restores plymouthd.conf, removes the theme and the recorded package" {
+    setup_070
+    step070 apply
+    [ "$status" -eq 0 ]
+    step070 undo
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_PLYMOUTHD_CONF")" = "$(printf '[Daemon]\nTheme=bgrt')" ]
+    [ ! -e "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr" ]
+    [ "$(grep -- '^-Rns' "$CALLS/pacman")" = "-Rns --noconfirm plymouth" ]
+    [ ! -s "$INSTALLED" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.plymouthd.conf.before" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.installed" ]
+    step070 undo
+    [ "$status" -eq 0 ]
+}
+
+@test "070 undo removes a plymouthd.conf that was absent and keeps a package it did not install" {
+    setup_070
+    rm "$AUSPEX_PLYMOUTHD_CONF"
+    printf 'plymouth\n' >"$INSTALLED"
+    step070 apply
+    [ "$status" -eq 0 ]
+    [ -e "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.plymouthd.conf.absent" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/070-avgvr-plymouth.installed" ]
+    step070 undo
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_PLYMOUTHD_CONF" ]
+    [ "$(cat "$INSTALLED")" = plymouth ]
+    [ -z "$(grep -- '^-Rns' "$CALLS/pacman")" ]
+}
+
+@test "070 undo refuses while the step 080 drop-in exists" {
+    setup_070
+    step070 apply
+    mkdir -p "$AUSPEX_MKINITCPIO_DIR"
+    printf 'HOOKS=()\n' >"$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf"
+    step070 undo
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"undo 080 first"* ]]
+    [ -d "$AUSPEX_PLYMOUTH_THEME_DIR/avgvr" ]
+    [ -z "$(grep -- '^-Rns' "$CALLS/pacman")" ]
+}
+
+@test "070 check uses no sudo and writes nothing" {
+    setup_070
+    step070 check
+    [ -z "$(fake_calls sudo)" ]
+    [ -z "$(grep -v -- '^-Qq' "$CALLS/pacman" 2>/dev/null)" ]
+    [ ! -e "$AUSPEX_PLYMOUTH_THEME_DIR" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE" ]
+    [ "$(cat "$AUSPEX_PLYMOUTHD_CONF")" = "$(printf '[Daemon]\nTheme=bgrt')" ]
+}
+
+CMDLINE_080='root=PARTUUID=0000 zswap.enabled=0 rootflags=subvol=@ rw rootfstype=btrfs'
+HOOKS_080='HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)'
+
+setup_080() {
+    export AUSPEX_SYSTEM_STATE="$TEST_TMP/var-lib-auspex"
+    export AUSPEX_MKINITCPIO_DIR="$TEST_TMP/mkinitcpio.conf.d"
+    export AUSPEX_MKINITCPIO_CONF="$TEST_TMP/mkinitcpio.conf"
+    export AUSPEX_KERNEL_CMDLINE="$TEST_TMP/kernel/cmdline"
+    export AUSPEX_CMDLINE_D="$TEST_TMP/cmdline.d"
+    export AUSPEX_LIMINE_CONFS="$TEST_TMP/boot/limine.conf $TEST_TMP/boot/EFI/BOOT/limine.conf"
+    export MKI_FAIL="$TEST_TMP/mkinitcpio-fail"
+    mkdir -p "$AUSPEX_MKINITCPIO_DIR" "${AUSPEX_KERNEL_CMDLINE%/*}" "$TEST_TMP/boot"
+    printf 'MODULES=(nvidia)\n' >"$AUSPEX_MKINITCPIO_DIR/auspex-nvidia.conf"
+    printf 'MODULES=()\n%s\n' "$HOOKS_080" >"$AUSPEX_MKINITCPIO_CONF"
+    printf '%s\n' "$CMDLINE_080" >"$AUSPEX_KERNEL_CMDLINE"
+    printf 'timeout: 3\n\n/Arch Linux\n    protocol: efi\n    path: boot():/EFI/Linux/arch-linux.efi\n' >"$TEST_TMP/boot/limine.conf"
+    make_fake plymouth-set-default-theme 'echo avgvr'
+    make_fake mkinitcpio '
+n=$(wc -l <"$CALLS/mkinitcpio")
+{ [ -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ] && echo dropin || echo none; cat "$AUSPEX_KERNEL_CMDLINE"; } >>"$CALLS/mkinitcpio.state"
+grep -qx "$n" "$MKI_FAIL" 2>/dev/null && exit 1
+exit 0'
+    cp "$AUSPEX_REPO/system/steps/080-avgvr-boot-splash.sh" "$AUSPEX/system/steps/"
+}
+
+step080() {
+    run bash -c 'source "$1/lib/common.sh"; source "$1/lib/system-steps.sh"; AUSPEX_REPO=$1; source "$1/system/steps/080-avgvr-boot-splash.sh"; "$2"' _ "$AUSPEX" "$1"
+}
+
+assert_080_unchanged() {
+    [ ! -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080" ]
+    [ -z "$(fake_calls mkinitcpio)" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE" ]
+    [ ! -e "$AUSPEX_CMDLINE_D" ]
+}
+
+@test "080 headers say level 3 and requires sudo, and name the cmdline order" {
+    local f="$AUSPEX_REPO/system/steps/080-avgvr-boot-splash.sh"
+    grep -qx '# auspex:level=3' "$f"
+    grep -qx '# auspex:requires-sudo=true' "$f"
+    ! grep -q '^# auspex:reads=' "$f"
+    grep -q '^# The UKI command line of mkinitcpio 42.2' "$f"
+    grep -q '/etc/cmdline.d/\*.conf in sort -V' "$f"
+}
+
+@test "080 check fails before apply" {
+    setup_080
+    step080 check
+    [ "$status" -ne 0 ]
+}
+
+@test "080 apply writes the drop-in, adds quiet splash, rebuilds, and check passes" {
+    setup_080
+    step080 apply
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf")" = "$(printf '%s\n' \
+        '# Written by auspex step 080. Main HOOKS plus plymouth after udev.' \
+        'HOOKS=(base udev plymouth autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)')" ]
+    [ "$(stat -c %a "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf")" = 644 ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080 quiet splash" ]
+    [ "$(wc -l <"$AUSPEX_KERNEL_CMDLINE")" -eq 1 ]
+    [ "$(cat "$AUSPEX_SYSTEM_STATE/080-avgvr-boot-splash.cmdline.before")" = "$CMDLINE_080" ]
+    [ "$(fake_calls mkinitcpio)" = "-P" ]
+    [ "$(cat "$CALLS/mkinitcpio.state")" = "$(printf 'dropin\n%s quiet splash' "$CMDLINE_080")" ]
+    [ ! -e "$AUSPEX_CMDLINE_D" ]
+    [ -z "$(ls "$AUSPEX_SYSTEM_STATE" | grep -v cmdline.before)" ]
+    step080 check
+    [ "$status" -eq 0 ]
+}
+
+@test "080 apply 2 times rebuilds once and does not add the words again" {
+    setup_080
+    step080 apply
+    step080 apply
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080 quiet splash" ]
+    [ "$(fake_calls mkinitcpio)" = "-P" ]
+}
+
+@test "080 apply adds only the missing word" {
+    setup_080
+    printf '%s quiet\n' "$CMDLINE_080" >"$AUSPEX_KERNEL_CMDLINE"
+    step080 apply
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080 quiet splash" ]
+    step080 undo
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080 quiet" ]
+}
+
+@test "080 guard 1 refuses without the step 020 drop-in" {
+    setup_080
+    rm "$AUSPEX_MKINITCPIO_DIR/auspex-nvidia.conf"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"auspex-nvidia.conf is missing. Apply step 020 first."* ]]
+    assert_080_unchanged
+}
+
+@test "080 guard 1 refuses when the plymouth theme is not avgvr" {
+    setup_080
+    make_fake plymouth-set-default-theme 'echo bgrt'
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"does not print avgvr. Apply step 070 first."* ]]
+    assert_080_unchanged
+}
+
+@test "080 guard 2 refuses a changed HOOKS line and prints both lines" {
+    setup_080
+    printf 'HOOKS=(base systemd autodetect)\n' >"$AUSPEX_MKINITCPIO_CONF"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"found:    HOOKS=(base systemd autodetect)"* ]]
+    [[ "$output" == *"expected: $HOOKS_080"* ]]
+    assert_080_unchanged
+}
+
+@test "080 guard 3 refuses when the cmdline.d dir exists" {
+    setup_080
+    mkdir "$AUSPEX_CMDLINE_D"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"cmdline.d exists"* ]]
+    [ ! -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080" ]
+    [ -z "$(fake_calls mkinitcpio)" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE" ]
+    [ -z "$(ls "$AUSPEX_CMDLINE_D")" ]
+}
+
+@test "080 guard 4 refuses a Limine entry for arch-linux.efi that sets a cmdline, and prints it" {
+    setup_080
+    mkdir -p "$TEST_TMP/boot/EFI/BOOT"
+    printf '/Other\n    path: boot():/EFI/other.efi\n    cmdline: other\n/Arch Linux\n    path: boot():/EFI/Linux/arch-linux.efi\n    KERNEL_CMDLINE: root=x\n' \
+        >"$TEST_TMP/boot/EFI/BOOT/limine.conf"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"EFI/BOOT/limine.conf:     KERNEL_CMDLINE: root=x"* ]]
+    [[ "$output" != *"cmdline: other"* ]]
+    assert_080_unchanged
+}
+
+@test "080 guard 4 allows a cmdline in an entry for another image" {
+    setup_080
+    printf '/Other\n    path: boot():/EFI/other.efi\n    cmdline: other\n/Arch Linux\n    path: boot():/EFI/Linux/arch-linux.efi\n' \
+        >"$TEST_TMP/boot/limine.conf"
+    step080 apply
+    [ "$status" -eq 0 ]
+}
+
+@test "080 apply refuses a cmdline file with 2 lines" {
+    setup_080
+    printf '%s\nextra\n' "$CMDLINE_080" >"$AUSPEX_KERNEL_CMDLINE"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"exactly 1 line"* ]]
+    [ ! -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ]
+    [ -z "$(fake_calls mkinitcpio)" ]
+}
+
+@test "080 a failed mkinitcpio restores the drop-in state and the cmdline, rebuilds and returns 1" {
+    setup_080
+    echo 1 >"$MKI_FAIL"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"apply failed. Restoring"* ]]
+    [ ! -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080" ]
+    [ "$(fake_calls mkinitcpio)" = "$(printf -- '-P\n-P')" ]
+    [ "$(cat "$CALLS/mkinitcpio.state")" = "$(printf 'dropin\n%s quiet splash\nnone\n%s' "$CMDLINE_080" "$CMDLINE_080")" ]
+    [ -z "$(ls "$AUSPEX_SYSTEM_STATE" | grep -v cmdline.before)" ]
+    [ -z "$(ls -A "$AUSPEX_MKINITCPIO_DIR" | grep -v auspex-nvidia.conf)" ]
+    step080 check
+    [ "$status" -ne 0 ]
+}
+
+@test "080 a failed mkinitcpio keeps an older drop-in and says when the rebuild fails too" {
+    setup_080
+    printf 'HOOKS=(old)\n' >"$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf"
+    printf '1\n2\n' >"$MKI_FAIL"
+    step080 apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"the 2nd mkinitcpio -P failed too"* ]]
+    [ "$(cat "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf")" = "HOOKS=(old)" ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080" ]
+}
+
+@test "080 undo removes the drop-in, restores the cmdline and rebuilds" {
+    setup_080
+    step080 apply
+    step080 undo
+    [ "$status" -eq 0 ]
+    [ ! -e "$AUSPEX_MKINITCPIO_DIR/auspex-plymouth.conf" ]
+    [ -e "$AUSPEX_MKINITCPIO_DIR/auspex-nvidia.conf" ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080" ]
+    [ ! -e "$AUSPEX_SYSTEM_STATE/080-avgvr-boot-splash.cmdline.before" ]
+    [ "$(fake_calls mkinitcpio)" = "$(printf -- '-P\n-P')" ]
+    [ "$(sed -n 3p "$CALLS/mkinitcpio.state")" = none ]
+    step080 undo
+    [ "$status" -eq 0 ]
+    [ "$(fake_calls mkinitcpio | wc -l)" -eq 2 ]
+}
+
+@test "080 undo keeps a later cmdline change and removes only the 2 words" {
+    setup_080
+    step080 apply
+    printf '%s quiet splash nowatchdog\n' "$CMDLINE_080" >"$AUSPEX_KERNEL_CMDLINE"
+    step080 undo
+    [ "$status" -eq 0 ]
+    [ "$(cat "$AUSPEX_KERNEL_CMDLINE")" = "$CMDLINE_080 nowatchdog" ]
+}
+
+@test "080 check uses no sudo and writes nothing" {
+    setup_080
+    step080 check
+    [ -z "$(fake_calls sudo)" ]
+    [ -z "$(fake_calls mkinitcpio)" ]
+    assert_080_unchanged
 }

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# theme-set hook: waybar reloads its style on SIGUSR2. Send it when style.css changed.
+set -euo pipefail
+meta="${AUSPEX_GEN_DIR:-${AUSPEX_STATE:-$HOME/.local/state/auspex}/generations/$(printf %04d "$1")}/meta.json"
+jq -e 'any(.targets[]; .path == ".config/waybar/style.css")' "$meta" >/dev/null || exit 0
+pids="$(pidof waybar)" || exit 0
+for pid in $pids; do
+    env kill -USR2 "$pid"
+done

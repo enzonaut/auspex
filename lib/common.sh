@@ -17,6 +17,8 @@ export AUSPEX_STATE="${AUSPEX_STATE:-$HOME/.local/state/auspex}"
 AUSPEX_BIN="$AUSPEX/bin"
 # shellcheck disable=SC2034
 AUSPEX_MANIFEST="$AUSPEX/manifest/user.tsv"
+# shellcheck source-path=SCRIPTDIR source=render.sh
+source "$AUSPEX/lib/render.sh"
 
 auspex_log() {
     printf 'auspex: %s\n' "$*" >&2
@@ -118,10 +120,20 @@ auspex_atomic_write() {
     return 1
 }
 
+auspex_theme_palette() {
+    local name
+    [[ -f "$AUSPEX/themes/current" ]] || auspex_die "no themes/current"
+    name="$(head -n 1 -- "$AUSPEX/themes/current")"
+    [[ "$name" =~ ^[a-z0-9_-]+$ && -d "$AUSPEX/themes/$name" ]] ||
+        auspex_die "themes/current names $name, which is not a folder in themes/"
+    [[ -f "$AUSPEX/themes/$name/colors.toml" ]] || auspex_die "no palette themes/$name/colors.toml"
+    printf '%s\n' "themes/$name/colors.toml"
+}
+
 auspex_manifest_load() {
-    local src tgt mode rel f name n=0
+    local src tgt mode rel f name n=0 palette=""
     local -A seen=() mergers=()
-    M_SRC=() M_REL=() M_MODE=() M_PATHS=()
+    M_SRC=() M_FILE=() M_REL=() M_MODE=() M_PATHS=()
     [[ -f "$AUSPEX_MANIFEST" ]] || auspex_die "no manifest at $AUSPEX_MANIFEST"
     while read -r src tgt mode _ || [[ -n "${src:-}" ]]; do
         n=$((n + 1))
@@ -135,12 +147,23 @@ auspex_manifest_load() {
         case "$mode" in
             copy)
                 [[ -f "$AUSPEX/$src" ]] || auspex_die "manifest line $n: no source file $src"
-                M_SRC+=("$src") M_REL+=("$rel") M_MODE+=(copy)
+                M_SRC+=("$src") M_FILE+=("$AUSPEX/$src") M_REL+=("$rel") M_MODE+=(copy)
+                ;;
+            render)
+                [[ -f "$AUSPEX/$src" ]] || auspex_die "manifest line $n: no source file $src"
+                if [[ -z "$palette" ]]; then
+                    palette="$(auspex_theme_palette)" || exit 1
+                    M_PATHS+=(themes/current "$palette")
+                fi
+                f="$AUSPEX_STATE/rendered/$rel"
+                auspex_render "$AUSPEX/$palette" "$AUSPEX/$src" "$f" ||
+                    auspex_die "manifest line $n: cannot render $src"
+                M_SRC+=("$src") M_FILE+=("$f") M_REL+=("$rel") M_MODE+=(render)
                 ;;
             tree)
                 [[ -d "$AUSPEX/$src" ]] || auspex_die "manifest line $n: no source folder $src"
                 while IFS= read -r f; do
-                    M_SRC+=("$src/$f") M_REL+=("$rel/$f") M_MODE+=(tree)
+                    M_SRC+=("$src/$f") M_FILE+=("$AUSPEX/$src/$f") M_REL+=("$rel/$f") M_MODE+=(tree)
                 done < <(find "$AUSPEX/$src" -type f -printf '%P\n' | LC_ALL=C sort)
                 ;;
             merge:*)
@@ -150,7 +173,7 @@ auspex_manifest_load() {
                 [[ -z "${mergers[$name]:-}" ]] || auspex_die "manifest line $n: merger $name is on 2 rows"
                 [[ -f "$AUSPEX/$src" ]] || auspex_die "manifest line $n: no source file $src"
                 mergers[$name]=1
-                M_SRC+=("$src") M_REL+=("$rel") M_MODE+=("$mode")
+                M_SRC+=("$src") M_FILE+=("$AUSPEX/$src") M_REL+=("$rel") M_MODE+=("$mode")
                 ;;
             *) auspex_die "manifest line $n: unknown mode $mode" ;;
         esac
@@ -229,7 +252,7 @@ auspex_plan_build() {
     auspex_index_load
     for i in "${!M_REL[@]}"; do
         rel="${M_REL[$i]}" mode="${M_MODE[$i]}" src="${M_SRC[$i]}"
-        tgt="$HOME/$rel" new="$AUSPEX/$src"
+        tgt="$HOME/$rel" new="${M_FILE[$i]}"
         want[$rel]=1
         if [[ "$mode" == merge:* ]]; then
             owned="$(auspex_owned_file "$mode")"
@@ -278,6 +301,27 @@ auspex_plan_build() {
     for i in "${!T_REL[@]}"; do
         [[ "${T_STATE[$i]}" == unchanged ]] || CH+=("$i")
     done
+}
+
+auspex_index_mode_sync() {
+    local i rel rc=1
+    for i in "${!T_REL[@]}"; do
+        rel="${T_REL[$i]}"
+        [[ "${T_STATE[$i]}" == unchanged && -n "${IDX_HASH[$rel]:-}" ]] || continue
+        [[ "${T_MODE[$i]}" != merge:* && "${IDX_MODE[$rel]}" != merge:* ]] || continue
+        [[ "${IDX_MODE[$rel]}" != "${T_MODE[$i]}" ]] || continue
+        IDX_MODE[$rel]="${T_MODE[$i]}"
+        rc=0
+    done
+    return "$rc"
+}
+
+auspex_changed_render() {
+    local i
+    for i in "${CH[@]}"; do
+        [[ "${T_MODE[$i]}" != render ]] || return 0
+    done
+    return 1
 }
 
 auspex_plan_has_drift() {

@@ -1,0 +1,196 @@
+#!/usr/bin/env bash
+# auspex:summary=Make the generated theme assets: fonts, wallpaper PNG, SDDM theme, plymouth theme, SHA256SUMS and INPUTS.sha256
+# auspex:args=[--dry-run]
+# auspex:level=2
+# auspex:requires-sudo=false
+#
+# Reads only the repo files in INPUTS. Uses no network and no sudo.
+# It builds every output in a temp folder, then prints 1 line per output:
+#   create|update|unchanged <repo path>
+# With --dry-run it prints the same lines and changes nothing.
+# Outputs:
+#   system/files/avgvr/fonts/*            woff2_decompress, and the OFL texts
+#   themes/avgvr/generated/wallpaper.png  resvg --use-font-file <the TTF files>
+#   system/files/avgvr/sddm/*             a copy of themes/avgvr/sddm/*, theme.conf
+#                                         (render of templates/sddm/theme.conf.tpl),
+#                                         backdrop.png (wallpaper.svg) and mark.png
+#   system/files/avgvr/plymouth/*         a copy of themes/avgvr/plymouth/*, avgvr.script
+#                                         (render of templates/plymouth/avgvr.script.tpl),
+#                                         mark.png, and PNG files of SVGs that this
+#                                         script writes (wordmark, numerals, dentils,
+#                                         entry, bullet) in palette colors
+#   system/files/avgvr/SHA256SUMS         every file under system/files/avgvr/
+#   themes/avgvr/generated/INPUTS.sha256  each file in INPUTS and this script
+# auspex check theme compares INPUTS.sha256 with the current inputs.
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+# shellcheck source-path=SCRIPTDIR source=../lib/render.sh
+source "$AUSPEX/lib/render.sh"
+
+DESIGN=design/directions/c
+SYS=system/files/avgvr
+GEN=themes/avgvr/generated
+SDDM_SRC=themes/avgvr/sddm
+SDDM_TPL=templates/sddm/theme.conf.tpl
+PLY_SRC=themes/avgvr/plymouth
+PLY_TPL=templates/plymouth/avgvr.script.tpl
+PALETTE=themes/avgvr/colors.toml
+MARK_PX=256
+WALL_W=5120
+WALL_H=2160
+
+FONTS=(
+    "jost-latin-variable.woff2:Jost.ttf"
+    "marcellus-sc-latin-400-normal.woff2:MarcellusSC-Regular.ttf"
+)
+LICENSES=(OFL-jost.txt OFL-marcellussc.txt)
+
+INPUTS=(bin/auspex-theme-build "$DESIGN/wallpaper.svg")
+for f in "${FONTS[@]}"; do INPUTS+=("$DESIGN/fonts/${f%%:*}"); done
+for f in "${LICENSES[@]}"; do INPUTS+=("$DESIGN/fonts/$f"); done
+INPUTS+=("$DESIGN/mark.svg" "$SDDM_TPL" "$PLY_TPL" "$PALETTE")
+
+src_files() {
+    [[ -d "$AUSPEX/$1" ]] || return 0
+    (cd "$AUSPEX/$1" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+}
+mapfile -t SDDM_FILES < <(src_files "$SDDM_SRC")
+[[ ${#SDDM_FILES[@]} -gt 0 ]] || auspex_die "$SDDM_SRC has no files"
+for f in "${SDDM_FILES[@]}"; do INPUTS+=("$SDDM_SRC/$f"); done
+mapfile -t PLY_FILES < <(src_files "$PLY_SRC")
+[[ ${#PLY_FILES[@]} -gt 0 ]] || auspex_die "$PLY_SRC has no files"
+for f in "${PLY_FILES[@]}"; do INPUTS+=("$PLY_SRC/$f"); done
+
+dry_run=false
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) dry_run=true ;;
+        *)
+            printf 'usage: auspex theme build [--dry-run]\n' >&2
+            exit 2
+            ;;
+    esac
+done
+
+for tool in woff2_decompress resvg sha256sum; do
+    command -v "$tool" >/dev/null || auspex_die "$tool is not installed"
+done
+for f in "${INPUTS[@]}"; do
+    [[ -f "$AUSPEX/$f" && ! -L "$AUSPEX/$f" ]] || auspex_die "missing input $f"
+done
+
+out="$(mktemp -d)"
+trap 'rm -rf -- "$out"' EXIT
+mkdir -p "$out/$SYS/fonts" "$out/$SYS/sddm" "$out/$SYS/plymouth" "$out/$GEN" "$out/woff2" "$out/svg"
+
+if [[ -d "$AUSPEX/$SYS" ]]; then
+    (cd "$AUSPEX/$SYS" && find . -type f ! -name SHA256SUMS ! -path './fonts/*' ! -path './sddm/*' ! -path './plymouth/*' -print0) |
+        while IFS= read -r -d '' f; do
+            mkdir -p "$(dirname "$out/$SYS/$f")"
+            cp -p -- "$AUSPEX/$SYS/$f" "$out/$SYS/$f"
+        done
+fi
+
+fontargs=()
+for f in "${FONTS[@]}"; do
+    src="${f%%:*}" ttf="${f#*:}"
+    cp -- "$AUSPEX/$DESIGN/fonts/$src" "$out/woff2/$src"
+    woff2_decompress "$out/woff2/$src" >/dev/null || auspex_die "woff2_decompress failed on $src"
+    mv -- "$out/woff2/${src%.woff2}.ttf" "$out/$SYS/fonts/$ttf"
+    fontargs+=(--use-font-file "$out/$SYS/fonts/$ttf")
+done
+for f in "${LICENSES[@]}"; do
+    cp -- "$AUSPEX/$DESIGN/fonts/$f" "$out/$SYS/fonts/$f"
+done
+
+# resvg skips the @font-face data URI in the SVG and warns. The TTF files
+# above give it the same fonts, so drop only that warning.
+if ! resvg --skip-system-fonts "${fontargs[@]}" -w "$WALL_W" -h "$WALL_H" \
+    "$AUSPEX/$DESIGN/wallpaper.svg" "$out/$GEN/wallpaper.png" 2>"$out/resvg.err"; then
+    cat -- "$out/resvg.err" >&2
+    auspex_die "resvg failed on $DESIGN/wallpaper.svg"
+fi
+grep -v '@font-face rule is not supported' -- "$out/resvg.err" >&2 || true
+
+for f in "${SDDM_FILES[@]}"; do
+    mkdir -p "$(dirname "$out/$SYS/sddm/$f")"
+    cp -- "$AUSPEX/$SDDM_SRC/$f" "$out/$SYS/sddm/$f"
+done
+auspex_render "$AUSPEX/$PALETTE" "$AUSPEX/$SDDM_TPL" "$out/$SYS/sddm/theme.conf" ||
+    auspex_die "render failed on $SDDM_TPL"
+cp -- "$out/$GEN/wallpaper.png" "$out/$SYS/sddm/backdrop.png"
+if ! resvg -w "$MARK_PX" -h "$MARK_PX" "$AUSPEX/$DESIGN/mark.svg" "$out/$SYS/sddm/mark.png" 2>"$out/resvg.err"; then
+    cat -- "$out/resvg.err" >&2
+    auspex_die "resvg failed on $DESIGN/mark.svg"
+fi
+cat -- "$out/resvg.err" >&2
+
+declare -A PAL=()
+re_pal='^([a-z][a-z0-9_]*)[[:space:]]*=[[:space:]]*"([^"]*)"[[:space:]]*$'
+while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ $re_pal ]] && PAL[${BASH_REMATCH[1]}]="${BASH_REMATCH[2]}"
+done <"$AUSPEX/$PALETTE"
+for k in bg surface bronze gold border text_faint text_bright font_display; do
+    [[ -n "${PAL[$k]:-}" ]] || auspex_die "$PALETTE has no $k"
+done
+
+svg_png() {
+    printf '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s">%s</svg>\n' \
+        "$2" "$3" "$2" "$3" "$4" >"$out/svg/$1.svg"
+    resvg --skip-system-fonts "${fontargs[@]}" "$out/svg/$1.svg" "$out/$SYS/plymouth/$1.png" ||
+        auspex_die "resvg failed on the $1 SVG"
+}
+
+svg_text() {
+    svg_png "$1" "$2" "$3" "$(printf '<text x="%s" y="%s" text-anchor="middle" font-family="%s" font-size="%s" letter-spacing="%s" fill="%s">%s</text>' \
+        "$(($2 / 2))" "$(($3 * 3 / 4))" "${PAL[font_display]}" "$4" "$5" "$6" "$7")"
+}
+
+for f in "${PLY_FILES[@]}"; do
+    mkdir -p "$(dirname "$out/$SYS/plymouth/$f")"
+    cp -- "$AUSPEX/$PLY_SRC/$f" "$out/$SYS/plymouth/$f"
+done
+auspex_render "$AUSPEX/$PALETTE" "$AUSPEX/$PLY_TPL" "$out/$SYS/plymouth/avgvr.script" ||
+    auspex_die "render failed on $PLY_TPL"
+cp -- "$out/$SYS/sddm/mark.png" "$out/$SYS/plymouth/mark.png"
+svg_text wordmark 1200 200 140 28 "${PAL[text_bright]}" AVSPEX
+for n in I II III IV V VI VII VIII IX X; do
+    svg_text "numeral-$n-off" 200 96 56 4 "${PAL[text_faint]}" "$n"
+    svg_text "numeral-$n-on" 200 96 56 4 "${PAL[gold]}" "$n"
+done
+svg_png dentil-off 32 48 "<rect width=\"32\" height=\"48\" fill=\"${PAL[surface]}\"/>"
+svg_png dentil-on 32 48 "<rect width=\"32\" height=\"48\" fill=\"${PAL[bronze]}\"/>"
+svg_png entry 1200 96 "<rect x=\"1\" y=\"1\" width=\"1198\" height=\"94\" fill=\"${PAL[surface]}\" stroke=\"${PAL[border]}\" stroke-width=\"2\"/>"
+svg_png bullet 24 24 "<circle cx=\"12\" cy=\"12\" r=\"9\" fill=\"${PAL[gold]}\"/>"
+
+(cd "$out/$SYS" && find . -type f ! -name SHA256SUMS -printf '%P\n' | LC_ALL=C sort |
+    while IFS= read -r f; do sha256sum -- "$f"; done) >"$out/$SYS/SHA256SUMS"
+(cd "$AUSPEX" && printf '%s\n' "${INPUTS[@]}" | LC_ALL=C sort |
+    while IFS= read -r f; do sha256sum -- "$f"; done) >"$out/$GEN/INPUTS.sha256"
+
+for sub in fonts sddm plymouth; do
+    [[ -d "$AUSPEX/$SYS/$sub" ]] || continue
+    (cd "$AUSPEX/$SYS/$sub" && find . -type f -printf '%P\n') | LC_ALL=C sort |
+        while IFS= read -r f; do
+            [[ -e "$out/$SYS/$sub/$f" ]] && continue
+            printf 'remove %s\n' "$SYS/$sub/$f"
+            $dry_run || rm -f -- "$AUSPEX/$SYS/$sub/$f"
+        done
+done
+
+(cd "$out" && find "$SYS" "$GEN" -type f | LC_ALL=C sort) | while IFS= read -r f; do
+    if [[ ! -e "$AUSPEX/$f" ]]; then
+        state=create
+    elif cmp -s -- "$out/$f" "$AUSPEX/$f"; then
+        printf 'unchanged %s\n' "$f"
+        continue
+    else
+        state=update
+    fi
+    printf '%s %s\n' "$state" "$f"
+    if ! $dry_run; then
+        mkdir -p "$(dirname "$AUSPEX/$f")"
+        install -m 644 -- "$out/$f" "$AUSPEX/$f"
+    fi
+done

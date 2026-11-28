@@ -9,7 +9,8 @@ die() {
 SETTINGS='length == 1 and (.[0] | type == "object"
     and ((.permissions // {}) | type == "object")
     and ((.permissions.deny // []) | type == "array" and all(type == "string")))'
-SOURCE='length == 1 and (.[0] | type == "object" and keys == ["permissions"]
+SOURCE='length == 1 and (.[0] | type == "object" and keys - ["theme"] == ["permissions"]
+    and ((.theme // "x") | type == "string" and length > 0)
     and (.permissions | type == "object" and keys == ["deny"])
     and (.permissions.deny | type == "array" and length > 0
         and all(type == "string" and length > 0)))'
@@ -44,8 +45,8 @@ case "${1:-}" in
             | ($c - ($o - $s)) as $base
             | (reduce $s[] as $r ($base; if any(.[]; . == $r) then . else . + [$r] end)) as $new
             | {
-                changed: ($new != $c),
-                settings: ($t | .permissions.deny = $new),
+                changed: (($new != $c) or (($src[0] | has("theme")) and $t.theme != $src[0].theme)),
+                settings: ($t | .permissions.deny = $new | if ($src[0] | has("theme")) then .theme = $src[0].theme else . end),
                 owned: ((($o - ($o - $s)) + ($s - $c)) | unique)
             }' >"$tmp"
         if [[ -e "$3" && "$(jq '.changed' "$tmp")" == false ]]; then
@@ -75,7 +76,10 @@ case "${1:-}" in
                 + [($ob[0] - $keep)[] | select(IN($bd[]) | not)]) as $deny
             | ($t | .permissions.deny = $deny
                 | if $deny == [] and $b.permissions.deny == null then del(.permissions.deny) else . end
-                | if .permissions == {} and $b.permissions == null then del(.permissions) else . end) as $r
+                | if .permissions == {} and $b.permissions == null then del(.permissions) else . end
+                | if .theme == "custom:avgvr" then
+                    (if ($b // {}) | has("theme") then .theme = $b.theme else del(.theme) end)
+                  else . end) as $r
             | {same: ($b != null and $r == $b), empty: ($b == null and $r == {}), settings: $r}' >"$tmp"
         if [[ "$(jq '.same' "$tmp")" == true ]]; then
             cp -- "$2" "$6"

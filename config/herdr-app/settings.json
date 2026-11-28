@@ -1,0 +1,10 @@
+{
+  "theme": "avgvr",
+  "font": "JetBrains Mono",
+  "font_weight": 400,
+  "font_weight_bold": 700,
+  "ui_font": "Jost",
+  "sounds": {
+    "done": "sounds/silent.mp3"
+  }
+}

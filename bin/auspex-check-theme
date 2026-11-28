@@ -1,0 +1,475 @@
+#!/usr/bin/env bash
+# auspex:summary=Check the theme: templates, generated files, SVG colors and fonts, contrast, game paths, the SDDM theme and the plymouth theme
+# auspex:args=none
+# auspex:level=1
+# auspex:requires-sudo=false
+#
+# Runs each function in CHECKS. A check function prints its own "ok" or
+# "FAIL" lines and returns 0 (pass), 77 (skip, the last line is the reason)
+# or 1 (fail). This command fails when 1 or more checks fail.
+set -euo pipefail
+# shellcheck source-path=SCRIPTDIR source=../lib/common.sh
+source "${AUSPEX:-$(dirname "$(readlink -f "$0")")/..}/lib/common.sh"
+
+SKIP_EXIT=77
+DESIGN="$AUSPEX/design/directions/c"
+SYS="$AUSPEX/system/files/avgvr"
+THEME="$(tr -d '[:space:]' <"$AUSPEX/themes/current")"
+PALETTE="$AUSPEX/themes/$THEME/colors.toml"
+INPUTS_SUMS="$AUSPEX/themes/$THEME/generated/INPUTS.sha256"
+SVGS=(mark.svg wallpaper.svg)
+
+DESIGN_ONLY_COLORS=(
+    "#8A2419"
+    "#0C0A09"
+    "#1A1614"
+    "#221522"
+)
+
+declare -A PAL=()
+re_pal='^([a-z][a-z0-9_]*)[[:space:]]*=[[:space:]]*"([^"]*)"[[:space:]]*$'
+while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ $re_pal ]] && PAL[${BASH_REMATCH[1]}]="${BASH_REMATCH[2]}"
+done <"$PALETTE"
+
+work="$(mktemp -d)"
+trap 'rm -rf -- "$work"' EXIT
+
+fail() { printf 'FAIL %s\n' "$*"; }
+
+is_palette_value() {
+    local want="${1^^}" k
+    for k in "${!PAL[@]}"; do
+        [[ "${PAL[$k]^^}" == "$want" ]] && return 0
+    done
+    return 1
+}
+
+check_templates() {
+    local tpl n=0 rc=0
+    while IFS= read -r -d '' tpl; do
+        n=$((n + 1))
+        auspex_render "$PALETTE" "$tpl" "$work/render.out" || {
+            fail "template ${tpl#"$AUSPEX"/} does not render"
+            rc=1
+        }
+    done < <(find "$AUSPEX/templates" -type f -name '*.tpl' -print0 2>/dev/null | sort -z)
+    [[ $rc -eq 0 ]] && printf 'ok   %d templates render\n' "$n"
+    return "$rc"
+}
+
+check_inputs() {
+    [[ -f "$INPUTS_SUMS" ]] || {
+        fail "${INPUTS_SUMS#"$AUSPEX"/} is missing: run auspex theme build"
+        return 1
+    }
+    if (cd "$AUSPEX" && sha256sum -c --quiet -- "$INPUTS_SUMS") >"$work/inputs.out" 2>&1; then
+        printf 'ok   %s is current\n' "${INPUTS_SUMS#"$AUSPEX"/}"
+        return 0
+    fi
+    sed 's/^/     /' "$work/inputs.out"
+    fail "${INPUTS_SUMS#"$AUSPEX"/} is not current: run auspex theme build"
+    return 1
+}
+
+check_sums() {
+    local sums="$SYS/SHA256SUMS" f rc=0
+    [[ -f "$sums" ]] || {
+        fail "system/files/avgvr/SHA256SUMS is missing: run auspex theme build"
+        return 1
+    }
+    if ! (cd "$SYS" && sha256sum -c --quiet SHA256SUMS) >"$work/sums.out" 2>&1; then
+        sed 's/^/     /' "$work/sums.out"
+        fail "system/files/avgvr/SHA256SUMS does not match: run auspex theme build"
+        rc=1
+    fi
+    while IFS= read -r f; do
+        cut -c67- "$sums" | grep -qxF -- "$f" && continue
+        fail "system/files/avgvr/$f is not in SHA256SUMS"
+        rc=1
+    done < <(cd "$SYS" && find . -type f ! -name SHA256SUMS -printf '%P\n' | LC_ALL=C sort)
+    [[ $rc -eq 0 ]] && printf 'ok   system/files/avgvr/SHA256SUMS matches\n'
+    return "$rc"
+}
+
+check_svg_colors() {
+    local svg c rc=0
+    for svg in "${SVGS[@]}"; do
+        while IFS= read -r c; do
+            is_palette_value "$c" && continue
+            [[ " ${DESIGN_ONLY_COLORS[*]^^} " == *" ${c^^} "* ]] && continue
+            fail "$svg uses $c, which is not a palette value"
+            rc=1
+        done < <(grep -oiE '#[0-9a-f]{6}\b' "$DESIGN/$svg" | sort -u)
+    done
+    [[ $rc -eq 0 ]] && printf 'ok   SVG colors are palette values\n'
+    return "$rc"
+}
+
+check_svg_fonts() {
+    local svg fam ttf families="" rc=0
+    command -v fc-scan >/dev/null || {
+        echo "fc-scan is not installed"
+        return "$SKIP_EXIT"
+    }
+    for ttf in "$SYS"/fonts/*.ttf; do
+        [[ -f "$ttf" ]] && families+="$(fc-scan --format '%{family}\n' "$ttf")"$'\n'
+    done
+    for svg in "${SVGS[@]}"; do
+        while IFS= read -r fam; do
+            [[ -n "$fam" ]] || continue
+            if ! is_palette_value "$fam"; then
+                fail "$svg uses font $fam, which is not a palette font"
+                rc=1
+            fi
+            if ! tr ',' '\n' <<<"$families" | grep -qxF "$fam"; then
+                fail "$svg uses font $fam, which no TTF in system/files/avgvr/fonts has"
+                rc=1
+            fi
+        done < <(grep -oE "font-family(=\"|:[[:space:]]*[\"'])[^\"']+" "$DESIGN/$svg" |
+            sed -E "s/^font-family(=\"|:[[:space:]]*[\"'])//" | sort -u)
+    done
+    [[ $rc -eq 0 ]] && printf 'ok   SVG fonts are palette fonts with a TTF\n'
+    return "$rc"
+}
+
+contrast_color() {
+    local cell="$1" key
+    if [[ "$cell" =~ ^--color-([a-z-]+)$ ]]; then
+        key="${BASH_REMATCH[1]//-/_}"
+        [[ -n "${PAL[$key]:-}" ]] || return 1
+        printf '%s' "${PAL[$key]}"
+    elif [[ "$cell" =~ ^([a-z_]+)\ \((#[0-9A-Fa-f]{6})\)$ ]]; then
+        [[ "${PAL[${BASH_REMATCH[1]}]:-}" == "${BASH_REMATCH[2]^^}" ]] || return 1
+        printf '%s' "${BASH_REMATCH[2]}"
+    else
+        return 1
+    fi
+}
+
+# WCAG 2.x contrast ratio of 2 hex colors, with 2 decimals.
+contrast_ratio() {
+    awk -v a="${1#\#}" -v b="${2#\#}" '
+        function ch(h, i,   v) { v = strtonum("0x" substr(h, i, 2)) / 255
+            return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ^ 2.4 }
+        function lum(h) { return 0.2126 * ch(h, 1) + 0.7152 * ch(h, 3) + 0.0722 * ch(h, 5) }
+        BEGIN { x = lum(a); y = lum(b); if (x < y) { t = x; x = y; y = t }
+            printf "%.2f", (x + 0.05) / (y + 0.05) }'
+}
+
+check_contrast() {
+    local line fg bg listed fgc bgc got n=0 rc=0
+    while IFS= read -r line; do
+        IFS='|' read -r _ fg bg listed _ <<<"$line"
+        fg="$(xargs <<<"$fg")" bg="$(xargs <<<"$bg")" listed="$(xargs <<<"$listed")"
+        listed="${listed%:1}"
+        [[ "$listed" =~ ^[0-9]+\.[0-9]+$ ]] || continue
+        n=$((n + 1))
+        if ! fgc="$(contrast_color "$fg")" || ! bgc="$(contrast_color "$bg")"; then
+            fail "contrast row $fg on $bg: a color is not in the palette"
+            rc=1
+            continue
+        fi
+        got="$(contrast_ratio "$fgc" "$bgc")"
+        if awk -v g="$got" -v l="$listed" 'BEGIN { exit !(g + 0.01 < l) }'; then
+            fail "contrast $fg on $bg is $got:1, DIRECTION.md needs $listed:1"
+            rc=1
+        fi
+    done < <(sed -n '/^| Text | Background | Ratio |/,/^$/p' "$DESIGN/DIRECTION.md")
+    if [[ $n -eq 0 ]]; then
+        fail "DIRECTION.md has no contrast table"
+        return 1
+    fi
+    [[ $rc -eq 0 ]] && printf 'ok   %d contrast pairs meet their ratios\n' "$n"
+    return "$rc"
+}
+
+# Spec 11.2: no manifest row and no step writes game config.
+check_game_paths() {
+    # shellcheck disable=SC2016 # a literal $HOME in the pattern
+    local re='\.steam\b|\.local/share/Steam|\.config/lutris|\.local/share/lutris|\.config/heroic|(~|\$HOME|\$\{HOME\})/Games\b|/usr/share/steam|\.wine\b|WINEPREFIX|compatdata|/pfx\b'
+    local files=("$AUSPEX/manifest/user.tsv") f
+    for f in "$AUSPEX"/system/steps/*.sh; do
+        [[ -f "$f" ]] && files+=("$f")
+    done
+    if grep -nHiE -- "$re" "${files[@]}" >"$work/games.out"; then
+        sed "s|^$AUSPEX/|     |" "$work/games.out"
+        fail "the manifest or a step names a game config path (spec 11.2)"
+        return 1
+    fi
+    printf 'ok   no game config path in the manifest or the steps\n'
+}
+
+check_sddm() {
+    local dir="$SYS/sddm" qml lint f rc=0
+    if [[ ! -f "$dir/Main.qml" ]]; then
+        fail "system/files/avgvr/sddm/Main.qml is missing (run auspex theme build)"
+        return 1
+    fi
+    lint="$(command -v qmllint6 || command -v qmllint || true)"
+    [[ -n "$lint" || ! -x /usr/lib/qt6/bin/qmllint ]] || lint=/usr/lib/qt6/bin/qmllint
+    if [[ -z "$lint" ]]; then
+        printf 'skip qmllint: qmllint is not installed\n'
+    else
+        for qml in "$dir"/*.qml; do
+            if "$lint" -- "$qml" >"$work/qmllint.out" 2>&1; then
+                printf 'ok   qmllint %s\n' "${qml#"$AUSPEX"/}"
+            else
+                sed 's/^/     /' "$work/qmllint.out"
+                fail "qmllint fails on ${qml#"$AUSPEX"/}"
+                rc=1
+            fi
+        done
+    fi
+    for qml in "$dir"/*.qml; do
+        if grep -nE '#[0-9A-Fa-f]{3,8}\b' -- "$qml" >"$work/hex.out"; then
+            sed 's/^/     /' "$work/hex.out"
+            fail "${qml#"$AUSPEX"/} has a hex color (use config.<key>)"
+            rc=1
+        fi
+    done
+    if ! grep -qx 'QtVersion=6' -- "$dir/metadata.desktop" 2>/dev/null; then
+        fail "system/files/avgvr/sddm/metadata.desktop has no QtVersion=6 line"
+        rc=1
+    fi
+    while IFS= read -r f; do
+        if ! awk -v p="sddm/$f" '$2 == p { found = 1 } END { exit !found }' "$SYS/SHA256SUMS"; then
+            fail "system/files/avgvr/sddm/$f is not in SHA256SUMS"
+            rc=1
+        fi
+    done < <(cd "$dir" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+    [[ $rc -eq 0 ]] && printf 'ok   SDDM theme: no hex color, QtVersion=6, every file in SHA256SUMS\n'
+    return "$rc"
+}
+
+check_plymouth() {
+    local dir="$SYS/plymouth" theme_dir=/usr/share/plymouth/themes/avgvr f img rc=0
+    if [[ ! -f "$dir/avgvr.plymouth" || ! -f "$dir/avgvr.script" ]]; then
+        fail "system/files/avgvr/plymouth/avgvr.plymouth or avgvr.script is missing (run auspex theme build)"
+        return 1
+    fi
+    if ! grep -qx "ImageDir=$theme_dir" -- "$dir/avgvr.plymouth" ||
+        ! grep -qx "ScriptFile=$theme_dir/avgvr.script" -- "$dir/avgvr.plymouth"; then
+        fail "avgvr.plymouth needs ImageDir=$theme_dir and ScriptFile=$theme_dir/avgvr.script"
+        rc=1
+    fi
+    if grep -n '{{' -- "$dir/avgvr.script" >"$work/ply.out"; then
+        sed 's/^/     /' "$work/ply.out"
+        fail "system/files/avgvr/plymouth/avgvr.script has an unrendered {{"
+        rc=1
+    fi
+    while IFS= read -r img; do
+        [[ -f "$dir/$img" ]] && continue
+        fail "avgvr.script names $img, which system/files/avgvr/plymouth does not have"
+        rc=1
+    done < <(grep -oE 'Image\("[^"]+"\)' -- "$dir/avgvr.script" | sed -E 's/^Image\("(.*)"\)$/\1/' | sort -u)
+    while IFS= read -r f; do
+        [[ "$f" == *.png ]] && continue
+        if grep -nE '#[0-9A-Fa-f]{3,8}\b' -- "$dir/$f" >"$work/hex.out"; then
+            sed 's/^/     /' "$work/hex.out"
+            fail "system/files/avgvr/plymouth/$f has a hex color (use the palette in the template)"
+            rc=1
+        fi
+        if ! awk -v p="plymouth/$f" '$2 == p { found = 1 } END { exit !found }' "$SYS/SHA256SUMS"; then
+            fail "system/files/avgvr/plymouth/$f is not in SHA256SUMS"
+            rc=1
+        fi
+    done < <(cd "$dir" && find . -type f -printf '%P\n' | LC_ALL=C sort)
+    [[ $rc -eq 0 ]] && printf 'ok   plymouth theme: paths, rendered script, every named image, no hex color\n'
+    return "$rc"
+}
+
+check_waybar() {
+    local cfg="$AUSPEX/config/waybar/config.jsonc" css="$work/style.css" accent bad rc=0
+    command -v jq >/dev/null || {
+        echo "jq is not installed"
+        return "$SKIP_EXIT"
+    }
+    if ! sed -E 's|^[[:space:]]*//.*$||' "$cfg" | jq -e . >/dev/null 2>"$work/waybar.out"; then
+        sed 's/^/     /' "$work/waybar.out"
+        fail "config/waybar/config.jsonc is not valid JSON after comments are removed"
+        rc=1
+    fi
+    auspex_render "$PALETTE" "$AUSPEX/templates/waybar/style.css.tpl" "$css" || {
+        fail "templates/waybar/style.css.tpl does not render"
+        return 1
+    }
+    accent="${PAL[accent]:-}"
+    bad="$(awk -v a="${accent^^}" '
+        { sel = sel $0 }
+        /\{/ { s = sel; sub(/\{.*/, "", s); cur = s; sel = "" }
+        /\}/ { cur = ""; sel = "" }
+        index(toupper($0), a) && cur !~ /urgent|\.blocked/ { print NR ": " $0 }
+    ' "$css")"
+    if [[ -n "$bad" ]]; then
+        printf '%s\n' "$bad" | sed 's/^/     /'
+        fail "style.css uses the accent outside the urgent and .blocked rules"
+        rc=1
+    fi
+    [[ $rc -eq 0 ]] && printf 'ok   waybar: config.jsonc parses, the accent is only in the urgent and .blocked rules\n'
+    return "$rc"
+}
+
+check_hyprland_config() {
+    command -v Hyprland >/dev/null 2>&1 || {
+        printf 'Hyprland is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local home="$work/hypr-home" dir out
+    dir="$home/.config/hypr"
+    mkdir -p "$dir"
+    auspex_render "$PALETTE" "$AUSPEX/templates/hypr/theme.lua.tpl" "$dir/theme.lua" || return 1
+    cp "$AUSPEX/config/hypr/hyprland.lua" "$AUSPEX/config/hypr/agent-binds.lua" "$dir/"
+    if ! out="$(HOME="$home" Hyprland --verify-config -c "$dir/hyprland.lua" 2>&1)"; then
+        printf '%s\n' "$out" | tail -5
+        fail 'Hyprland --verify-config failed on the rendered config'
+        return 1
+    fi
+    printf 'ok   Hyprland --verify-config passes on the rendered theme.lua\n'
+}
+
+check_fuzzel() {
+    command -v fuzzel >/dev/null 2>&1 || {
+        printf 'fuzzel is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local ini="$work/fuzzel.ini" out
+    auspex_render "$PALETTE" "$AUSPEX/templates/fuzzel/fuzzel.ini.tpl" "$ini" || {
+        fail "templates/fuzzel/fuzzel.ini.tpl does not render"
+        return 1
+    }
+    if ! out="$(fuzzel --check-config --config "$ini" 2>&1)"; then
+        printf '%s\n' "$out" | tail -5
+        fail 'fuzzel --check-config failed on the rendered fuzzel.ini'
+        return 1
+    fi
+    printf 'ok   fuzzel --check-config passes on the rendered fuzzel.ini\n'
+}
+
+check_herdr_theme() {
+    command -v jq >/dev/null 2>&1 || {
+        printf 'jq is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local out="$work/herdr-avgvr.json"
+    auspex_render "$PALETTE" "$AUSPEX/templates/herdr-app/avgvr.json.tpl" "$out" || {
+        fail 'templates/herdr-app/avgvr.json.tpl does not render'
+        return 1
+    }
+    if ! jq -e '(.ansi | length == 16) and (.ansi | all(type == "string"))' "$out" >/dev/null 2>&1; then
+        fail 'the rendered herdr theme is not valid JSON with 16 ansi values'
+        return 1
+    fi
+    printf 'ok   the rendered herdr theme parses and has 16 ansi values\n'
+}
+
+check_claude_theme() {
+    command -v jq >/dev/null 2>&1 || {
+        printf 'jq is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local tpl="$AUSPEX/templates/claude/avgvr.json.tpl" out="$work/claude-avgvr.json" key
+    auspex_render "$PALETTE" "$tpl" "$out" || {
+        fail 'templates/claude/avgvr.json.tpl does not render'
+        return 1
+    }
+    for key in claude permission success error inactive subtle text; do
+        if ! jq -e --arg k "$key" '.overrides[$k] | type == "string" and test("^#[0-9a-fA-F]{6}$")' "$out" >/dev/null 2>&1; then
+            fail "the rendered Claude Code theme is not valid JSON with a #rrggbb value for $key"
+            return 1
+        fi
+    done
+    printf 'ok   the rendered Claude Code theme parses and has every mapped key\n'
+}
+
+check_herdr_layout() {
+    command -v jq >/dev/null 2>&1 || {
+        printf 'jq is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local f="$AUSPEX/config/herdr-app/layouts/avgvr.json"
+    if ! jq -e . "$f" >/dev/null 2>&1; then
+        fail 'config/herdr-app/layouts/avgvr.json is not valid JSON'
+        return 1
+    fi
+    if ! jq -e '[.. | objects | .radius? | select(type == "number" and . > 0)] | length == 0' "$f" >/dev/null 2>&1; then
+        fail 'the herdr layout avgvr has a radius above 0'
+        return 1
+    fi
+    if ! jq -e '[.. | objects | .mod? | select(. == "avgvr-spaces")] | length > 0' "$f" >/dev/null 2>&1; then
+        fail 'the herdr layout avgvr does not name the mod avgvr-spaces'
+        return 1
+    fi
+    printf 'ok   the herdr layout avgvr parses, has radius 0 and names avgvr-spaces\n'
+}
+
+check_herdr_mod() {
+    command -v jq >/dev/null 2>&1 || {
+        printf 'jq is not installed\n'
+        return "$SKIP_EXIT"
+    }
+    local d="$AUSPEX/config/herdr-app/mods/avgvr-spaces"
+    if ! jq -e . "$d/mod.json" >/dev/null 2>&1; then
+        fail 'config/herdr-app/mods/avgvr-spaces/mod.json is not valid JSON'
+        return 1
+    fi
+    if grep -q '\.rounded(' "$d/main.js"; then
+        fail 'the herdr mod avgvr-spaces calls .rounded('
+        return 1
+    fi
+    if grep -Eq '#[0-9A-Fa-f]{3,8}\b' "$d/main.js"; then
+        fail 'the herdr mod avgvr-spaces has a hex color'
+        return 1
+    fi
+    printf 'ok   the herdr mod avgvr-spaces has valid mod.json, no .rounded( and no hex color\n'
+    if command -v herdr-app >/dev/null 2>&1; then
+        local tmp
+        tmp=$(mktemp -d)
+        cp "$d/main.js" "$d/mod.json" "$tmp/"
+        if ! herdr-app check "$tmp" >/dev/null 2>&1; then
+            rm -rf "$tmp"
+            fail 'herdr-app check reports a problem in the mod avgvr-spaces'
+            return 1
+        fi
+        rm -rf "$tmp"
+        printf 'ok   herdr-app check passes on the mod avgvr-spaces\n'
+    else
+        printf 'skip herdr-app is not installed\n'
+    fi
+}
+
+CHECKS=(
+    check_templates
+    check_inputs
+    check_sums
+    check_svg_colors
+    check_svg_fonts
+    check_contrast
+    check_game_paths
+    check_sddm
+    check_plymouth
+    check_hyprland_config
+    check_waybar
+    check_fuzzel
+    check_herdr_theme
+    check_claude_theme
+    check_herdr_layout
+    check_herdr_mod
+)
+
+failed=0
+for check in "${CHECKS[@]}"; do
+    rc=0
+    out="$("$check" 2>&1)" || rc=$?
+    if [[ $rc -eq $SKIP_EXIT ]]; then
+        printf 'skip %s: %s\n' "$check" "${out##*$'\n'}"
+    else
+        printf '%s\n' "$out"
+        [[ $rc -eq 0 ]] || failed=$((failed + 1))
+    fi
+done
+
+if [[ $failed -gt 0 ]]; then
+    auspex_warn "$failed theme checks failed"
+    exit 1
+fi

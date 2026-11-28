@@ -22,15 +22,17 @@ hl.config({
 hl.on("hyprland.start", function()
   hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
   hl.exec_cmd("/usr/lib/pam_kwallet_init")
+  hl.exec_cmd("hyprpaper")
   hl.exec_cmd("waybar")
   hl.exec_cmd("mako")
   hl.exec_cmd("hypridle")
   hl.exec_cmd("systemctl --user start hyprpolkitagent")
   hl.exec_cmd("nm-applet --indicator")
   hl.exec_cmd("blueman-applet")
+  hl.exec_cmd("[workspace 1 silent] herdr-app")
 end)
 
-hl.bind("SUPER + Return", hl.dsp.exec_cmd("ghostty"))
+hl.bind("SUPER + Return", hl.dsp.exec_cmd("hyprctl clients -j | jq -e '.[] | select(.class == \"herdr-app\")' >/dev/null && hyprctl dispatch focuswindow class:herdr-app || herdr-app"))
 hl.bind("SUPER + D", hl.dsp.exec_cmd("fuzzel"))
 hl.bind("SUPER + Q", hl.dsp.window.close())
 hl.bind("SUPER + F", hl.dsp.window.fullscreen({ mode = "fullscreen" }))
@@ -59,8 +61,17 @@ local config_dir = (debug.getinfo(1, "S").source:match("^@(.*/)"))
   or ((os.getenv("HOME") or "") .. "/.config/hypr/")
 dofile(config_dir .. "agent-binds.lua")
 
+local load_theme = loadfile(config_dir .. "theme.lua")
+local theme = load_theme and load_theme()
+if theme then
+  hl.config(theme.config)
+  hl.curve(theme.curve.name, { type = "bezier", points = theme.curve.points })
+  hl.animation({ leaf = "global", enabled = true, speed = theme.animation_speed, bezier = theme.curve.name })
+end
+
 -- Window rules (spec 9.5). The last matching rule wins, so each program
 -- first floats all its windows, then tiles its main window.
+hl.window_rule({ match = { class = "^herdr-app$" }, tile = true, workspace = "1" })
 hl.window_rule({ match = { class = "^steam$" }, float = true, center = true })
 hl.window_rule({ match = { class = "^steam$", title = "^Steam$" }, tile = true })
 hl.window_rule({ match = { class = "^steam_app_.*" }, idle_inhibit = "fullscreen" })

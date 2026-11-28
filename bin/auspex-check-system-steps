@@ -17,6 +17,8 @@ case "${1:-}" in
 esac
 
 deny_re='(\.config/plasma|\.config/k|~/\.config/k|/etc/sddm\.conf\.d|/usr/share/sddm|/usr/share/plasma)'
+sddm_allow_step=060-avgvr-sddm
+sddm_allow_sed='s#(/etc/sddm\.conf\.d/zz-auspex-avgvr\.conf|/usr/share/sddm/themes/avgvr(\.new)?)([^A-Za-z0-9_./-]|$)#\3#g'
 repo_path_re='(^|[^A-Za-z0-9_.-])(packages|system/files|config)/[^[:space:]"'"'"';)}]*'
 
 fail=0
@@ -33,7 +35,12 @@ while IFS= read -r step; do
     [[ "$(auspex_header "$file" requires-sudo || true)" == true ]] || errs+=("header requires-sudo is not true")
     [[ -n "$(auspex_header "$file" summary || true)" ]] || errs+=("no summary header")
     bash -n "$file" 2>/dev/null || errs+=("bash -n fails")
-    if hits="$(grep -nE "$deny_re" "$file")"; then
+    if [[ "$step" == "$sddm_allow_step" ]]; then
+        hits="$(sed -E "$sddm_allow_sed" "$file" | grep -nE "$deny_re")" || hits=""
+    else
+        hits="$(grep -nE "$deny_re" "$file")" || hits=""
+    fi
+    if [[ -n "$hits" ]]; then
         errs+=("names a KDE deny-list path: ${hits//$'\n'/; }")
     fi
     text=""
@@ -54,7 +61,16 @@ while IFS= read -r step; do
     fi
     while IFS= read -r p; do
         [[ -n "$p" ]] || continue
-        [[ " ${declared[*]} " == *" $p "* ]] || errs+=("reads $p but does not declare it in auspex:reads")
+        [[ " ${declared[*]} " == *" $p "* ]] && continue
+        covered=0
+        for d in "${declared[@]}"; do
+            [[ "$d" == */SHA256SUMS && -f "$AUSPEX/$d" ]] || continue
+            top="${d%/SHA256SUMS}"
+            while read -r _ f; do
+                [[ "$top/$f" == "$p" || "$top/$f" == "${p%/}"/* ]] && covered=1
+            done <"$AUSPEX/$d"
+        done
+        ((covered)) || errs+=("reads $p but does not declare it in auspex:reads or in a declared SHA256SUMS dir")
     done < <(grep -v '^# auspex:reads=' <<<"$text" | grep -oE "$repo_path_re" | sed -E 's|^[^A-Za-z0-9_.-]||' | LC_ALL=C sort -u)
     if [[ ${#errs[@]} -eq 0 ]]; then
         printf 'ok %s\n' "$step"

@@ -116,6 +116,89 @@ system_step_digest() {
     printf '%s\n' "${h%% *}"
 }
 
+# step_install_verified <sums> <repo dir> <dest dir>: install the binary
+# files that a SHA256SUMS file lists. The root shell runs a copy of this
+# function.
+#   <sums>      the repo path of a SHA256SUMS file that the step declares in
+#               a reads line, for example system/files/avgvr/SHA256SUMS. The
+#               function reads the approved copy in AUSPEX_READS_DIR (as
+#               root) or the repo copy (in a direct run).
+#   <repo dir>  a repo dir at or under the dir of <sums>, for example
+#               system/files/avgvr/fonts. Only the lines of <sums> under it
+#               are installed.
+#   <dest dir>  the target dir. <repo dir>/a/b goes to <dest dir>/a/b.
+# Each line is "<sha256>  <path relative to the dir of <sums>>". The
+# function copies each listed file into a new mktemp -d dir and checks its
+# sha256. Only when every file matches does it run install -D -m 644 for
+# each, and print each installed target path, 1 per line. On a bad line, a
+# missing file, a symlink, a hash mismatch or no matching line it installs
+# nothing and returns 1. It never reads a file that <sums> does not list.
+step_install_verified() {
+    local sums="$1" src="${2%/}" dest="${3%/}" top prefix list tmp line want path rel got rc=0
+    local -a rels=()
+    [[ -n "$sums" && -n "$src" && -n "$dest" ]] || return 1
+    top="$(dirname -- "$sums")"
+    case "$src" in
+        "$top") prefix="" ;;
+        "$top"/*) prefix="${src#"$top"/}/" ;;
+        *)
+            echo "step_install_verified: $src is not under $top" >&2
+            return 1
+            ;;
+    esac
+    list="${AUSPEX_READS_DIR:-${AUSPEX_REPO:?}}/$sums"
+    [[ -f "$list" && ! -L "$list" ]] || {
+        echo "step_install_verified: cannot read $sums" >&2
+        return 1
+    }
+    tmp="$(mktemp -d)" || return 1
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ -n "$line" ]] || continue
+        if [[ ! "$line" =~ ^([0-9a-f]{64})\ \ ([A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*)$ ]]; then
+            echo "step_install_verified: bad line in $sums: $line" >&2
+            rc=1
+            break
+        fi
+        want="${BASH_REMATCH[1]}" path="${BASH_REMATCH[2]}"
+        if [[ "/$path/" == */../* || "/$path/" == */./* ]]; then
+            echo "step_install_verified: bad path in $sums: $path" >&2
+            rc=1
+            break
+        fi
+        [[ "$path" == "$prefix"* ]] || continue
+        rel="${path#"$prefix"}"
+        if [[ ! -f "$AUSPEX_REPO/$top/$path" || -L "$AUSPEX_REPO/$top/$path" ]] ||
+            ! mkdir -p -- "$tmp/$(dirname -- "$rel")" ||
+            ! cp -- "$AUSPEX_REPO/$top/$path" "$tmp/$rel"; then
+            echo "step_install_verified: cannot copy $top/$path" >&2
+            rc=1
+            break
+        fi
+        got="$(sha256sum -- "$tmp/$rel")" || got=""
+        if [[ "${got%% *}" != "$want" ]]; then
+            echo "step_install_verified: hash mismatch: $top/$path" >&2
+            rc=1
+            break
+        fi
+        rels+=("$rel")
+    done <"$list"
+    if ((rc == 0 && ${#rels[@]} == 0)); then
+        echo "step_install_verified: $sums lists no file under $src" >&2
+        rc=1
+    fi
+    if ((rc == 0)); then
+        for rel in "${rels[@]}"; do
+            install -D -m 644 -- "$tmp/$rel" "$dest/$rel" || {
+                rc=1
+                break
+            }
+            printf '%s\n' "$dest/$rel"
+        done
+    fi
+    rm -rf -- "$tmp"
+    return "$rc"
+}
+
 # system_step_load <step>: read the step and its reads files 1 time, and
 # set SYSTEM_STEP_NAMES, SYSTEM_STEP_PARTS and SYSTEM_STEP_DIGEST.
 system_step_load() {
@@ -288,7 +371,7 @@ system_step_run() {
         args+=("${SYSTEM_STEP_NAMES[i]}" "${SYSTEM_STEP_PARTS[i]}")
     done
     rc=0
-    sudo bash -c "$(declare -f system_step_digest)"$'\n'"$SYSTEM_STEP_ROOT_SHELL" \
+    sudo bash -c "$(declare -f system_step_digest step_install_verified)"$'\n'"$SYSTEM_STEP_ROOT_SHELL" \
         _ "$SYSTEM_STEP_DIGEST" "$action" "$AUSPEX" "${args[@]}" || rc=$?
     if system_step_check; then check_state=pass; else check_state=fail; fi
     local result=ok

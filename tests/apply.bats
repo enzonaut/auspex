@@ -381,3 +381,98 @@ teardown() {
     [[ "$output" != *"910-done"* ]]
     [[ "$output" == *"~/.config/app/app.conf"* ]]
 }
+
+render_setup() {
+    mkdir -p "$AUSPEX/themes/t1" "$AUSPEX/templates"
+    printf 't1\n' >"$AUSPEX/themes/current"
+    printf 'accent = "#EB6A43"\nfont = "Jost"\n' >"$AUSPEX/themes/t1/colors.toml"
+    printf 'color={{ accent }}\nfont={{ font }}\n' >"$AUSPEX/templates/a.tpl"
+    printf 'rgba({{ accent | dec }})\n' >"$AUSPEX/templates/b.tpl"
+    printf 'templates/a.tpl\t~/.config/r/a.conf\trender\tany\n' >>"$AUSPEX/manifest/user.tsv"
+    printf 'templates/b.tpl\t~/.config/r/b.css\trender\tany\n' >>"$AUSPEX/manifest/user.tsv"
+    repo_commit "render rows"
+}
+
+@test "apply writes a render target with the palette values" {
+    render_setup
+    run auspex plan
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"create    ~/.config/r/a.conf"* ]]
+    run auspex apply
+    [ "$status" -eq 0 ]
+    [ "$(cat "$HOME/.config/r/a.conf")" = $'color=#EB6A43\nfont=Jost' ]
+    [ "$(cat "$HOME/.config/r/b.css")" = "rgba(235, 106, 67)" ]
+    [ "$(meta 1 '[.targets[] | select(.mode == "render")] | length')" -eq 2 ]
+    run auspex status
+    [ "$status" -eq 0 ]
+    run auspex apply
+    [[ "$output" == *"nothing to apply"* ]]
+}
+
+@test "a palette edit changes all render targets in 1 generation, and 1 undo restores them" {
+    render_setup
+    auspex apply
+    printf 'accent = "#000000"\nfont = "Jost"\n' >"$AUSPEX/themes/t1/colors.toml"
+    run auspex apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"uncommitted"* ]]
+    repo_commit "palette"
+    run auspex apply
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"generation 2"* ]]
+    [ "$(cat "$HOME/.config/r/b.css")" = "rgba(0, 0, 0)" ]
+    [[ "$(cat "$HOME/.config/r/a.conf")" == *"#000000"* ]]
+    [ "$(meta 2 '.targets | length')" -eq 2 ]
+    run auspex undo
+    [ "$status" -eq 0 ]
+    [ "$(cat "$HOME/.config/r/b.css")" = "rgba(235, 106, 67)" ]
+    [[ "$(cat "$HOME/.config/r/a.conf")" == *"#EB6A43"* ]]
+}
+
+@test "copy to render with the same file is not drift and updates the index mode" {
+    auspex apply
+    mkdir -p "$AUSPEX/themes/t1"
+    printf 't1\n' >"$AUSPEX/themes/current"
+    printf 'a = "1"\n' >"$AUSPEX/themes/t1/colors.toml"
+    printf 'a={{ a }}\n' >"$AUSPEX/config/app/app.conf"
+    sed -i 's|^config/app/app.conf\t\(.*\)\tcopy\t|config/app/app.conf\t\1\trender\t|' "$AUSPEX/manifest/user.tsv"
+    grep -q 'app.conf.*render' "$AUSPEX/manifest/user.tsv"
+    repo_commit "copy to render"
+    run auspex plan
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"unchanged ~/.config/app/app.conf"* ]]
+    run auspex apply
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"nothing to apply"* ]]
+    [ ! -e "$(gen 2)" ]
+    grep -q $'\trender\t.config/app/app.conf$' "$AUSPEX_STATE/targets.tsv"
+}
+
+@test "apply --adopt refuses a render target" {
+    render_setup
+    auspex apply
+    run auspex apply --adopt "~/.config/r/a.conf"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"render"* ]]
+    [[ "$output" == *"--force"* ]]
+    [ "$(cat "$AUSPEX/templates/a.tpl")" = $'color={{ accent }}\nfont={{ font }}' ]
+}
+
+@test "apply stops on a bad themes/current or a bad template and writes nothing" {
+    render_setup
+    printf 'nope\n' >"$AUSPEX/themes/current"
+    repo_commit "bad theme"
+    run auspex apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"themes/current"* ]]
+    [ ! -e "$HOME/.config/r" ]
+    printf 't1\n' >"$AUSPEX/themes/current"
+    printf 'x={{ missing }}\n' >"$AUSPEX/templates/b.tpl"
+    repo_commit "bad template"
+    run auspex apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"templates/b.tpl:1: unknown key missing"* ]]
+    [[ "$output" == *"cannot render templates/b.tpl"* ]]
+    [ ! -e "$HOME/.config/r" ]
+    [ ! -e "$(gen 1)" ]
+}

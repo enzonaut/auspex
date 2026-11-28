@@ -7,7 +7,8 @@ apply_test_setup() {
     make_repo_copy
     cp -a "$AUSPEX_REPO/tests/fixtures/apply/repo/." "$AUSPEX/"
     mkdir -p "$AUSPEX/migrations" "$AUSPEX/hooks/post-apply.d" \
-        "$AUSPEX/hooks/post-undo.d" "$AUSPEX/hooks/post-system-step.d"
+        "$AUSPEX/hooks/post-undo.d" "$AUSPEX/hooks/post-system-step.d" \
+        "$AUSPEX/hooks/theme-set.d"
     make_fake snapper 'exit 1'
     make_fake hyprctl
     make_fake systemctl

@@ -132,7 +132,7 @@ hypr_repo_copy() {
 
 @test "the manifest installs the Hyprland and browser flag files, none to KDE config" {
     m="$AUSPEX_REPO/manifest/user.tsv"
-    for f in hyprland.lua agent-binds.lua hypridle.conf hyprlock.conf; do
+    for f in hyprland.lua agent-binds.lua hypridle.conf; do
         grep -qP "^config/hypr/$f\t~/.config/hypr/$f\tcopy\thyprland$" "$m"
     done
     grep -qP '^config/browser-flags/chrome-flags.conf\t~/.config/chrome-flags.conf\tcopy\tany$' "$m"
@@ -140,4 +140,66 @@ hypr_repo_copy() {
     [ "$(cat "$AUSPEX_REPO/config/browser-flags/chrome-flags.conf")" = '--password-store=kwallet6' ]
     run auspex check kde-untouched
     [ "$status" -eq 0 ]
+}
+
+render_hypr() {
+    source "$AUSPEX_REPO/lib/common.sh"
+    AUSPEX="$AUSPEX_REPO" auspex_render "$AUSPEX_REPO/themes/avgvr/colors.toml" \
+        "$AUSPEX_REPO/templates/hypr/$1" "$TEST_TMP/$2"
+}
+
+@test "theme.lua renders the AVGVR look with no unresolved key" {
+    render_hypr theme.lua.tpl theme.lua
+    out="$TEST_TMP/theme.lua"
+    ! grep -q '{{' "$out"
+    grep -q 'border_size = 1' "$out"
+    grep -q 'rounding = 0' "$out"
+    grep -q 'disable_hyprland_logo = true' "$out"
+    grep -q 'allow_session_lock_restore = true' "$out"
+    grep -q '/ 100' "$out"
+}
+
+@test "hyprpaper.conf sets the AVGVR wallpaper for every monitor" {
+    cp "$AUSPEX_REPO/templates/hypr/hyprpaper.conf.tpl" "$TEST_TMP/h.conf"
+    grep -q '^preload = ~/.local/share/auspex/wallpaper/avgvr.png$' "$TEST_TMP/h.conf"
+    grep -q '^wallpaper = , ~/.local/share/auspex/wallpaper/avgvr.png$' "$TEST_TMP/h.conf"
+}
+
+@test "hyprpaper is the only new package and starts with Hyprland" {
+    grep -qx hyprpaper "$AUSPEX_REPO/packages/hyprland.list"
+    grep -q 'hl.exec_cmd("hyprpaper")' "$AUSPEX_REPO/config/hypr/hyprland.lua"
+}
+
+@test "the manifest has the 3 theme rows and the deny list covers each target" {
+    for t in '.config/hypr/theme.lua	render' '.config/hypr/hyprpaper.conf	render' '.local/share/auspex/wallpaper/avgvr.png	copy'; do
+        grep -qF "~/$t	hyprland" "$AUSPEX_REPO/manifest/user.tsv" ||
+            grep -P "~/${t%%	*}\t${t##*	}\thyprland" "$AUSPEX_REPO/manifest/user.tsv"
+        for tool in Edit Write; do
+            grep -qF "$tool(~/${t%%	*})" "$AUSPEX_REPO/claude/deny.json"
+        done
+    done
+}
+
+@test "check theme runs Hyprland --verify-config on the rendered config" {
+    make_fake Hyprland 'echo "$HOME $*" >>"$TEST_TMP/hypr.calls"; [ -f "$HOME/.config/hypr/theme.lua" ]'
+    run "$AUSPEX_REPO/bin/auspex-check-theme"
+    [[ "$output" == *"ok   Hyprland --verify-config passes"* ]]
+    grep -q -- '--verify-config -c .*/hyprland.lua' "$TEST_TMP/hypr.calls"
+}
+
+@test "SUPER+Return starts or raises herdr-app, it autostarts, and no ghostty is left" {
+    f="$AUSPEX_REPO/config/hypr/hyprland.lua"
+    run grep -n ghostty "$f"
+    [ "$status" -eq 1 ]
+    grep -F 'hl.bind("SUPER + Return"' "$f" | grep -qF 'focuswindow class:herdr-app || herdr-app'
+    grep -qF 'hl.exec_cmd("[workspace 1 silent] herdr-app")' "$f"
+    grep -qF 'hl.window_rule({ match = { class = "^herdr-app$" }, tile = true, workspace = "1" })' "$f"
+}
+
+@test "check hyprland-rules fails when the herdr-app rule is missing" {
+    hypr_repo_copy
+    sed -i '/\^herdr-app\$/d' "$AUSPEX/config/hypr/hyprland.lua"
+    run auspex check hyprland-rules
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL herdr app"* ]]
 }

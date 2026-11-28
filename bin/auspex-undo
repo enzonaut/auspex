@@ -166,6 +166,9 @@ auspex_gen_commit
 
 export AUSPEX_GEN_DIR="$GEN_DIR"
 auspex_run_hooks post-undo "$GEN_N"
+if auspex_changed_render; then
+    auspex_run_hooks theme-set "$GEN_N"
+fi
 
 printf 'generation %d undoes %s\n' "$GEN_N" "${UNDO[*]}"
 while IFS=$'\t' read -r rel _ action; do

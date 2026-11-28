@@ -90,8 +90,8 @@ mapfile -t deny < <(rules "$DENY" deny)
 mapfile -t allow < <(rules "$AGENT" allow)
 mapfile -t live_allow < <([[ -f "$LIVE" ]] && rules "$LIVE" allow)
 
-[[ "$(jq -c 'keys' "$DENY")" == '["permissions"]' && "$(jq -c '.permissions | keys' "$DENY")" == '["deny"]' ]] ||
-    fail "claude/deny.json may hold only permissions.deny"
+[[ "$(jq -c 'keys - ["theme"]' "$DENY")" == '["permissions"]' && "$(jq -c '.permissions | keys' "$DENY")" == '["deny"]' ]] ||
+    fail "claude/deny.json may hold only permissions.deny and theme"
 
 for f in "$AUSPEX_BIN"/auspex-*; do
     level="$(auspex_header "$f" level || true)"

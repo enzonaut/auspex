@@ -23,7 +23,8 @@ deny() {
 
 check_merged() {
     jq -e . "$2" >/dev/null
-    [ "$(jq -c 'del(.permissions.deny)' "$1")" = "$(jq -c 'del(.permissions.deny)' "$2")" ]
+    [ "$(jq -c 'del(.permissions.deny, .theme)' "$1")" = "$(jq -c 'del(.permissions.deny, .theme)' "$2")" ]
+    [ "$(jq -r .theme "$2")" = custom:avgvr ]
     local n
     n="$(deny "$1" | wc -l)"
     [ "$(deny "$2" | head -n "$n")" = "$(deny "$1")" ]
@@ -72,17 +73,17 @@ src_with() {
     ! deny "$W/out2" | grep -qFx -- "$rule"
     ! jq -e --arg r "$rule" 'index($r)' "$W/owned2"
     check_merged "$FIX" "$W/out1" "$W/owned1"
-    [ "$(jq -c 'del(.permissions.deny)' "$FIX")" = "$(jq -c 'del(.permissions.deny)' "$W/out2")" ]
+    [ "$(jq -c 'del(.permissions.deny, .theme)' "$FIX")" = "$(jq -c 'del(.permissions.deny, .theme)' "$W/out2")" ]
 }
 
 @test "merge with no target writes only the deny rules" {
     "$M" merge "$SRC" "$W/none" "$W/none" "$W/out" "$W/owned"
-    [ "$(jq -c 'keys' "$W/out")" = '["permissions"]' ]
+    [ "$(jq -c 'keys' "$W/out")" = '["permissions","theme"]' ]
     [ "$(deny "$W/out")" = "$(deny "$SRC")" ]
 }
 
 @test "merge refuses a bad source or target and writes nothing" {
-    for f in '.permissions.allow = ["Bash(x)"]' '.env = {}' '.permissions.deny = []' '.permissions.deny = [1]'; do
+    for f in '.permissions.allow = ["Bash(x)"]' '.env = {}' '.permissions.deny = []' '.permissions.deny = [1]' '.theme = 1' '.theme = ""'; do
         src="$(src_with "$f")"
         run "$M" merge "$src" "$FIX" "$W/none" "$W/out" "$W/owned"
         [ "$status" -eq 1 ]
@@ -112,6 +113,30 @@ src_with() {
     "$M" restore "$FIX" "$W/edited" "$W/owned" "$W/none" "$W/back"
     [ "$(deny "$W/back")" = "$(deny "$FIX"; echo 'Bash(operator-rule)')" ]
     [ "$(jq -r .theme "$W/back")" = light ]
+}
+
+@test "merge sets the theme and restore puts back the old one" {
+    "$M" merge "$SRC" "$FIX" "$W/none" "$W/out" "$W/owned"
+    [ "$(jq -r .theme "$W/out")" = custom:avgvr ]
+    [ "$(jq -r .theme "$FIX")" = dark ]
+    [ "$(jq -c 'del(.theme, .permissions.deny)' "$W/out")" = "$(jq -c 'del(.theme, .permissions.deny)' "$FIX")" ]
+    "$M" restore "$FIX" "$W/out" "$W/owned" "$W/none" "$W/back"
+    [ "$(jq -r .theme "$W/back")" = dark ]
+    cmp "$FIX" "$W/back"
+}
+
+@test "restore removes the theme when the earlier file had none" {
+    jq 'del(.theme)' "$FIX" >"$W/before"
+    "$M" merge "$SRC" "$W/before" "$W/none" "$W/out" "$W/owned"
+    [ "$(jq -r .theme "$W/out")" = custom:avgvr ]
+    "$M" restore "$W/before" "$W/out" "$W/owned" "$W/none" "$W/back"
+    ! jq -e 'has("theme")' "$W/back"
+    cmp "$W/before" "$W/back"
+}
+
+@test "merge with no target writes the theme too" {
+    "$M" merge "$SRC" "$W/none" "$W/none" "$W/out" "$W/owned"
+    [ "$(jq -c 'keys' "$W/out")" = '["permissions","theme"]' ]
 }
 
 @test "restore with no earlier file gives an empty file" {
@@ -146,7 +171,7 @@ src_with() {
 
 perm_repo() {
     make_repo_copy
-    cp -a "$AUSPEX_REPO/agent" "$AUSPEX_REPO/claude" "$AUSPEX_REPO/config" "$AUSPEX_REPO/manifest" "$AUSPEX_REPO/systemd" "$AUSPEX/"
+    cp -a "$AUSPEX_REPO/agent" "$AUSPEX_REPO/claude" "$AUSPEX_REPO/config" "$AUSPEX_REPO/manifest" "$AUSPEX_REPO/system" "$AUSPEX_REPO/systemd" "$AUSPEX_REPO/templates" "$AUSPEX_REPO/themes" "$AUSPEX/"
 }
 
 @test "apply merges the settings, plan shows unchanged, undo restores them" {

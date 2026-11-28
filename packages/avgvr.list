@@ -1,0 +1,5 @@
+# Packages of the AVGVR theme. Each step installs only its own line.
+# 050-avgvr-fonts
+ttf-jetbrains-mono
+# the plymouth step
+plymouth
